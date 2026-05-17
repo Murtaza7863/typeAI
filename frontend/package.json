@@ -41,7 +41,7 @@
     "@tanstack/pacer-lite": "0.2.1",
     "@tanstack/query-db-collection": "1.0.36",
     "@tanstack/solid-db": "0.2.19",
-    "@tanstack/solid-devtools": "0.8.2",
+    "@tanstack/solid-devtools": "0.8.5",
     "@tanstack/solid-form": "1.29.1",
     "@tanstack/solid-hotkeys": "0.9.1",
     "@tanstack/solid-hotkeys-devtools": "0.6.6",
