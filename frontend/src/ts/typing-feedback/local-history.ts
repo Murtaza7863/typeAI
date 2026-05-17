@@ -66,6 +66,11 @@ export function getLocalTypingSessionCount(): number {
   return getLocalTypingSessions().length;
 }
 
+export function clearLocalTypingHistory(): void {
+  localStorage.removeItem(STORAGE_KEY);
+  setHistoryVersion((version) => version + 1);
+}
+
 export function getLocalTypingHistoryVersion(): number {
   return historyVersion();
 }

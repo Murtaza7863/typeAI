@@ -8,9 +8,11 @@ import {
 import { isAuthenticated } from "../../../states/core";
 import { getResultVisible } from "../../../states/test";
 import {
+  clearLocalTypingHistory,
   getLocalTypingHistoryVersion,
   getLocalTypingSessionCount,
 } from "../../../typing-feedback/local-history";
+import { showNoticeNotification } from "../../../states/notifications";
 import { cn } from "../../../utils/cn";
 import AsyncContent from "../../common/AsyncContent";
 import { Button } from "../../common/Button";
@@ -21,17 +23,33 @@ export function TypingFeedbackPanel(props: {
 }): JSXElement {
   const variant = (): "result" | "account" => props.variant ?? "account";
 
+  const localSessionCount = createMemo(() => {
+    getLocalTypingHistoryVersion();
+    return getLocalTypingSessionCount();
+  });
+
   const enabled = createMemo(() => {
     if (variant() === "account") {
-      getLocalTypingHistoryVersion();
-      return isAuthenticated() || getLocalTypingSessionCount() > 0;
+      return true;
     }
     return getResultVisible();
   });
 
+  const showResetHistory = (): boolean =>
+    !isAuthenticated() && localSessionCount() > 0;
+
   const query = useQuery(() => ({
     ...getTypingFeedbackQueryOptions({ enabled: enabled() }),
   }));
+
+  const resetLocalHistory = (): void => {
+    clearLocalTypingHistory();
+    invalidateTypingFeedback();
+    void query.refetch();
+    showNoticeNotification("Coach history cleared on this device.", {
+      durationMs: 3000,
+    });
+  };
 
   return (
     <div
@@ -53,17 +71,27 @@ export function TypingFeedbackPanel(props: {
             </p>
           </Show>
         </div>
-        <Show when={query.data?.ready}>
-          <Button
-            variant="text"
-            text="Refresh"
-            disabled={query.isFetching}
-            onClick={() => {
-              invalidateTypingFeedback();
-              void query.refetch();
-            }}
-          />
-        </Show>
+        <div class="flex shrink-0 items-center gap-2">
+          <Show when={showResetHistory()}>
+            <Button
+              variant="text"
+              text="Reset history"
+              disabled={query.isFetching}
+              onClick={resetLocalHistory}
+            />
+          </Show>
+          <Show when={query.data?.ready}>
+            <Button
+              variant="text"
+              text="Refresh"
+              disabled={query.isFetching}
+              onClick={() => {
+                invalidateTypingFeedback();
+                void query.refetch();
+              }}
+            />
+          </Show>
+        </div>
       </div>
 
       <AsyncContent queries={{ query }}>
