@@ -1,0 +1,49 @@
+import { Config } from "../config/store";
+import { Keycode } from "../constants/keys";
+import * as KeyConverter from "../utils/key-converter";
+
+export let leftState = false;
+export let rightState = false;
+
+document.addEventListener("keydown", (e: KeyboardEvent) => {
+  if (e.code === "ShiftLeft") {
+    leftState = true;
+    rightState = false;
+  } else if (e.code === "ShiftRight") {
+    leftState = false;
+    rightState = true;
+  }
+});
+
+document.addEventListener("keyup", (e: KeyboardEvent) => {
+  if (e.code === "ShiftLeft" || e.code === "ShiftRight") {
+    leftState = false;
+    rightState = false;
+  }
+});
+
+export function reset(): void {
+  leftState = false;
+  rightState = false;
+}
+
+export function isUsingOppositeShift(keycode: Keycode): boolean {
+  if (!leftState && !rightState) {
+    return true;
+  }
+
+  if (Config.oppositeShiftMode === "off") {
+    return true;
+  }
+
+  const { leftSide, rightSide } = KeyConverter.keycodeToKeyboardSide(keycode);
+  if (!leftSide && !rightSide) {
+    return true;
+  }
+
+  if ((leftState && rightSide) || (rightState && leftSide)) {
+    return true;
+  }
+
+  return false;
+}

@@ -1,0 +1,87 @@
+@use "./media.scss" as *;
+
+@include media-query(green) {
+  .content-grid {
+    --content-max-width: 768px;
+  }
+  .pageAccountSettings .main {
+    gap: 2rem;
+    .right .tab .section {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "title"
+        "text" "buttons";
+      &.discordIntegration .info {
+        height: 8rem;
+        display: grid;
+        align-content: center;
+      }
+    }
+  }
+  .pageTest {
+    #result .wrapper .stats.morestats {
+      display: grid;
+      grid-template-columns: repeat(3, max-content);
+      grid-template-rows: 1fr 1fr;
+    }
+    #liveStatsTextTop,
+    #liveStatsTextBottom {
+      font-size: 7rem;
+    }
+  }
+  .pageSettings {
+    .section {
+      grid-template-columns: 1fr 1fr;
+
+      &[data-config-name="customBackgroundFilter"] {
+        .groups {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      &.themes .tabContainer .tabContent.customTheme {
+        .customThemeInputs .customThemeInput {
+          grid-template-columns: 10em 1fr;
+        }
+      }
+    }
+    .settingsGroup.quickNav {
+      justify-content: unset;
+      .links {
+        max-width: unset;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+      }
+    }
+  }
+
+  .testActivity {
+    --gap-size: 0.1em;
+    --font-size: 0.8em;
+    .wrapper {
+      grid-template-areas:
+        "top top"
+        "chart chart"
+        "month month";
+    }
+    .days {
+      display: none;
+    }
+    // .activity div,
+    // .legend div {
+    //   width: 0.9em;
+    //   height: 0.9em;
+    //   border-radius: 0.2em;
+    // }
+  }
+
+  .pageFriends {
+    .content .friends table {
+      td:nth-child(4),
+      td:nth-child(7),
+      td:nth-child(8) {
+        display: none;
+      }
+    }
+  }
+}

@@ -1,0 +1,69 @@
+import { QuoteWithTextSplit } from "../controllers/quotes-controller";
+import * as TestState from "./test-state";
+
+class Words {
+  public list: string[];
+  public sectionIndexList: number[];
+  public length: number;
+
+  constructor() {
+    this.list = [];
+    this.sectionIndexList = [];
+    this.length = 0;
+  }
+
+  getText(i?: undefined, raw?: boolean): string[];
+  getText(i: number, raw?: boolean): string;
+  getText(i?: number, raw = false): string | string[] | undefined {
+    if (i === undefined) {
+      return this.list;
+    } else {
+      if (raw) {
+        return this.list[i]?.replace(/[.?!":\-,]/g, "")?.toLowerCase();
+      } else {
+        return this.list[i];
+      }
+    }
+  }
+  getCurrentText(): string {
+    return this.list[TestState.activeWordIndex] ?? "";
+  }
+  getLast(): string {
+    return this.list[this.list.length - 1] as string;
+  }
+  push(word: string, sectionIndex: number): void {
+    this.list.push(word);
+    this.sectionIndexList.push(sectionIndex);
+    this.length = this.list.length;
+  }
+
+  reset(): void {
+    this.list = [];
+    this.sectionIndexList = [];
+    this.length = this.list.length;
+  }
+  clean(): void {
+    for (const s of this.list) {
+      if (/ +/.test(s)) {
+        const id = this.list.indexOf(s);
+        const tempList = s.split(" ");
+        this.list.splice(id, 1);
+        for (let i = 0; i < tempList.length; i++) {
+          this.list.splice(id + i, 0, tempList[i] as string);
+        }
+      }
+    }
+  }
+}
+
+export const words = new Words();
+export let hasNumbers = false;
+export let currentQuote = null as QuoteWithTextSplit | null;
+
+export function setCurrentQuote(rq: QuoteWithTextSplit | null): void {
+  currentQuote = rq;
+}
+
+export function setHasNumbers(tf: boolean): void {
+  hasNumbers = tf;
+}
