@@ -6,6 +6,7 @@ import {
   onCleanup,
   Show,
 } from "solid-js";
+import { envConfig } from "virtual:env-config";
 
 import { restartTestEvent } from "../../../events/test";
 import { createEffectOn } from "../../../hooks/effects";
@@ -36,6 +37,7 @@ import { AccountXpBar } from "./AccountXpBar";
 
 export function Nav(): JSXElement {
   const [getAccountMenuOpen, setAccountMenuOpen] = createSignal(false);
+  const isLiteMode = () => envConfig.liteMode;
   const isCoarse = () => window.matchMedia("(pointer: coarse)").matches;
   const [accountMenuRef, accountMenuEl] = useRefWithUtils<HTMLDivElement>();
 
@@ -104,163 +106,170 @@ export function Nav(): JSXElement {
           if (getActivePage() === "test") restartTestEvent.dispatch();
         }}
       />
-      <Button
-        variant="text"
-        fa={{
-          icon: "fa-crown",
-          fixedWidth: true,
-        }}
-        router-link
-        dataset={{
-          "data-nav-item": "leaderboards",
-        }}
-        class={buttonClass()}
-        href="/leaderboards"
-        onMouseEnter={() => {
-          prefetchLeaderboardPage();
-        }}
-      />
-      <Button
-        variant="text"
-        fa={{
-          icon: "fa-info",
-          fixedWidth: true,
-        }}
-        class={buttonClass()}
-        dataset={{
-          "data-nav-item": "about",
-        }}
-        href="/about"
-        router-link
-        onMouseEnter={() => {
-          prefetchAboutPage();
-        }}
-      />
-      <Button
-        variant="text"
-        fa={{
-          icon: "fa-cog",
-          fixedWidth: true,
-        }}
-        class={buttonClass()}
-        href="/settings"
-        dataset={{
-          "data-nav-item": "settings",
-        }}
-        router-link
-      />
-      <div class="grow"></div>
-      <Button
-        variant="text"
-        fa={{
-          icon: "fa-bell",
-          fixedWidth: true,
-        }}
-        dataset={{
-          "data-nav-item": "alerts",
-        }}
-        onClick={() => {
-          showModal("Alerts");
-        }}
-        class={cn(buttonClass(), "relative")}
-      >
-        <NotificationBubble
-          variant="fromCorner"
-          show={showAlertsNotificationBubble()}
-        />
-      </Button>
-      <AnimePresence exitBeforeEnter>
-        <Show
-          when={getSnapshot()}
-          fallback={
-            <Anime
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1, duration: 125 }}
-              exit={{ opacity: 0, duration: 125 }}
-            >
-              <Show when={showLoginButton()}>
-                <Button
-                  variant="text"
-                  href="/login"
-                  dataset={{
-                    "data-nav-item": "login",
-                  }}
-                  fa={{
-                    icon: "fa-user",
-                    variant: "regular",
-                    fixedWidth: true,
-                  }}
-                  router-link
-                  class={buttonClass()}
-                />
-              </Show>
-            </Anime>
-          }
-        >
-          {(snap) => (
-            <Anime
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1, duration: 125 }}
-              exit={{ opacity: 0, duration: 125 }}
-            >
-              <div
-                ref={accountMenuRef}
-                class={cn(
-                  "relative",
-                  !getFocus() &&
-                    "hover:**:data-[ui-element='accountMenu']:pointer-events-auto hover:**:data-[ui-element='accountMenu']:opacity-100",
-                  "has-focus-visible:**:data-[ui-element='accountMenu']:pointer-events-auto has-focus-visible:**:data-[ui-element='accountMenu']:opacity-100",
-                  getAccountMenuOpen() &&
-                    "**:data-[ui-element='accountMenu']:pointer-events-auto **:data-[ui-element='accountMenu']:opacity-100",
-                )}
-                // oxlint-disable-next-line react/no-unknown-property
-                on:click={(e: MouseEvent) => {
-                  if (isCoarse()) {
-                    if (e.target instanceof HTMLAnchorElement) {
-                      if (e.target.dataset["navItem"] === "account") {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }
-                      setAccountMenuOpen((prev) => !prev);
-                    }
-                  }
-                }}
-              >
-                <Button
-                  variant="text"
-                  class={cn(
-                    "h-full",
-                    "hover:**:data-[ui-element='userLevel']:bg-(--themable-button-hover-text)",
-                    { "opacity-(--nav-focus-opacity)": getFocus() },
-                  )}
-                  href="/account"
-                  router-link
-                  dataset={{
-                    "data-nav-item": "account",
-                  }}
+      <Show when={!isLiteMode()}>
+        <>
+          <Button
+            variant="text"
+            fa={{
+              icon: "fa-crown",
+              fixedWidth: true,
+            }}
+            router-link
+            dataset={{
+              "data-nav-item": "leaderboards",
+            }}
+            class={buttonClass()}
+            href="/leaderboards"
+            onMouseEnter={() => {
+              prefetchLeaderboardPage();
+            }}
+          />
+          <Button
+            variant="text"
+            fa={{
+              icon: "fa-info",
+              fixedWidth: true,
+            }}
+            class={buttonClass()}
+            dataset={{
+              "data-nav-item": "about",
+            }}
+            href="/about"
+            router-link
+            onMouseEnter={() => {
+              prefetchAboutPage();
+            }}
+          />
+          <Button
+            variant="text"
+            fa={{
+              icon: "fa-cog",
+              fixedWidth: true,
+            }}
+            class={buttonClass()}
+            href="/settings"
+            dataset={{
+              "data-nav-item": "settings",
+            }}
+            router-link
+          />
+          <div class="grow"></div>
+          <Button
+            variant="text"
+            fa={{
+              icon: "fa-bell",
+              fixedWidth: true,
+            }}
+            dataset={{
+              "data-nav-item": "alerts",
+            }}
+            onClick={() => {
+              showModal("Alerts");
+            }}
+            class={cn(buttonClass(), "relative")}
+          >
+            <NotificationBubble
+              variant="fromCorner"
+              show={showAlertsNotificationBubble()}
+            />
+          </Button>
+          <AnimePresence exitBeforeEnter>
+            <Show
+              when={getSnapshot()}
+              fallback={
+                <Anime
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1, duration: 125 }}
+                  exit={{ opacity: 0, duration: 125 }}
                 >
-                  <User
-                    user={snap()}
-                    showAvatar={true}
-                    iconsOnly={true}
-                    hideNameOnSmallScreens={true}
-                    level={getAnimatedLevel()}
-                    showSpinner={getAccountButtonSpinner()}
-                    showNotificationBubble={showFriendsNotificationBubble()}
-                    fontClass="text-em-xs"
-                  />
-                </Button>
-                <AccountMenu
-                  showFriendsNotificationBubble={showFriendsNotificationBubble()}
-                />
-              </div>
-              <div class="relative">
-                <AccountXpBar />
-              </div>
-            </Anime>
-          )}
-        </Show>
-      </AnimePresence>
+                  <Show when={showLoginButton()}>
+                    <Button
+                      variant="text"
+                      href="/login"
+                      dataset={{
+                        "data-nav-item": "login",
+                      }}
+                      fa={{
+                        icon: "fa-user",
+                        variant: "regular",
+                        fixedWidth: true,
+                      }}
+                      router-link
+                      class={buttonClass()}
+                    />
+                  </Show>
+                </Anime>
+              }
+            >
+              {(snap) => (
+                <Anime
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1, duration: 125 }}
+                  exit={{ opacity: 0, duration: 125 }}
+                >
+                  <div
+                    ref={accountMenuRef}
+                    class={cn(
+                      "relative",
+                      !getFocus() &&
+                        "hover:**:data-[ui-element='accountMenu']:pointer-events-auto hover:**:data-[ui-element='accountMenu']:opacity-100",
+                      "has-focus-visible:**:data-[ui-element='accountMenu']:pointer-events-auto has-focus-visible:**:data-[ui-element='accountMenu']:opacity-100",
+                      getAccountMenuOpen() &&
+                        "**:data-[ui-element='accountMenu']:pointer-events-auto **:data-[ui-element='accountMenu']:opacity-100",
+                    )}
+                    // oxlint-disable-next-line react/no-unknown-property
+                    on:click={(e: MouseEvent) => {
+                      if (isCoarse()) {
+                        if (e.target instanceof HTMLAnchorElement) {
+                          if (e.target.dataset["navItem"] === "account") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }
+                          setAccountMenuOpen((prev) => !prev);
+                        }
+                      }
+                    }}
+                  >
+                    <Button
+                      variant="text"
+                      class={cn(
+                        "h-full",
+                        "hover:**:data-[ui-element='userLevel']:bg-(--themable-button-hover-text)",
+                        { "opacity-(--nav-focus-opacity)": getFocus() },
+                      )}
+                      href="/account"
+                      router-link
+                      dataset={{
+                        "data-nav-item": "account",
+                      }}
+                    >
+                      <User
+                        user={snap()}
+                        showAvatar={true}
+                        iconsOnly={true}
+                        hideNameOnSmallScreens={true}
+                        level={getAnimatedLevel()}
+                        showSpinner={getAccountButtonSpinner()}
+                        showNotificationBubble={showFriendsNotificationBubble()}
+                        fontClass="text-em-xs"
+                      />
+                    </Button>
+                    <AccountMenu
+                      showFriendsNotificationBubble={showFriendsNotificationBubble()}
+                    />
+                  </div>
+                  <div class="relative">
+                    <AccountXpBar />
+                  </div>
+                </Anime>
+              )}
+            </Show>
+          </AnimePresence>
+        </>
+      </Show>
+      <Show when={isLiteMode()}>
+        <div class="grow"></div>
+      </Show>
     </nav>
   );
 }

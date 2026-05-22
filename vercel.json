@@ -1,0 +1,11 @@
+{
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm build-fe",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

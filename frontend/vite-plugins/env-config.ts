@@ -22,12 +22,14 @@ export function envConfig(options: {
     },
     load(id) {
       if (id === resolvedVirtualModuleId) {
+        const liteMode = options.env["LITE_MODE"] === "true";
         const devConfig: EnvConfig = {
           isDevelopment: true,
           backendUrl: fallback(
             options.env["BACKEND_URL"],
             "http://localhost:5005",
           ),
+          liteMode,
           clientVersion: options.clientVersion,
           recaptchaSiteKey: "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI",
           quickLoginEmail: options.env["QUICK_LOGIN_EMAIL"],
@@ -40,6 +42,7 @@ export function envConfig(options: {
             options.env["BACKEND_URL"],
             "https://api.monkeytype.com",
           ),
+          liteMode,
           recaptchaSiteKey: options.env["RECAPTCHA_SITE_KEY"] ?? "",
           quickLoginEmail: undefined,
           quickLoginPassword: undefined,

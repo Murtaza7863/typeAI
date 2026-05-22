@@ -1,6 +1,7 @@
 import { QueryClientProvider } from "@tanstack/solid-query";
 import { JSXElement } from "solid-js";
 import { render } from "solid-js/web";
+import { envConfig } from "virtual:env-config";
 
 import { queryClient } from "../queries";
 import { qsa } from "../utils/dom";
@@ -22,7 +23,7 @@ import { TestConfig } from "./pages/test/TestConfig";
 import { TypingFeedbackPanel } from "./pages/test/TypingFeedbackPanel";
 import { Popups } from "./popups/Popups";
 
-const components: Record<string, () => JSXElement> = {
+const fullComponents: Record<string, () => JSXElement> = {
   footer: () => <Footer />,
   aboutpage: () => <AboutPage />,
   accountpage: () => <AccountPage />,
@@ -42,6 +43,15 @@ const components: Record<string, () => JSXElement> = {
   commandlinehotkey: () => <CommandlineHotkey />,
 };
 
+const liteComponents: Record<string, () => JSXElement> = {
+  modals: () => <Modals />,
+  popups: () => <Popups />,
+  overlays: () => <Overlays />,
+  theme: () => <Theme />,
+  header: () => <Header />,
+  testconfig: () => <TestConfig />,
+};
+
 function mountToMountpoint(name: string, component: () => JSXElement): void {
   for (const mountPoint of qsa(name)) {
     render(
@@ -56,6 +66,7 @@ function mountToMountpoint(name: string, component: () => JSXElement): void {
 }
 
 export function mountComponents(): void {
+  const components = envConfig.liteMode ? liteComponents : fullComponents;
   for (const [query, component] of Object.entries(components)) {
     mountToMountpoint(`mount[data-component=${query}]`, component);
   }

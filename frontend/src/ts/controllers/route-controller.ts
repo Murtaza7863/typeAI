@@ -8,6 +8,7 @@ import * as TestState from "../test/test-state";
 import { showNoticeNotification } from "../states/notifications";
 import { navigationEvent, type NavigateOptions } from "../events/navigation";
 import { authEvent } from "../events/auth";
+import { envConfig } from "virtual:env-config";
 
 //source: https://www.youtube.com/watch?v=OstALBk-jTc
 // https://www.youtube.com/watch?v=OstALBk-jTc
@@ -36,6 +37,10 @@ type Route = {
     navigateOptions: NavigateOptions,
   ) => Promise<void>;
 };
+
+function isAllowedLitePath(pathname: string): boolean {
+  return pathname === "/" || pathname === "/verify";
+}
 
 const route404: Route = {
   path: "404",
@@ -191,6 +196,13 @@ export async function navigate(
 
   url = url.replace(/\/$/, "");
   if (url === "") url = "/";
+
+  if (envConfig.liteMode) {
+    const targetUrl = new URL(url, window.location.origin);
+    if (!isAllowedLitePath(targetUrl.pathname)) {
+      url = "/";
+    }
+  }
 
   // only push to history if we're navigating to a different URL
   const currentUrl = new URL(window.location.href);

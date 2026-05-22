@@ -6,6 +6,7 @@ import {
   PluginOption,
   CSSOptions,
 } from "vite";
+import fs from "node:fs";
 import path from "node:path";
 import injectHTML from "vite-plugin-html-inject";
 import childProcess from "child_process";
@@ -330,6 +331,10 @@ export default defineConfig(({ mode }): UserConfig => {
   const env = loadEnv(mode, process.cwd(), "");
   const useSentry = env["SENTRY"] !== undefined;
   const isDevelopment = mode !== "production";
+  const isLiteMode = env["LITE_MODE"] === "true";
+  const hasFirebaseConfigLive = fs.existsSync(
+    path.resolve(__dirname, "src/ts/constants/firebase-config-live.ts"),
+  );
 
   if (!isDevelopment) {
     if (env["RECAPTCHA_SITE_KEY"] === undefined) {
@@ -355,14 +360,15 @@ export default defineConfig(({ mode }): UserConfig => {
       },
     },
     resolve: {
-      alias: isDevelopment
-        ? []
-        : [
-            {
-              find: /\/constants\/firebase-config$/,
-              replacement: "/constants/firebase-config-live",
-            },
-          ],
+      alias:
+        isDevelopment || isLiteMode || !hasFirebaseConfigLive
+          ? []
+          : [
+              {
+                find: /\/constants\/firebase-config$/,
+                replacement: "/constants/firebase-config-live",
+              },
+            ],
     },
     clearScreen: false,
     root: "src",
