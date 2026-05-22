@@ -332,6 +332,9 @@ export default defineConfig(({ mode }): UserConfig => {
   const useSentry = env["SENTRY"] !== undefined;
   const isDevelopment = mode !== "production";
   const isLiteMode = env["LITE_MODE"] === "true";
+  const hasFirebaseConfig = fs.existsSync(
+    path.resolve(__dirname, "src/ts/constants/firebase-config.ts"),
+  );
   const hasFirebaseConfigLive = fs.existsSync(
     path.resolve(__dirname, "src/ts/constants/firebase-config-live.ts"),
   );
@@ -360,15 +363,28 @@ export default defineConfig(({ mode }): UserConfig => {
       },
     },
     resolve: {
-      alias:
-        isDevelopment || isLiteMode || !hasFirebaseConfigLive
+      alias: [
+        ...(isDevelopment || isLiteMode || !hasFirebaseConfigLive
           ? []
           : [
               {
                 find: /\/constants\/firebase-config$/,
                 replacement: "/constants/firebase-config-live",
               },
-            ],
+            ]),
+        ...(hasFirebaseConfig
+          ? []
+          : [
+              {
+                find: /\/constants\/firebase-config$/,
+                replacement: "/constants/firebase-config-example",
+              },
+              {
+                find: /\/ts\/constants\/firebase-config$/,
+                replacement: "/ts/constants/firebase-config-example",
+              },
+            ]),
+      ],
     },
     clearScreen: false,
     root: "src",
