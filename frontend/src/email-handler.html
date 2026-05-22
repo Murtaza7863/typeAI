@@ -172,11 +172,22 @@
       getAuth,
     } from "firebase/auth";
     import { initializeApp } from "firebase/app";
-    import { firebaseConfig } from "./ts/constants/firebase-config";
     import { qs, onDOMReady } from "./ts/utils/dom";
+    let Auth;
 
-    const app = initializeApp(firebaseConfig);
-    const Auth = getAuth(app);
+    async function initAuth() {
+      let firebaseConfig;
+      try {
+        firebaseConfig = (await import("./ts/constants/firebase-config"))
+          .firebaseConfig;
+      } catch {
+        firebaseConfig = (
+          await import("./ts/constants/firebase-config-example")
+        ).firebaseConfig;
+      }
+      const app = initializeApp(firebaseConfig);
+      Auth = getAuth(app);
+    }
 
     function isPasswordStrong(password) {
       const hasCapital = !!password.match(/[A-Z]/);
@@ -370,8 +381,9 @@
       return decodeURIComponent(results[2].replace(/\+/g, " "));
     }
 
-    onDOMReady(() => {
+    onDOMReady(async () => {
       try {
+        await initAuth();
         // Get the action to complete.
         var mode = getParameterByName("mode");
         // Get the one-time code from the query parameter.

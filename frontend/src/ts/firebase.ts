@@ -62,11 +62,19 @@ export async function init(callback: ReadyCallback): Promise<void> {
   try {
     let firebaseConfig: FirebaseOptions | null;
 
-    firebaseConfig = (
-      (await import("./constants/firebase-config")) as {
-        firebaseConfig: FirebaseOptions;
-      }
-    ).firebaseConfig;
+    try {
+      firebaseConfig = (
+        (await import("./constants/firebase-config")) as {
+          firebaseConfig: FirebaseOptions;
+        }
+      ).firebaseConfig;
+    } catch {
+      firebaseConfig = (
+        (await import("./constants/firebase-config-example")) as {
+          firebaseConfig: FirebaseOptions;
+        }
+      ).firebaseConfig;
+    }
 
     readyCallback = callback;
     if (!hasFirebaseConfig(firebaseConfig)) {
