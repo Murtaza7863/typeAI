@@ -1,6 +1,5 @@
 import { TypingFeedback } from "@monkeytype/schemas/typing-feedback";
 import { queryOptions } from "@tanstack/solid-query";
-import { envConfig } from "virtual:env-config";
 import Ape from "../ape";
 import { isAuthenticated } from "../states/core";
 import { computeRuleBasedTypingFeedback } from "../typing-feedback/compute-rule-based-feedback";
@@ -41,11 +40,11 @@ export function getTypingFeedbackQueryOptions(options?: {
       }
 
       const sessions = getLocalTypingSessions();
-      if (envConfig.liteMode) {
+      try {
+        return await fetchLocalTypingFeedback(sessions);
+      } catch {
         return computeRuleBasedTypingFeedback(sessions);
       }
-
-      return fetchLocalTypingFeedback(sessions);
     },
     enabled: options?.enabled ?? true,
     staleTime: 60 * 60 * 1000,

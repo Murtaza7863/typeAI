@@ -11,6 +11,14 @@ type LocalTypingFeedbackResponse = {
   data?: TypingFeedback;
 };
 
+/** Production static deploy uses same-origin Vercel function; local dev uses backend. */
+function resolveLocalFeedbackUrl(): string {
+  if (envConfig.isDevelopment) {
+    return `${envConfig.backendUrl}/dev/typingFeedback`;
+  }
+  return "/api/typing-feedback";
+}
+
 export async function fetchLocalTypingFeedback(
   sessions: TypingSessionInput[],
 ): Promise<TypingFeedback> {
@@ -20,19 +28,16 @@ export async function fetchLocalTypingFeedback(
   }, LOCAL_FEEDBACK_TIMEOUT_MS);
 
   try {
-    const response = await fetch(
-      `${envConfig.backendUrl}/dev/typingFeedback`,
-      {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          "X-Client-Version": envConfig.clientVersion,
-        },
-        body: JSON.stringify({ sessions }),
-        signal: controller.signal,
+    const response = await fetch(resolveLocalFeedbackUrl(), {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-Client-Version": envConfig.clientVersion,
       },
-    );
+      body: JSON.stringify({ sessions }),
+      signal: controller.signal,
+    });
 
     const body = (await response.json()) as LocalTypingFeedbackResponse;
     if (response.status !== 200 || body.data === undefined) {

@@ -2,9 +2,14 @@
   "installCommand": "pnpm install --filter @monkeytype/frontend... --ignore-scripts",
   "buildCommand": "pnpm build-fe",
   "outputDirectory": "frontend/dist",
+  "functions": {
+    "api/typing-feedback.ts": {
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ]

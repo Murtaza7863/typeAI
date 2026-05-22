@@ -86,7 +86,10 @@
     "*": [
       "oxfmt --no-error-on-unmatched-pattern"
     ],
-    "*.{ts,tsx,js}": [
+    "api/**/*.ts": [
+      "oxfmt --no-error-on-unmatched-pattern"
+    ],
+    "{backend,frontend,packages}/**/*.{ts,tsx,js}": [
       "oxlint --type-aware --type-check"
     ],
     "*.{scss,css}": [
