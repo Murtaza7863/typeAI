@@ -1,7 +1,7 @@
 {
   "installCommand": "pnpm install --filter @monkeytype/frontend... --ignore-scripts",
   "buildCommand": "pnpm build-fe",
-  "outputDirectory": "dist",
+  "outputDirectory": "frontend/dist",
   "rewrites": [
     {
       "source": "/(.*)",
