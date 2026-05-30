@@ -1,6 +1,6 @@
-import type { Difficulty, FunboxName } from "@monkeytype/schemas/configs";
-import type { CustomTextSettings } from "@monkeytype/schemas/results";
-import type { Mode, Mode2 } from "@monkeytype/schemas/shared";
+import type { Difficulty, FunboxName } from "@typeai/schemas/configs";
+import type { CustomTextSettings } from "@typeai/schemas/results";
+import type { Mode, Mode2 } from "@typeai/schemas/shared";
 
 import { createForm } from "@tanstack/solid-form";
 import { compressToURI } from "lz-ts";

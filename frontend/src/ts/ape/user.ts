@@ -1,4 +1,4 @@
-import { GetUserResponse } from "@monkeytype/contracts/users";
+import { GetUserResponse } from "@typeai/contracts/users";
 import Ape from ".";
 import { createEffectOn } from "../hooks/effects";
 import { isAuthenticated } from "../states/core";

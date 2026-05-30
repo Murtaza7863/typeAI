@@ -4,9 +4,9 @@ import { cachedFetchJson } from "../utils/json-data";
 import { configEvent } from "../events/config";
 import * as DB from "../db";
 import Ape from "../ape";
-import { tryCatch } from "@monkeytype/util/trycatch";
-import { Language } from "@monkeytype/schemas/languages";
-import { QuoteData, QuoteDataQuote } from "@monkeytype/schemas/quotes";
+import { tryCatch } from "@typeai/util/trycatch";
+import { Language } from "@typeai/schemas/languages";
+import { QuoteData, QuoteDataQuote } from "@typeai/schemas/quotes";
 import { RequiredProperties } from "../utils/misc";
 
 export type Quote = QuoteDataQuote & {
@@ -70,7 +70,7 @@ class QuotesController {
         language: data.language,
       };
 
-      // Transform JSON Quote schema to MonkeyTypes Quote schema
+      // Transform JSON Quote schema to typeAIs Quote schema
       data.quotes.forEach((quote) => {
         const monkeyTypeQuote: Quote = {
           text: quote.text,

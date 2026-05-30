@@ -1,12 +1,12 @@
-import { checkCompatibility } from "@monkeytype/funbox";
+import { checkCompatibility } from "@typeai/funbox";
 import * as DB from "../db";
 import { showNoticeNotification } from "../states/notifications";
 import { isAuthenticated } from "../states/core";
 import { canSetFunboxWithConfig } from "./funbox-validation";
 import { reloadAfter } from "../utils/misc";
 import { isDevEnvironment } from "../utils/env";
-import * as ConfigSchemas from "@monkeytype/schemas/configs";
-import { roundTo1 } from "@monkeytype/util/numbers";
+import * as ConfigSchemas from "@typeai/schemas/configs";
+import { roundTo1 } from "@typeai/util/numbers";
 import { capitalizeFirstLetter } from "../utils/strings";
 import { getDefaultConfig } from "../constants/default-config";
 import { FaObject } from "../types/font-awesome";

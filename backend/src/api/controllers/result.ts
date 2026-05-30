@@ -31,7 +31,7 @@ import * as WeeklyXpLeaderboard from "../../services/weekly-xp-leaderboard";
 import { UAParser } from "ua-parser-js";
 import { canFunboxGetPb } from "../../utils/pb";
 import { buildDbResult } from "../../utils/result";
-import { Configuration } from "@monkeytype/schemas/configuration";
+import { Configuration } from "@typeai/schemas/configuration";
 import { addImportantLog, addLog } from "../../dal/logs";
 import {
   AddResultRequest,
@@ -43,26 +43,21 @@ import {
   GetResultsResponse,
   UpdateResultTagsRequest,
   UpdateResultTagsResponse,
-} from "@monkeytype/contracts/results";
+} from "@typeai/contracts/results";
 import {
   CompletedEvent,
   KeyStats,
   PostResultResponse,
   XpBreakdown,
-} from "@monkeytype/schemas/results";
-import {
-  isSafeNumber,
-  mapRange,
-  roundTo2,
-  stdDev,
-} from "@monkeytype/util/numbers";
+} from "@typeai/schemas/results";
+import { isSafeNumber, mapRange, roundTo2, stdDev } from "@typeai/util/numbers";
 import {
   getCurrentDayTimestamp,
   getStartOfDayTimestamp,
-} from "@monkeytype/util/date-and-time";
+} from "@typeai/util/date-and-time";
 import { MonkeyRequest } from "../types";
-import { getFunbox, checkCompatibility } from "@monkeytype/funbox";
-import { tryCatch } from "@monkeytype/util/trycatch";
+import { getFunbox, checkCompatibility } from "@typeai/funbox";
+import { tryCatch } from "@typeai/util/trycatch";
 import { getCachedConfiguration } from "../../init/configuration";
 
 try {

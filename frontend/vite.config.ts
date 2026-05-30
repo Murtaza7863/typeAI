@@ -24,7 +24,7 @@ import Inspect from "vite-plugin-inspect";
 import { ViteMinifyPlugin } from "vite-plugin-minify";
 import { VitePWA } from "vite-plugin-pwa";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
-import { KnownFontName } from "@monkeytype/schemas/fonts";
+import { KnownFontName } from "@typeai/schemas/fonts";
 import solidPlugin from "vite-plugin-solid";
 import devtools from "solid-devtools/vite";
 import tailwindcss from "@tailwindcss/vite";
@@ -128,8 +128,8 @@ function getPlugins({
       injectRegister: null,
       registerType: "autoUpdate",
       manifest: {
-        short_name: "Monkeytype",
-        name: "Monkeytype",
+        short_name: "typeAI",
+        name: "typeAI",
         start_url: "/",
         icons: [
           {
@@ -159,7 +159,7 @@ function getPlugins({
         runtimeCaching: [
           {
             urlPattern: (options) => {
-              const isApi = options.url.hostname === "api.monkeytype.com";
+              const isApi = options.url.hostname === "api.typeai.com";
               return options.sameOrigin && !isApi;
             },
             handler: "NetworkFirst",
@@ -179,12 +179,12 @@ function getPlugins({
     useSentry
       ? sentryVitePlugin({
           authToken: env["SENTRY_AUTH_TOKEN"],
-          org: "monkeytype",
+          org: "typeai",
           project: "frontend",
           release: {
             name: clientVersion,
           },
-          applicationKey: "monkeytype-frontend",
+          applicationKey: "typeai-frontend",
         })
       : null,
     injectPreload(),
@@ -208,7 +208,7 @@ function getBuildOptions({
     assetsInlineLimit: 0, //dont inline small files as data
     rollupOptions: {
       input: {
-        monkeytype: path.resolve(__dirname, "src/index.html"),
+        typeai: path.resolve(__dirname, "src/index.html"),
         email: path.resolve(__dirname, "src/email-handler.html"),
         privacy: path.resolve(__dirname, "src/privacy-policy.html"),
         security: path.resolve(__dirname, "src/security-policy.html"),
@@ -257,15 +257,15 @@ function getBuildOptions({
               test: /node_modules\/@tanstack\//,
             },
             {
-              name: "monkeytype-packages",
-              test: /monkeytype\/packages\//,
+              name: "typeai-packages",
+              test: /typeai\/packages\//,
             },
             {
               name: "vendor-chart",
               test: /node_modules\/chart/,
             },
             {
-              name: "monkeytype-utils",
+              name: "typeai-utils",
               test: /src\/ts\/utils\//,
             },
             {
@@ -393,7 +393,7 @@ export default defineConfig(({ mode }): UserConfig => {
       exclude: [
         "@fortawesome/fontawesome-free",
         // Workspace package; prebundling can cache an old contract without new routes.
-        "@monkeytype/contracts",
+        "@typeai/contracts",
       ],
     },
   };

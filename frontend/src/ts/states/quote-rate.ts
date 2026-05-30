@@ -1,10 +1,10 @@
 import { createSignal } from "solid-js";
-import { Language } from "@monkeytype/schemas/languages";
+import { Language } from "@typeai/schemas/languages";
 import Ape from "../ape";
 import { Quote } from "../controllers/quotes-controller";
 import { showErrorNotification } from "./notifications";
 import { showModal } from "./modals";
-import { isSafeNumber } from "@monkeytype/util/numbers";
+import { isSafeNumber } from "@typeai/util/numbers";
 
 type QuoteStats = {
   average?: number;

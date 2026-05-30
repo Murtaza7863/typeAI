@@ -4,7 +4,7 @@ import { getLanguageDisplayString } from "../utils/strings";
 import { Config } from "../config/store";
 import Format from "../singletons/format";
 import AnimatedModal from "../utils/animated-modal";
-import { Mode, Mode2, PersonalBest } from "@monkeytype/schemas/shared";
+import { Mode, Mode2, PersonalBest } from "@typeai/schemas/shared";
 
 type PBWithMode2 = {
   mode2: Mode2<Mode>;

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { RequireConfiguration } from "@monkeytype/contracts/require-configuration/index";
+import { RequireConfiguration } from "@typeai/contracts/require-configuration/index";
 import { verifyRequiredConfiguration } from "../../src/middlewares/configuration";
-import { Configuration } from "@monkeytype/schemas/configuration";
+import { Configuration } from "@typeai/schemas/configuration";
 import { Response } from "express";
 import MonkeyError from "../../src/utils/error";
 import { TsRestRequest } from "../../src/api/types";

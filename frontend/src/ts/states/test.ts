@@ -1,5 +1,5 @@
 import { createSignal, createEffect } from "solid-js";
-import { Challenge } from "@monkeytype/schemas/challenges";
+import { Challenge } from "@typeai/schemas/challenges";
 import { getConfig } from "../config/store";
 import { getActivePage } from "./core";
 import { canQuickRestart } from "../utils/quick-restart";

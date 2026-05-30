@@ -9,7 +9,7 @@ import { getIdToken } from "../../firebase";
 import {
   COMPATIBILITY_CHECK,
   COMPATIBILITY_CHECK_HEADER,
-} from "@monkeytype/contracts";
+} from "@typeai/contracts";
 import { addBanner } from "../../states/banners";
 
 let bannerShownThisSession = false;

@@ -104,8 +104,8 @@ function resolveSpecifier(
     return null;
   }
 
-  // @monkeytype packages are treated as leaf nodes (no recursion into them)
-  if (specifier.startsWith("@monkeytype/")) return specifier;
+  // @typeai packages are treated as leaf nodes (no recursion into them)
+  if (specifier.startsWith("@typeai/")) return specifier;
 
   return null; // third-party / virtual
 }
@@ -151,8 +151,8 @@ function walk(
 
     reachable.add(resolved);
 
-    // @monkeytype packages are leaf nodes — don't recurse
-    if (resolved.startsWith("@monkeytype/")) {
+    // @typeai packages are leaf nodes — don't recurse
+    if (resolved.startsWith("@typeai/")) {
       maxDepth = Math.max(maxDepth, 1);
       continue;
     }
@@ -216,7 +216,7 @@ function depthColor(depth: number): string {
 
 function leavesFolder(filePath: string): boolean {
   if (boundary === null) return false;
-  if (filePath.startsWith("@monkeytype/")) return true;
+  if (filePath.startsWith("@typeai/")) return true;
   return !filePath.startsWith(`${boundary}/`);
 }
 
@@ -244,7 +244,7 @@ function printTree(
   const leavesTag = leaves ? ` ${c.red}[↑]${c.reset}` : "";
 
   if (!info) {
-    // leaf node (e.g. @monkeytype package)
+    // leaf node (e.g. @typeai package)
     console.log(`${c.dim}${prefix}${connector}${dp}${c.reset}${leavesTag}`);
     return;
   }

@@ -1,9 +1,9 @@
-import { GetPsaResponse } from "@monkeytype/contracts/psas";
+import { GetPsaResponse } from "@typeai/contracts/psas";
 import * as PsaDAL from "../../dal/psa";
 import { MonkeyResponse } from "../../utils/monkey-response";
 import { replaceObjectIds } from "../../utils/misc";
 import { MonkeyRequest } from "../types";
-import { PSA } from "@monkeytype/schemas/psas";
+import { PSA } from "@typeai/schemas/psas";
 import { cacheWithTTL } from "../../utils/ttl-cache";
 
 //cache for one minute

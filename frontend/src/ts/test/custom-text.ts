@@ -1,10 +1,10 @@
-import { CustomTextLimitMode, CustomTextMode } from "@monkeytype/schemas/util";
+import { CustomTextLimitMode, CustomTextMode } from "@typeai/schemas/util";
 import { LocalStorageWithSchema } from "../utils/local-storage-with-schema";
 import { z } from "zod";
 import {
   CustomTextSettings,
   CustomTextSettingsSchema,
-} from "@monkeytype/schemas/results";
+} from "@typeai/schemas/results";
 
 const CustomTextObjectSchema = z.record(z.string(), z.string());
 type CustomTextObject = z.infer<typeof CustomTextObjectSchema>;

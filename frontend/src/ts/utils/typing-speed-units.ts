@@ -1,4 +1,4 @@
-import { TypingSpeedUnit } from "@monkeytype/schemas/configs";
+import { TypingSpeedUnit } from "@typeai/schemas/configs";
 
 export type TypingSpeedUnitSettings = {
   fromWpm: (number: number) => number;

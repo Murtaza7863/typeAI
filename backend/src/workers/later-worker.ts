@@ -14,9 +14,9 @@ import LaterQueue, {
 } from "../queues/later-queue";
 import { recordTimeToCompleteJob } from "../utils/prometheus";
 import { WeeklyXpLeaderboard } from "../services/weekly-xp-leaderboard";
-import { MonkeyMail } from "@monkeytype/schemas/users";
-import { isSafeNumber, mapRange } from "@monkeytype/util/numbers";
-import { RewardBracket } from "@monkeytype/schemas/configuration";
+import { MonkeyMail } from "@typeai/schemas/users";
+import { isSafeNumber, mapRange } from "@typeai/util/numbers";
+import { RewardBracket } from "@typeai/schemas/configuration";
 
 async function handleDailyLeaderboardResults(
   ctx: LaterTaskContexts["daily-leaderboard-results"],

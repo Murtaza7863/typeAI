@@ -4,11 +4,7 @@ import {
   showSuccessNotification,
 } from "../../states/notifications";
 import Ape from "../../ape";
-import {
-  ApeKey,
-  ApeKeys,
-  ApeKeyNameSchema,
-} from "@monkeytype/schemas/ape-keys";
+import { ApeKey, ApeKeys, ApeKeyNameSchema } from "@typeai/schemas/ape-keys";
 import { format } from "date-fns/format";
 import { SimpleModal, TextArea } from "../simple-modal";
 import { isAuthenticated } from "../../states/core";

@@ -1,8 +1,8 @@
-import type { Language } from "@monkeytype/schemas/languages";
-import type { LayoutObject } from "@monkeytype/schemas/layouts";
+import type { Language } from "@typeai/schemas/languages";
+import type { LayoutObject } from "@typeai/schemas/layouts";
 
-import { tryCatch } from "@monkeytype/util/trycatch";
 import { createForm } from "@tanstack/solid-form";
+import { tryCatch } from "@typeai/util/trycatch";
 import { createSignal, JSXElement, Setter } from "solid-js";
 
 import { LanguageList } from "../../constants/languages";

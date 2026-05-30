@@ -7,7 +7,7 @@ import * as DailyLeaderboards from "../../../src/utils/daily-leaderboards";
 import * as WeeklyXpLeaderboard from "../../../src/services/weekly-xp-leaderboard";
 import * as Configuration from "../../../src/init/configuration";
 import { mockAuthenticateWithApeKey } from "../../__testData__/auth";
-import { XpLeaderboardEntry } from "@monkeytype/schemas/leaderboards";
+import { XpLeaderboardEntry } from "@typeai/schemas/leaderboards";
 
 const { mockApp, uid } = setup();
 const configuration = Configuration.getCachedConfiguration();

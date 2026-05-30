@@ -16,6 +16,10 @@ type LlmConfig = {
   model: string;
 };
 
+function nonEmpty(value: string | undefined): value is string {
+  return value !== undefined && value !== "";
+}
+
 const TYPING_COACH_JSON_SHAPE = `{
   "summary": string (2-3 sentences),
   "frequentMistakes": [{"issue": string, "evidence": string, "fix": string}] (max 5),
@@ -30,7 +34,7 @@ export function resolveLlmConfig(): LlmConfig | null {
   const providerEnv = process.env["LLM_PROVIDER"]?.trim().toLowerCase();
 
   if (providerEnv === "cursor" || providerEnv === "cursor-agent") {
-    if (cursorKey) {
+    if (nonEmpty(cursorKey)) {
       return {
         provider: "cursor-agent",
         apiKey: cursorKey,
@@ -41,7 +45,12 @@ export function resolveLlmConfig(): LlmConfig | null {
     return null;
   }
 
-  if (cursorKey && providerEnv !== "openai" && !llmKey && !openaiKey) {
+  if (
+    nonEmpty(cursorKey) &&
+    providerEnv !== "openai" &&
+    !nonEmpty(llmKey) &&
+    !nonEmpty(openaiKey)
+  ) {
     return {
       provider: "cursor-agent",
       apiKey: cursorKey,
@@ -50,8 +59,8 @@ export function resolveLlmConfig(): LlmConfig | null {
     };
   }
 
-  const apiKey = llmKey || openaiKey || cursorKey;
-  if (!apiKey) return null;
+  const apiKey = llmKey ?? openaiKey ?? cursorKey;
+  if (!nonEmpty(apiKey)) return null;
 
   if (apiKey.startsWith("crsr_") && providerEnv !== "openai") {
     return {
@@ -73,9 +82,7 @@ export function resolveLlmConfig(): LlmConfig | null {
     apiKey,
     baseUrl,
     model:
-      process.env["LLM_MODEL"] ??
-      process.env["OPENAI_MODEL"] ??
-      "gpt-4o-mini",
+      process.env["LLM_MODEL"] ?? process.env["OPENAI_MODEL"] ?? "gpt-4o-mini",
   };
 }
 
@@ -111,7 +118,7 @@ async function openAiCompatibleJson(
     choices?: { message?: { content?: string } }[];
   };
   const content = payload.choices?.[0]?.message?.content;
-  if (!content) return null;
+  if (!nonEmpty(content)) return null;
 
   try {
     return JSON.parse(content) as ChatJsonResult;
@@ -205,7 +212,7 @@ async function cursorAgentJson(
     };
     const agentId = created.agent?.id;
     const runId = created.run?.id;
-    if (!agentId || !runId) return null;
+    if (!nonEmpty(agentId) || !nonEmpty(runId)) return null;
 
     const streamRes = await fetch(
       `https://api.cursor.com/v1/agents/${agentId}/runs/${runId}/stream`,
@@ -223,8 +230,8 @@ async function cursorAgentJson(
     const assistantText = await readCursorAgentSseStream(streamRes);
     if (assistantText === "") return null;
 
-    const jsonMatch = assistantText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return null;
+    const jsonMatch = /\{[\s\S]*\}/.exec(assistantText);
+    if (jsonMatch === null) return null;
 
     return JSON.parse(jsonMatch[0]) as ChatJsonResult;
   } catch {
@@ -240,7 +247,7 @@ export async function requestTypingCoachJson(
   const config = resolveLlmConfig();
   if (!config) return null;
 
-  const systemPrompt = `You are a typing coach analyzing Monkeytype test statistics.
+  const systemPrompt = `You are a typing coach analyzing typeAI test statistics.
 Be specific, actionable, and encouraging. Reference the user's stats.
 Do not invent per-key data that was not provided.`;
 

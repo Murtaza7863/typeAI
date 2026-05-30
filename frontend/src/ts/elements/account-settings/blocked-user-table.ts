@@ -1,5 +1,5 @@
 import { showErrorNotification } from "../../states/notifications";
-import { Connection } from "@monkeytype/schemas/connections";
+import { Connection } from "@typeai/schemas/connections";
 import Ape from "../../ape";
 import { format } from "date-fns/format";
 import { isAuthenticated } from "../../states/core";

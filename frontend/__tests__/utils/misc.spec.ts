@@ -8,7 +8,7 @@ import {
   getLanguageDisplayString,
   removeLanguageSize,
 } from "../../src/ts/utils/strings";
-import { Language } from "@monkeytype/schemas/languages";
+import { Language } from "@typeai/schemas/languages";
 import { getErrorMessage } from "../../src/ts/utils/error";
 
 describe("misc.ts", () => {

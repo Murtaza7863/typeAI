@@ -1,4 +1,4 @@
-import { KnownFontName } from "@monkeytype/schemas/fonts";
+import { KnownFontName } from "@typeai/schemas/fonts";
 
 export type FontConfig = {
   display?: string;

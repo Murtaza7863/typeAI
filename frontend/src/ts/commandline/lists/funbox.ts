@@ -1,6 +1,6 @@
 import * as Funbox from "../../test/funbox/funbox";
 import * as TestLogic from "../../test/test-logic";
-import { getAllFunboxes, checkCompatibility } from "@monkeytype/funbox";
+import { getAllFunboxes, checkCompatibility } from "@typeai/funbox";
 import { Command, CommandsSubgroup } from "../types";
 import { getActiveFunboxNames } from "../../test/funbox/list";
 

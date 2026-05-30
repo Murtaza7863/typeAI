@@ -1,4 +1,4 @@
-import { tryCatch } from "@monkeytype/util/trycatch";
+import { tryCatch } from "@typeai/util/trycatch";
 import {
   GoogleAuthProvider,
   GithubAuthProvider,

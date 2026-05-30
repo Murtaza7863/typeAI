@@ -1,5 +1,5 @@
 {
-  "name": "@monkeytype/backend",
+  "name": "@typeai/backend",
   "version": "1.14.3",
   "private": true,
   "license": "GPL-3.0",
@@ -21,13 +21,13 @@
   },
   "dependencies": {
     "@date-fns/utc": "1.2.0",
-    "@monkeytype/contracts": "workspace:*",
-    "@monkeytype/funbox": "workspace:*",
-    "@monkeytype/schemas": "workspace:*",
-    "@monkeytype/util": "workspace:*",
     "@ts-rest/core": "3.52.1",
     "@ts-rest/express": "3.52.1",
     "@ts-rest/open-api": "3.52.1",
+    "@typeai/contracts": "workspace:*",
+    "@typeai/funbox": "workspace:*",
+    "@typeai/schemas": "workspace:*",
+    "@typeai/util": "workspace:*",
     "bcrypt": "5.1.1",
     "bullmq": "1.91.1",
     "chalk": "4.1.2",
@@ -58,9 +58,9 @@
     "zod": "3.23.8"
   },
   "devDependencies": {
-    "@monkeytype/oxlint-config": "workspace:*",
-    "@monkeytype/typescript-config": "workspace:*",
     "@redocly/cli": "2.24.1",
+    "@typeai/oxlint-config": "workspace:*",
+    "@typeai/typescript-config": "workspace:*",
     "@types/bcrypt": "5.0.2",
     "@types/cors": "2.8.12",
     "@types/cron": "1.7.3",

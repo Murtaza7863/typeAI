@@ -5,7 +5,7 @@ import {
   showNoticeNotification,
   showErrorNotification,
 } from "../states/notifications";
-import { CompletedEvent } from "@monkeytype/schemas/results";
+import { CompletedEvent } from "@typeai/schemas/results";
 import { getAuthenticatedUser } from "../firebase";
 import { authEvent } from "../events/auth";
 

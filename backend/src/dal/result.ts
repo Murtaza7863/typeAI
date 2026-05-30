@@ -9,7 +9,7 @@ import MonkeyError from "../utils/error";
 import * as db from "../init/db";
 import { getUser, getTags } from "./user";
 import { DBResult, replaceLegacyValues } from "../utils/result";
-import { tryCatch } from "@monkeytype/util/trycatch";
+import { tryCatch } from "@typeai/util/trycatch";
 
 export const getResultCollection = (): Collection<DBResult> =>
   db.collection<DBResult>("results");

@@ -10,7 +10,7 @@ import { mockAuthenticateWithApeKey } from "../../__testData__/auth";
 import { enableRateLimitExpects } from "../../__testData__/rate-limit";
 import { DBResult } from "../../../src/utils/result";
 import { omit } from "../../../src/utils/misc";
-import { CompletedEvent } from "@monkeytype/schemas/results";
+import { CompletedEvent } from "@typeai/schemas/results";
 
 const { mockApp, uid, mockAuth } = setup();
 const configuration = Configuration.getCachedConfiguration();

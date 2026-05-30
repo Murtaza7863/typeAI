@@ -1,4 +1,4 @@
-import { CaretStyle } from "@monkeytype/schemas/configs";
+import { CaretStyle } from "@typeai/schemas/configs";
 import { Config } from "../config/store";
 import * as TestWords from "../test/test-words";
 import { getTotalInlineMargin } from "../utils/misc";

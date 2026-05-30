@@ -1,8 +1,8 @@
 {
-  "name": "@monkeytype/release",
+  "name": "@typeai/release",
   "private": true,
   "bin": {
-    "monkeytype-release": "./src/index.js"
+    "typeai-release": "./src/index.js"
   },
   "type": "module",
   "scripts": {

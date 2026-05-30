@@ -1,8 +1,8 @@
-import { Config as ConfigSchema } from "@monkeytype/schemas/configs";
+import { Config as ConfigSchema } from "@typeai/schemas/configs";
 import { saveConfig } from "../ape/config";
 import { setAccountButtonSpinner } from "../states/header";
 import { Config } from "./store";
-import * as ConfigSchemas from "@monkeytype/schemas/configs";
+import * as ConfigSchemas from "@typeai/schemas/configs";
 import { getDefaultConfig } from "../constants/default-config";
 import { migrateConfig } from "./utils";
 import { LocalStorageWithSchema } from "../utils/local-storage-with-schema";

@@ -1,7 +1,7 @@
-name: monkeytype
+name: typeai
 services:
   frontend:
-    container_name: monkeytype-frontend
+    container_name: typeai-frontend
     build:
       dockerfile_inline: |
         FROM node:24.11.0
@@ -15,9 +15,9 @@ services:
     ports:
       - "${DOCKER_HTTP_PORT:-3000}:3000"
     volumes:
-      - ../../:/monkeytype
+      - ../../:/typeai
     entrypoint: 'bash -c "echo starting, this may take a while... \
-      && cd /monkeytype \
+      && cd /typeai \
       && pnpm config set store-dir /pnpm-store
       && pnpm i \
       && export SERVER_OPEN=false \

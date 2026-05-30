@@ -8,7 +8,7 @@ import { recordEmail } from "../utils/prometheus";
 import type { EmailTaskContexts, EmailType } from "../queues/email-queue";
 import { isDevEnvironment } from "../utils/misc";
 import { getErrorMessage } from "../utils/error";
-import { tryCatch } from "@monkeytype/util/trycatch";
+import { tryCatch } from "@typeai/util/trycatch";
 
 type EmailMetadata = {
   subject: string;
@@ -17,18 +17,18 @@ type EmailMetadata = {
 
 const templates: Record<EmailType, EmailMetadata> = {
   verify: {
-    subject: "Verify your Monkeytype account",
+    subject: "Verify your typeAI account",
     templateName: "verification.html",
   },
   resetPassword: {
-    subject: "Reset your Monkeytype password",
+    subject: "Reset your typeAI password",
     templateName: "reset-password.html",
   },
 };
 
 let transportInitialized = false;
 let transporter: nodemailer.Transporter;
-let emailFrom = "Monkeytype <noreply@monkeytype.com>";
+let emailFrom = "typeAI <noreply@typeai.com>";
 
 export function isInitialized(): boolean {
   return transportInitialized;

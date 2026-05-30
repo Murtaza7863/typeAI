@@ -17,11 +17,11 @@ import { Command, CommandsSubgroup, CommandWithValidation } from "./types";
 import { areSortedArraysEqual, areUnsortedArraysEqual } from "../utils/arrays";
 import { parseIntOptional } from "../utils/numbers";
 import { debounce } from "throttle-debounce";
-import { intersect } from "@monkeytype/util/arrays";
+import { intersect } from "@typeai/util/arrays";
 import { createInputEventHandler } from "../elements/input-validation";
 import { isInputElementFocused } from "../input/input-element";
 import { qs } from "../utils/dom";
-import { ConfigKey } from "@monkeytype/schemas/configs";
+import { ConfigKey } from "@typeai/schemas/configs";
 import { createEffect } from "solid-js";
 import {
   getModalVisibility,

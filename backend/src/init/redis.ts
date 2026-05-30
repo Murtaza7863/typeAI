@@ -4,7 +4,7 @@ import IORedis, { Redis } from "ioredis";
 import Logger from "../utils/logger";
 import { isDevEnvironment } from "../utils/misc";
 import { getErrorMessage } from "../utils/error";
-import { kebabToCamelCase } from "@monkeytype/util/strings";
+import { kebabToCamelCase } from "@typeai/util/strings";
 
 // Define Redis connection with custom methods for type safety
 export type RedisConnectionWithCustomMethods = Redis & {

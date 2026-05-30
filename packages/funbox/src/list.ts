@@ -1,4 +1,4 @@
-import { FunboxName } from "@monkeytype/schemas/configs";
+import { FunboxName } from "@typeai/schemas/configs";
 import { FunboxMetadata } from "./types";
 
 const list: Record<FunboxName, FunboxMetadata> = {

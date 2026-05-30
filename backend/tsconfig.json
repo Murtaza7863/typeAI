@@ -1,5 +1,5 @@
 {
-  "extends": "@monkeytype/typescript-config/base.json",
+  "extends": "@typeai/typescript-config/base.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",

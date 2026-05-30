@@ -1,4 +1,4 @@
-import type { ThemeName } from "@monkeytype/schemas/configs";
+import type { ThemeName } from "@typeai/schemas/configs";
 import type { JSXElement } from "solid-js";
 
 import { ThemesList, ThemeWithName } from "../../src/ts/constants/themes";

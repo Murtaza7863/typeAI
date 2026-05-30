@@ -1,4 +1,4 @@
-import { Preset } from "@monkeytype/schemas/presets";
+import { Preset } from "@typeai/schemas/presets";
 import { queryCollectionOptions } from "@tanstack/query-db-collection";
 import {
   createCollection,
@@ -8,7 +8,7 @@ import {
 import Ape from "../ape";
 import { queryClient } from "../queries";
 import { baseKey } from "../queries/utils/keys";
-import { ConfigGroupName } from "@monkeytype/schemas/configs";
+import { ConfigGroupName } from "@typeai/schemas/configs";
 import { applyIdWorkaround, tempId } from "./utils/misc";
 import { isAuthenticated } from "../states/core";
 import { replaceUnderscoresWithSpaces } from "../utils/strings";

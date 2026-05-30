@@ -13,7 +13,7 @@ import * as AltTracker from "../test/alt-tracker";
 import * as KeyConverter from "../utils/key-converter";
 import { getActiveFunboxNames } from "../test/funbox/list";
 import { areSortedArraysEqual } from "../utils/arrays";
-import { LayoutObject } from "@monkeytype/schemas/layouts";
+import { LayoutObject } from "@typeai/schemas/layouts";
 import { animate } from "animejs";
 import { ElementsWithUtils, qsr } from "../utils/dom";
 import { requestDebouncedAnimationFrame } from "../utils/debounced-animation-frame";

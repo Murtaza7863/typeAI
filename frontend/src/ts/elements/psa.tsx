@@ -1,7 +1,7 @@
-import { PSA } from "@monkeytype/schemas/psas";
-import { IdSchema } from "@monkeytype/schemas/util";
-import { isSafeNumber } from "@monkeytype/util/numbers";
-import { tryCatch } from "@monkeytype/util/trycatch";
+import { PSA } from "@typeai/schemas/psas";
+import { IdSchema } from "@typeai/schemas/util";
+import { isSafeNumber } from "@typeai/util/numbers";
+import { tryCatch } from "@typeai/util/trycatch";
 import { format } from "date-fns/format";
 import { z } from "zod";
 
@@ -73,7 +73,7 @@ async function getLatest(): Promise<PSA[] | null> {
       };
 
       const { data: instatus, error } = await tryCatch(
-        fetch("https://monkeytype.instatus.com/summary.json"),
+        fetch("https://typeai.instatus.com/summary.json"),
       );
 
       let maintenanceData: undefined | InstatusSummary["activeMaintenances"];
@@ -115,7 +115,7 @@ async function getLatest(): Promise<PSA[] | null> {
               Looks like the server is experiencing unexpected down time.
               <br />
               Check the{" "}
-              <a target="_blank" href="https://monkeytype.instatus.com/">
+              <a target="_blank" href="https://typeai.instatus.com/">
                 status page
               </a>{" "}
               for more information.
@@ -132,7 +132,7 @@ async function getLatest(): Promise<PSA[] | null> {
       customContent: (
         <>
           Server is currently under maintenance.{" "}
-          <a target="_blank" href="https://monkeytype.instatus.com/">
+          <a target="_blank" href="https://typeai.instatus.com/">
             Check the status page
           </a>{" "}
           for more info.

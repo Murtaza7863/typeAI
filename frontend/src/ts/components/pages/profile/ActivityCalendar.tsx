@@ -1,4 +1,4 @@
-import { TestActivity } from "@monkeytype/schemas/users";
+import { TestActivity } from "@typeai/schemas/users";
 import { createSignal, JSXElement, onMount, Show } from "solid-js";
 
 import { get as getSeverConfiguration } from "../../../ape/server-configuration";

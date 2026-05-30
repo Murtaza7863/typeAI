@@ -1,6 +1,6 @@
-import { Language, LanguageObject } from "@monkeytype/schemas/languages";
-import { Challenge } from "@monkeytype/schemas/challenges";
-import { LayoutObject } from "@monkeytype/schemas/layouts";
+import { Language, LanguageObject } from "@typeai/schemas/languages";
+import { Challenge } from "@typeai/schemas/challenges";
+import { LayoutObject } from "@typeai/schemas/layouts";
 import { toHex } from "./strings";
 import { languageHashes } from "virtual:language-hashes";
 import { isDevEnvironment } from "./env";
@@ -233,7 +233,7 @@ type GithubRelease = {
 export async function getLatestReleaseFromGitHub(): Promise<string> {
   type releaseType = { name: string };
   const releases = await cachedFetchJson<releaseType[]>(
-    "https://api.github.com/repos/monkeytypegame/monkeytype/releases?per_page=1",
+    "https://api.github.com/repos/typeaigame/typeai/releases?per_page=1",
   );
   if (releases[0] === undefined || releases[0].name === undefined) {
     throw new Error("No release found");
@@ -249,6 +249,6 @@ export async function getReleasesFromGitHub(options?: {
   page?: number;
 }): Promise<GithubRelease[]> {
   return fetchJson(
-    `https://api.github.com/repos/monkeytypegame/monkeytype/releases?per_page=5&page=${options?.page ?? 1}`,
+    `https://api.github.com/repos/typeaigame/typeai/releases?per_page=5&page=${options?.page ?? 1}`,
   );
 }

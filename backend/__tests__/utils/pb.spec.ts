@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import * as pb from "../../src/utils/pb";
-import { Mode, PersonalBests } from "@monkeytype/schemas/shared";
-import { Result } from "@monkeytype/schemas/results";
-import { FunboxName } from "@monkeytype/schemas/configs";
+import { Mode, PersonalBests } from "@typeai/schemas/shared";
+import { Result } from "@typeai/schemas/results";
+import { FunboxName } from "@typeai/schemas/configs";
 
 describe("Pb Utils", () => {
   describe("funboxCatGetPb", () => {

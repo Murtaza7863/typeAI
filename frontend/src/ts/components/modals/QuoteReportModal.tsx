@@ -1,5 +1,5 @@
-import { QuoteReportReason } from "@monkeytype/schemas/quotes";
 import { createForm } from "@tanstack/solid-form";
+import { QuoteReportReason } from "@typeai/schemas/quotes";
 import { JSXElement, createSignal } from "solid-js";
 
 import Ape from "../../ape";

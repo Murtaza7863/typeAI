@@ -17,8 +17,8 @@ import { AppRoute, AppRouter } from "@ts-rest/core";
 import {
   EndpointMetadata,
   RequestAuthenticationOptions,
-} from "@monkeytype/contracts/util/api";
-import { Configuration } from "@monkeytype/schemas/configuration";
+} from "@typeai/contracts/util/api";
+import { Configuration } from "@typeai/schemas/configuration";
 import { getMetadata } from "./utility";
 import { TsRestRequestWithContext } from "../api/types";
 

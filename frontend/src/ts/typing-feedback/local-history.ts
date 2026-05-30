@@ -1,8 +1,8 @@
-import { CompletedEvent, KeyStats } from "@monkeytype/schemas/results";
-import { TypingSessionInput } from "@monkeytype/schemas/typing-feedback";
+import { CompletedEvent, KeyStats } from "@typeai/schemas/results";
+import { TypingSessionInput } from "@typeai/schemas/typing-feedback";
 import { createSignal } from "solid-js";
 
-const STORAGE_KEY = "monkeytype-local-typing-history";
+const STORAGE_KEY = "typeai-local-typing-history";
 const MAX_SESSIONS = 50;
 const [historyVersion, setHistoryVersion] = createSignal(0);
 

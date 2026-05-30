@@ -39,7 +39,7 @@ import {
   CountByYearAndDay,
   TestActivity,
   UserProfileDetails,
-} from "@monkeytype/schemas/users";
+} from "@typeai/schemas/users";
 import { addImportantLog, addLog, deleteUserLogs } from "../../dal/logs";
 import { sendForgotPasswordEmail as authSendForgotPasswordEmail } from "../../utils/auth";
 import {
@@ -87,12 +87,12 @@ import {
   UpdateUserNameRequest,
   UpdateUserProfileRequest,
   UpdateUserProfileResponse,
-} from "@monkeytype/contracts/users";
-import { MILLISECONDS_IN_DAY } from "@monkeytype/util/date-and-time";
+} from "@typeai/contracts/users";
+import { MILLISECONDS_IN_DAY } from "@typeai/util/date-and-time";
 import { MonkeyRequest } from "../types";
-import { tryCatch } from "@monkeytype/util/trycatch";
+import { tryCatch } from "@typeai/util/trycatch";
 import * as ConnectionsDal from "../../dal/connections";
-import { PersonalBest } from "@monkeytype/schemas/shared";
+import { PersonalBest } from "@typeai/schemas/shared";
 
 async function verifyCaptcha(captcha: string): Promise<void> {
   const { data: verified, error } = await tryCatch(verify(captcha));

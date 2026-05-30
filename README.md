@@ -1,4 +1,4 @@
-[![](https://github.com/monkeytypegame/monkeytype/blob/master/frontend/static/images/githubbanner2.png?raw=true)](https://monkeytype.com/)
+[![](https://github.com/Murtaza7863/monkeytype-typing-coach/blob/master/frontend/static/images/githubbanner2.png?raw=true)](https://typeai.com/)
 <br />
 
 [![ChartJs](https://img.shields.io/badge/Chart.js-FF6384?style=for-the-badge&logo=chartdotjs&logoColor=white)](https://www.chartjs.org/)
@@ -23,7 +23,7 @@
 
 # About
 
-Monkeytype is a minimalistic and customizable [typing test](https://www.monkeytype.com). It features many test modes, an account system to save your typing speed history, and user-configurable features such as themes, sounds, a smooth caret, and more. Monkeytype attempts to emulate a natural typing experience during a typing test by unobtrusively presenting the text prompts and displaying typed characters in place, providing straightforward, real-time feedback on typos, speed, and accuracy.
+typeAI is a minimalistic and customizable [typing test](https://www.typeai.com). It features many test modes, an account system to save your typing speed history, and user-configurable features such as themes, sounds, a smooth caret, and more. typeAI attempts to emulate a natural typing experience during a typing test by unobtrusively presenting the text prompts and displaying typed characters in place, providing straightforward, real-time feedback on typos, speed, and accuracy.
 
 # Features
 
@@ -41,11 +41,11 @@ Monkeytype is a minimalistic and customizable [typing test](https://www.monkeyty
 
 # Discord bot
 
-On the [Monkeytype Discord server](https://www.discord.gg/monkeytype), we added a Discord bot to auto-assign optional roles based on typing performance and challenge completion. You can find its code over at https://github.com/monkeytypegame/monkeytype-bot.
+On the [typeAI Discord server](https://www.discord.gg/typeai), we added a Discord bot to auto-assign optional roles based on typing performance and challenge completion. You can find its code over at https://github.com/Murtaza7863/monkeytype-typing-coach-bot.
 
 # Bug report or Feature request
 
-If you encounter a bug or have a feature request, [send us an email](mailto:contact@monkeytype.com), [create an issue](https://github.com/monkeytypegame/monkeytype/issues), [create a discussion thread](https://github.com/monkeytypegame/monkeytype/discussions), or [join the Discord server](https://www.discord.gg/monkeytype).
+If you encounter a bug or have a feature request, [send us an email](mailto:contact@typeai.com), [create an issue](https://github.com/Murtaza7863/monkeytype-typing-coach/issues), [create a discussion thread](https://github.com/Murtaza7863/monkeytype-typing-coach/discussions), or [join the Discord server](https://www.discord.gg/typeai).
 
 # Want to Contribute?
 
@@ -65,8 +65,8 @@ To report a security vulnerability, please refer to [SECURITY.md](./docs/SECURIT
 
 Everyone who provided valuable feedback on the [original Reddit post](https://www.reddit.com/r/MechanicalKeyboards/comments/gc6wx3/experimenting_with_a_completely_new_type_of/) for the prototype of this website.
 
-All of the [contributors](https://github.com/monkeytypegame/monkeytype/graphs/contributors) have helped implement various features, add themes, fix bugs, and more.
+All of the [contributors](https://github.com/Murtaza7863/monkeytype-typing-coach/graphs/contributors) have helped implement various features, add themes, fix bugs, and more.
 
 # Support
 
-If you wish to support further development and feel extra awesome, you can [donate](https://ko-fi.com/monkeytype), [become a Patron](https://www.patreon.com/monkeytype), or [buy a t-shirt](https://www.monkeytype.store/).
+If you wish to support further development and feel extra awesome, you can [donate](https://ko-fi.com/typeai), [become a Patron](https://www.patreon.com/typeai), or [buy a t-shirt](https://www.typeai.store/).

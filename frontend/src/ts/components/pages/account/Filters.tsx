@@ -1,10 +1,10 @@
-import { QuoteLength } from "@monkeytype/schemas/configs";
+import { QuoteLength } from "@typeai/schemas/configs";
 import {
   ResultFilterPresetNameSchema,
   ResultFilters,
   ResultFiltersGroupItem,
   ResultFiltersKeys,
-} from "@monkeytype/schemas/users";
+} from "@typeai/schemas/users";
 import { createMemo, createSignal, For, JSXElement, Show } from "solid-js";
 import { SetStoreFunction, unwrap } from "solid-js/store";
 

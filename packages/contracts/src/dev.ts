@@ -6,11 +6,11 @@ import {
   MonkeyResponseSchema,
   responseWithData,
 } from "./util/api";
-import { IdSchema } from "@monkeytype/schemas/util";
+import { IdSchema } from "@typeai/schemas/util";
 import {
   TypingFeedbackSchema,
   TypingSessionInputSchema,
-} from "@monkeytype/schemas/typing-feedback";
+} from "@typeai/schemas/typing-feedback";
 
 export const GenerateDataRequestSchema = z.object({
   username: z.string(),

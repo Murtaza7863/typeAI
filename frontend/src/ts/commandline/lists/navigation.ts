@@ -3,7 +3,7 @@ import { isAuthenticated } from "../../states/core";
 import { toggleFullscreen } from "../../utils/misc";
 import { Command, withValidation } from "../types";
 import { remoteValidation } from "../../utils/remote-validation";
-import { UserNameWithoutFilterSchema } from "@monkeytype/schemas/users";
+import { UserNameWithoutFilterSchema } from "@typeai/schemas/users";
 import Ape from "../../ape";
 
 const commands: Command[] = [

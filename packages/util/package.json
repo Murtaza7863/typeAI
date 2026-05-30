@@ -1,5 +1,5 @@
 {
-  "name": "@monkeytype/util",
+  "name": "@typeai/util",
   "exports": {
     "./*": {
       "types": "./src/*.ts",
@@ -17,8 +17,8 @@
     "lint-fast": "oxlint ."
   },
   "devDependencies": {
-    "@monkeytype/tsup-config": "workspace:*",
-    "@monkeytype/typescript-config": "workspace:*",
+    "@typeai/tsup-config": "workspace:*",
+    "@typeai/typescript-config": "workspace:*",
     "@types/node": "24.9.1",
     "madge": "8.0.0",
     "oxlint": "1.64.0",

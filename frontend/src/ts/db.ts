@@ -11,35 +11,35 @@ import {
   ModifiableTestActivityCalendar,
 } from "./elements/test-activity-calendar";
 import { showLoaderBar, hideLoaderBar } from "./states/loader-bar";
-import { Badge, CustomTheme } from "@monkeytype/schemas/users";
-import { Difficulty } from "@monkeytype/schemas/configs";
+import { Badge, CustomTheme } from "@typeai/schemas/users";
+import { Difficulty } from "@typeai/schemas/configs";
 import {
   Mode,
   Mode2,
   PersonalBest,
   PersonalBests,
-} from "@monkeytype/schemas/shared";
+} from "@typeai/schemas/shared";
 import {
   getDefaultSnapshot,
   Snapshot,
   SnapshotResult,
 } from "./constants/default-snapshot";
 import { getFirstDayOfTheWeek } from "./utils/date-and-time";
-import { Language } from "@monkeytype/schemas/languages";
+import { Language } from "@typeai/schemas/languages";
 import { authEvent } from "./events/auth";
 import {
   configurationPromise,
   get as getServerConfiguration,
 } from "./ape/server-configuration";
-import { Connection } from "@monkeytype/schemas/connections";
+import { Connection } from "@typeai/schemas/connections";
 import { insertLocalResult } from "./collections/results";
 import {
   setLastResult,
   setSnapshot as setSolidSnapshot,
 } from "./states/snapshot";
-import { XpBreakdown } from "@monkeytype/schemas/results";
+import { XpBreakdown } from "@typeai/schemas/results";
 import { setXpBarData } from "./states/header";
-import { FunboxMetadata } from "@monkeytype/funbox";
+import { FunboxMetadata } from "@typeai/funbox";
 import { __nonReactive } from "./collections/tags";
 import { updateTagsInFilterStorage } from "./states/result-filters";
 import { fetchUserFromApi } from "./ape/user";

@@ -1,4 +1,4 @@
-import { AllRewards, MonkeyMail } from "@monkeytype/schemas/users";
+import { AllRewards, MonkeyMail } from "@typeai/schemas/users";
 import { queryCollectionOptions } from "@tanstack/query-db-collection";
 import {
   createCollection,

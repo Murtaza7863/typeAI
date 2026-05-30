@@ -19,10 +19,10 @@ import {
   IsSubmissionEnabledResponse,
   RejectQuoteRequest,
   ReportQuoteRequest,
-} from "@monkeytype/contracts/quotes";
+} from "@typeai/contracts/quotes";
 import { replaceObjectId, replaceObjectIds } from "../../utils/misc";
 import { MonkeyRequest } from "../types";
-import { Language } from "@monkeytype/schemas/languages";
+import { Language } from "@typeai/schemas/languages";
 
 async function verifyCaptcha(captcha: string): Promise<void> {
   if (!(await verify(captcha))) {

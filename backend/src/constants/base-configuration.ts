@@ -1,4 +1,4 @@
-import { Configuration } from "@monkeytype/schemas/configuration";
+import { Configuration } from "@typeai/schemas/configuration";
 
 /**
  * This is the base schema for the configuration of the API backend.

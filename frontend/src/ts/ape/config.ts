@@ -1,4 +1,4 @@
-import { Config } from "@monkeytype/schemas/configs";
+import { Config } from "@typeai/schemas/configs";
 import { isAuthenticated } from "../states/core";
 import { showErrorNotification } from "../states/notifications";
 import Ape from ".";

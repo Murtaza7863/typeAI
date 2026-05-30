@@ -27,7 +27,7 @@ import { WordGenError } from "../utils/word-gen-error";
 
 import { showLoaderBar, hideLoaderBar } from "../states/loader-bar";
 import { PolyglotWordset } from "./funbox/funbox-functions";
-import { LanguageObject } from "@monkeytype/schemas/languages";
+import { LanguageObject } from "@typeai/schemas/languages";
 
 //pin implementation
 const random = Math.random;

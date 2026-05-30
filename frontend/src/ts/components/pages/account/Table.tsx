@@ -1,6 +1,6 @@
-import { Difficulty } from "@monkeytype/schemas/configs";
-import { Mode } from "@monkeytype/schemas/shared";
 import { createColumnHelper } from "@tanstack/solid-table";
+import { Difficulty } from "@typeai/schemas/configs";
+import { Mode } from "@typeai/schemas/shared";
 import { format as dateFormat } from "date-fns/format";
 import { Accessor, createMemo, createSignal, JSXElement, Show } from "solid-js";
 

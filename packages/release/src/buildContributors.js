@@ -2,10 +2,10 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const OWNER = "monkeytypegame";
-const REPO = "monkeytype";
+const OWNER = "typeaigame";
+const REPO = "typeai";
 
-const EXCLUDED = new Set(["monkeytypegeorge", "miodec"]);
+const EXCLUDED = new Set(["typeaigeorge", "miodec"]);
 
 async function getContributors(page) {
   console.log(`Getting contributors from page ${page}`);
@@ -14,7 +14,7 @@ async function getContributors(page) {
     {
       method: "GET",
       headers: {
-        "User-Agent": "monkeytypegame release script",
+        "User-Agent": "typeaigame release script",
         ...(process.env.GITHUB_TOKEN && {
           Authorization: `token ${process.env.GITHUB_TOKEN}`,
         }),

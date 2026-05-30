@@ -11,7 +11,7 @@
     - [Firebase (optional)](#firebase-optional)
     - [Config file](#config-file)
     - [Databases (optional if running frontend only)](#databases-optional-if-running-frontend-only)
-  - [Building and Running Monkeytype](#building-and-running-monkeytype)
+  - [Building and Running typeAI](#building-and-running-typeai)
     - [Dependencies (if running manually)](#dependencies-if-running-manually)
     - [Both Frontend and Backend](#both-frontend-and-backend)
     - [Backend only](#backend-only)
@@ -28,7 +28,7 @@ This contribution guide is for cases in which you need to test the functionality
 > [!WARNING]
 > **If you are on Windows, run `git config --global core.autocrlf false` before cloning this repo to prevent CRLF errors.**
 
-Git is optional but we recommend you utilize it. Monkeytype uses the Git source control management (SCM) system for its version control. Assuming you don't have experience typing commands in the command line, we suggest installing [Sourcetree](https://www.sourcetreeapp.com/). You will be able to utilize the power of Git without needing to remember any cryptic commands. Using a Git client such as Sourcetree won't give you access to the full functionality of Git, but provides an easy-to-understand graphical user interface (GUI). Once you have downloaded Sourcetree, run the installer. While installing Sourcetree, keep your eyes peeled for the option to also install Git with Sourcetree. This is the option you will need to look for in order to install Git. **Make sure to click yes in the installer to install Git with Sourcetree.**
+Git is optional but we recommend you utilize it. typeAI uses the Git source control management (SCM) system for its version control. Assuming you don't have experience typing commands in the command line, we suggest installing [Sourcetree](https://www.sourcetreeapp.com/). You will be able to utilize the power of Git without needing to remember any cryptic commands. Using a Git client such as Sourcetree won't give you access to the full functionality of Git, but provides an easy-to-understand graphical user interface (GUI). Once you have downloaded Sourcetree, run the installer. While installing Sourcetree, keep your eyes peeled for the option to also install Git with Sourcetree. This is the option you will need to look for in order to install Git. **Make sure to click yes in the installer to install Git with Sourcetree.**
 
 ### NodeJS and PNPM
 
@@ -50,7 +50,7 @@ The account system will not let you create an account without a Firebase project
 
 1. Create a Firebase account if you already haven't done so.
 1. [Create a new Firebase project.](https://console.firebase.google.com/u/0/)
-   - The project name doesn't matter, but the name `monkeytype` would be preferred.
+   - The project name doesn't matter, but the name `typeai` would be preferred.
    - Google Analytics is not necessary.
 
 1. Enable Firebase Authentication
@@ -111,11 +111,11 @@ Follow these steps if you want to work on anything involving the database/accoun
 | <ol><li>Install [MongoDB Community Edition](https://docs.mongodb.com/manual/administration/install-community/)</li><li>Install [Redis](https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/)</li><li>Make sure both are running</li></ol> | <ol><li>Install [Docker](http://www.docker.io/gettingstarted/#h_installation) on your machine</li><li>Run `npm run docker-db-only` from the `./backend` directory</li></ol> |
 
 3. (Optional) Install [MongoDB-compass](https://www.mongodb.com/try/download/compass?tck=docs_compass). This tool can be used to see and manipulate your database visually.
-   - To connect, type `mongodb://localhost:27017` in the connection string box and press connect. The Monkeytype database will be created and shown after the server is started.
+   - To connect, type `mongodb://localhost:27017` in the connection string box and press connect. The typeAI database will be created and shown after the server is started.
 
-## Building and Running Monkeytype
+## Building and Running typeAI
 
-It's time to run Monkeytype. Just like with the databases, you can run the frontend and backend manually or with Docker.
+It's time to run typeAI. Just like with the databases, you can run the frontend and backend manually or with Docker.
 
 ### Dependencies (if running manually)
 
@@ -156,4 +156,4 @@ For guidelines on commit messages, adding themes, languages, or quotes, please r
 
 ## Questions
 
-If you have any questions, comments, concerns, or problems let me know on [GitHub](https://github.com/Miodec), [Discord](https://discord.gg/monkeytype) in the `#development` channel, or ask a question on Monkeytype's [GitHub discussions](https://github.com/monkeytypegame/monkeytype/discussions) and a contributor will be happy to assist you.
+If you have any questions, comments, concerns, or problems let me know on [GitHub](https://github.com/Miodec), [Discord](https://discord.gg/typeai) in the `#development` channel, or ask a question on typeAI's [GitHub discussions](https://github.com/Murtaza7863/monkeytype-typing-coach/discussions) and a contributor will be happy to assist you.

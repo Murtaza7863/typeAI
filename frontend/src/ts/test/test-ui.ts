@@ -20,7 +20,7 @@ import * as Hangul from "hangul-js";
 import * as ResultWordHighlight from "../elements/result-word-highlight";
 import { getActivePage } from "../states/core";
 import Format from "../singletons/format";
-import { TimerColor, TimerOpacity } from "@monkeytype/schemas/configs";
+import { TimerColor, TimerOpacity } from "@typeai/schemas/configs";
 import { convertRemToPixels } from "../utils/numbers";
 import {
   findSingleActiveFunboxWithFunction,
@@ -33,7 +33,7 @@ import {
   requestDebouncedAnimationFrame,
 } from "../utils/debounced-animation-frame";
 import * as SoundController from "../controllers/sound-controller";
-import * as Numbers from "@monkeytype/util/numbers";
+import * as Numbers from "@typeai/util/numbers";
 import * as TestStats from "./test-stats";
 import { highlight } from "../events/keymap";
 import * as LiveAcc from "./live-acc";

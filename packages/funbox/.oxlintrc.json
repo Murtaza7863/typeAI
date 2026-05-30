@@ -2,6 +2,6 @@
   "ignorePatterns": ["node_modules", "dist", ".turbo"],
   "extends": [
     "../oxlint-config/index.jsonc"
-    // "@monkeytype/oxlint-config"
+    // "@typeai/oxlint-config"
   ]
 }

@@ -14,18 +14,18 @@ import { configEvent } from "../events/config";
 import * as TestState from "../test/test-state";
 
 import { showLoaderBar, hideLoaderBar } from "../states/loader-bar";
-import { CustomTextLimitMode, CustomTextMode } from "@monkeytype/schemas/util";
+import { CustomTextLimitMode, CustomTextMode } from "@typeai/schemas/util";
 import {
   Config as ConfigType,
   Difficulty,
   ThemeName,
   FunboxName,
-} from "@monkeytype/schemas/configs";
-import { Mode } from "@monkeytype/schemas/shared";
-import { CompletedEvent } from "@monkeytype/schemas/results";
+} from "@typeai/schemas/configs";
+import { Mode } from "@typeai/schemas/shared";
+import { CompletedEvent } from "@typeai/schemas/results";
 import { areUnsortedArraysEqual } from "../utils/arrays";
-import { tryCatch } from "@monkeytype/util/trycatch";
-import { Challenge } from "@monkeytype/schemas/challenges";
+import { tryCatch } from "@typeai/util/trycatch";
+import { Challenge } from "@typeai/schemas/challenges";
 import { qs } from "../utils/dom";
 import { getLoadedChallenge, setLoadedChallenge } from "../states/test";
 

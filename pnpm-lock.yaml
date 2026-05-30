@@ -17,7 +17,7 @@ importers:
       '@commitlint/config-conventional':
         specifier: 19.2.2
         version: 19.2.2
-      '@monkeytype/release':
+      '@typeai/release':
         specifier: workspace:*
         version: link:packages/release
       '@types/node':
@@ -80,16 +80,16 @@ importers:
       '@date-fns/utc':
         specifier: 1.2.0
         version: 1.2.0
-      '@monkeytype/contracts':
+      '@typeai/contracts':
         specifier: workspace:*
         version: link:../packages/contracts
-      '@monkeytype/funbox':
+      '@typeai/funbox':
         specifier: workspace:*
         version: link:../packages/funbox
-      '@monkeytype/schemas':
+      '@typeai/schemas':
         specifier: workspace:*
         version: link:../packages/schemas
-      '@monkeytype/util':
+      '@typeai/util':
         specifier: workspace:*
         version: link:../packages/util
       '@ts-rest/core':
@@ -186,10 +186,10 @@ importers:
         specifier: 3.23.8
         version: 3.23.8
     devDependencies:
-      '@monkeytype/oxlint-config':
+      '@typeai/oxlint-config':
         specifier: workspace:*
         version: link:../packages/oxlint-config
-      '@monkeytype/typescript-config':
+      '@typeai/typescript-config':
         specifier: workspace:*
         version: link:../packages/typescript-config
       '@redocly/cli':
@@ -288,16 +288,16 @@ importers:
       '@leonabcd123/modern-caps-lock':
         specifier: 3.0.4
         version: 3.0.4
-      '@monkeytype/contracts':
+      '@typeai/contracts':
         specifier: workspace:*
         version: link:../packages/contracts
-      '@monkeytype/funbox':
+      '@typeai/funbox':
         specifier: workspace:*
         version: link:../packages/funbox
-      '@monkeytype/schemas':
+      '@typeai/schemas':
         specifier: workspace:*
         version: link:../packages/schemas
-      '@monkeytype/util':
+      '@typeai/util':
         specifier: workspace:*
         version: link:../packages/util
       '@sentry/browser':
@@ -436,10 +436,10 @@ importers:
       '@fortawesome/fontawesome-free':
         specifier: 5.15.4
         version: 5.15.4
-      '@monkeytype/oxlint-config':
+      '@typeai/oxlint-config':
         specifier: workspace:*
         version: link:../packages/oxlint-config
-      '@monkeytype/typescript-config':
+      '@typeai/typescript-config':
         specifier: workspace:*
         version: link:../packages/typescript-config
       '@solidjs/testing-library':
@@ -644,7 +644,7 @@ importers:
 
   packages/contracts:
     dependencies:
-      '@monkeytype/schemas':
+      '@typeai/schemas':
         specifier: workspace:*
         version: link:../schemas
       '@ts-rest/core':
@@ -654,10 +654,10 @@ importers:
         specifier: 3.23.8
         version: 3.23.8
     devDependencies:
-      '@monkeytype/tsup-config':
+      '@typeai/tsup-config':
         specifier: workspace:*
         version: link:../tsup-config
-      '@monkeytype/typescript-config':
+      '@typeai/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
@@ -684,17 +684,17 @@ importers:
 
   packages/funbox:
     dependencies:
-      '@monkeytype/schemas':
+      '@typeai/schemas':
         specifier: workspace:*
         version: link:../schemas
-      '@monkeytype/util':
+      '@typeai/util':
         specifier: workspace:*
         version: link:../util
     devDependencies:
-      '@monkeytype/tsup-config':
+      '@typeai/tsup-config':
         specifier: workspace:*
         version: link:../tsup-config
-      '@monkeytype/typescript-config':
+      '@typeai/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
@@ -753,10 +753,10 @@ importers:
         specifier: 3.23.8
         version: 3.23.8
     devDependencies:
-      '@monkeytype/tsup-config':
+      '@typeai/tsup-config':
         specifier: workspace:*
         version: link:../tsup-config
-      '@monkeytype/typescript-config':
+      '@typeai/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
@@ -787,7 +787,7 @@ importers:
         specifier: 8.4.0
         version: 8.4.0(jiti@2.6.1)(postcss@8.5.8)(tsx@4.21.0)(typescript@6.0.2)(yaml@2.8.3)
     devDependencies:
-      '@monkeytype/typescript-config':
+      '@typeai/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
@@ -807,10 +807,10 @@ importers:
 
   packages/util:
     devDependencies:
-      '@monkeytype/tsup-config':
+      '@typeai/tsup-config':
         specifier: workspace:*
         version: link:../tsup-config
-      '@monkeytype/typescript-config':
+      '@typeai/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':

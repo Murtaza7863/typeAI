@@ -1,4 +1,4 @@
-import * as ConfigSchemas from "@monkeytype/schemas/configs";
+import * as ConfigSchemas from "@typeai/schemas/configs";
 import { ZodType as ZodSchema } from "zod";
 import { saveToLocalStorage } from "../config/persistence";
 import { configMetadata, ConfigMetadataObject } from "./metadata";
@@ -13,7 +13,7 @@ import * as TestState from "../test/test-state";
 import { typedKeys, triggerResize, escapeHTML } from "../utils/misc";
 import { camelCaseToWords, capitalizeFirstLetter } from "../utils/strings";
 import { Config, setConfigStore } from "./store";
-import { FunboxName } from "@monkeytype/schemas/configs";
+import { FunboxName } from "@typeai/schemas/configs";
 
 export function setConfig<T extends keyof ConfigSchemas.Config>(
   key: T,

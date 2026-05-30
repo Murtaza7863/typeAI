@@ -2,13 +2,13 @@ import {
   TypingStats as TypingStatsType,
   UserProfile,
   UserProfileDetails,
-} from "@monkeytype/schemas/users";
+} from "@typeai/schemas/users";
 import {
   getCurrentDayTimestamp,
   isToday as dateIsToday,
   isYesterday as dateIsYesterday,
-} from "@monkeytype/util/date-and-time";
-import { isSafeNumber } from "@monkeytype/util/numbers";
+} from "@typeai/util/date-and-time";
+import { isSafeNumber } from "@typeai/util/numbers";
 import { differenceInDays } from "date-fns/differenceInDays";
 import { formatDate } from "date-fns/format";
 import { formatDistanceToNowStrict } from "date-fns/formatDistanceToNowStrict";

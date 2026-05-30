@@ -32,5 +32,5 @@ if [[ ! -d node_modules ]]; then
   HUSKY=0 pnpm install
 fi
 
-echo "Starting Monkeytype (http://localhost:3000)..."
+echo "Starting typeAI (http://localhost:3000)..."
 HUSKY=0 pnpm run dev

@@ -1,4 +1,4 @@
-import { Config, CustomThemeColors } from "@monkeytype/schemas/configs";
+import { Config, CustomThemeColors } from "@typeai/schemas/configs";
 
 const obj: Config = {
   theme: "serika_dark",

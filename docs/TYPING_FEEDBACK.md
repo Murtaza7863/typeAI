@@ -1,4 +1,4 @@
-# Launch Monkeytype (fixed setup)
+# Launch typeAI (fixed setup)
 
 ## What was wrong
 
@@ -11,7 +11,7 @@
 ## One-command start (after first-time setup below)
 
 ```bash
-cd ~/Downloads/monkeytype-master
+cd ~/Downloads/typeai-master
 ./scripts/dev.sh
 ```
 
@@ -62,7 +62,7 @@ brew services start mongodb/brew/mongodb-community@7.0
 
 ```bash
 export PATH="/opt/homebrew/opt/node@24/bin:$PATH"
-cd ~/Downloads/monkeytype-master
+cd ~/Downloads/typeai-master
 HUSKY=0 pnpm run dev
 ```
 

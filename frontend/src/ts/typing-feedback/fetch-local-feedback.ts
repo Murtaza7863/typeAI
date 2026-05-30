@@ -1,7 +1,7 @@
 import {
   TypingFeedback,
   TypingSessionInput,
-} from "@monkeytype/schemas/typing-feedback";
+} from "@typeai/schemas/typing-feedback";
 import { envConfig } from "virtual:env-config";
 
 const LOCAL_FEEDBACK_TIMEOUT_MS = 240_000;

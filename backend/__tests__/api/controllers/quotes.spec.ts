@@ -9,7 +9,7 @@ import * as ReportDal from "../../../src/dal/report";
 import * as LogsDal from "../../../src/dal/logs";
 import * as Captcha from "../../../src/utils/captcha";
 import { ObjectId } from "mongodb";
-import { ApproveQuote } from "@monkeytype/schemas/quotes";
+import { ApproveQuote } from "@typeai/schemas/quotes";
 
 const { mockApp, uid } = setup();
 const configuration = Configuration.getCachedConfiguration();

@@ -1,4 +1,4 @@
-import { UserProfile as UserProfileType } from "@monkeytype/schemas/users";
+import { UserProfile as UserProfileType } from "@typeai/schemas/users";
 import { JSXElement, Show } from "solid-js";
 
 import { getActivePage } from "../../../states/core";

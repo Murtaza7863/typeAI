@@ -34,8 +34,8 @@ import {
   FunboxName,
   ConfigKeySchema,
   ConfigKey,
-} from "@monkeytype/schemas/configs";
-import { getAllFunboxes, checkCompatibility } from "@monkeytype/funbox";
+} from "@typeai/schemas/configs";
+import { getAllFunboxes, checkCompatibility } from "@typeai/funbox";
 import { getActiveFunboxNames } from "../test/funbox/list";
 import {
   __nonReactive as __nonReactivePresets,
@@ -45,9 +45,9 @@ import { LayoutsList } from "../constants/layouts";
 import { DataArrayPartial, Optgroup, OptionOptional } from "slim-select/store";
 import { ThemesList, ThemeWithName } from "../constants/themes";
 import { areSortedArraysEqual, areUnsortedArraysEqual } from "../utils/arrays";
-import { LayoutName } from "@monkeytype/schemas/layouts";
+import { LayoutName } from "@typeai/schemas/layouts";
 import { LanguageGroupNames, LanguageGroups } from "../constants/languages";
-import { Language } from "@monkeytype/schemas/languages";
+import { Language } from "@typeai/schemas/languages";
 import FileStorage from "../utils/file-storage";
 import { z } from "zod";
 import { handleConfigInput } from "../elements/input-validation";

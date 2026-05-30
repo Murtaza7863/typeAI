@@ -1,5 +1,5 @@
-import { checkForcedConfig, getFunbox } from "@monkeytype/funbox";
-import { Config, ConfigValue, FunboxName } from "@monkeytype/schemas/configs";
+import { checkForcedConfig, getFunbox } from "@typeai/funbox";
+import { Config, ConfigValue, FunboxName } from "@typeai/schemas/configs";
 
 export function canSetConfigWithCurrentFunboxes(
   key: string,

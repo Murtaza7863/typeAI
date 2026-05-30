@@ -3,11 +3,11 @@ import {
   CompletedEvent,
   OldChartData,
   Result,
-} from "@monkeytype/schemas/results";
-import { Mode } from "@monkeytype/schemas/shared";
+} from "@typeai/schemas/results";
+import { Mode } from "@typeai/schemas/shared";
 import { ObjectId } from "mongodb";
 import { WithObjectId } from "./misc";
-import { FunboxName } from "@monkeytype/schemas/configs";
+import { FunboxName } from "@typeai/schemas/configs";
 
 export type DBResult = WithObjectId<Result<Mode>> & {
   //legacy values

@@ -1,9 +1,6 @@
 import { get as getTypingSpeedUnit } from "../utils/typing-speed-units";
-import * as Numbers from "@monkeytype/util/numbers";
-import {
-  Config as ConfigType,
-  TypingSpeedUnit,
-} from "@monkeytype/schemas/configs";
+import * as Numbers from "@typeai/util/numbers";
+import { Config as ConfigType, TypingSpeedUnit } from "@typeai/schemas/configs";
 
 export type FormatOptions = {
   showDecimalPlaces?: boolean;

@@ -4,7 +4,7 @@ import * as UserDal from "../../../src/dal/user";
 import * as LeaderboardsDal from "../../../src/dal/leaderboards";
 import * as PublicDal from "../../../src/dal/public";
 import type { DBLeaderboardEntry } from "../../../src/dal/leaderboards";
-import type { PersonalBest } from "@monkeytype/schemas/shared";
+import type { PersonalBest } from "@typeai/schemas/shared";
 
 import * as DB from "../../../src/init/db";
 import { LbPersonalBests } from "../../../src/utils/pb";

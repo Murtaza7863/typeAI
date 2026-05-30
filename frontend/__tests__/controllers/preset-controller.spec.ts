@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import * as PresetController from "../../src/ts/controllers/preset-controller";
-import { Preset } from "@monkeytype/schemas/presets";
+import { Preset } from "@typeai/schemas/presets";
 import * as DB from "../../src/ts/db";
 import { setConfig } from "../../src/ts/config/setters";
 import { Config } from "../../src/ts/config/store";

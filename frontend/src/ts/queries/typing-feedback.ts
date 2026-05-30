@@ -1,4 +1,4 @@
-import { TypingFeedback } from "@monkeytype/schemas/typing-feedback";
+import { TypingFeedback } from "@typeai/schemas/typing-feedback";
 import { queryOptions } from "@tanstack/solid-query";
 import Ape from "../ape";
 import { isAuthenticated } from "../states/core";

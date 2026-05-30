@@ -1,4 +1,4 @@
-import type { XpBreakdown } from "@monkeytype/schemas/results";
+import type { XpBreakdown } from "@typeai/schemas/results";
 
 import preview from "#.storybook/preview";
 import { onMount } from "solid-js";

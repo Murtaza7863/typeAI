@@ -1,8 +1,8 @@
-name: monkeytype
+name: typeai
 version: "3.8"
 services:
   redis:
-    container_name: monkeytype-redis
+    container_name: typeai-redis
     image: redis:6.2.6
     restart: on-failure
     ports:
@@ -11,7 +11,7 @@ services:
       - redis-data:/data
 
   mongodb:
-    container_name: monkeytype-mongodb
+    container_name: typeai-mongodb
     image: mongo:5.0.13
     restart: on-failure
     ports:

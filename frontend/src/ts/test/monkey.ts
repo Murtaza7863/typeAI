@@ -1,4 +1,4 @@
-import { mapRange } from "@monkeytype/util/numbers";
+import { mapRange } from "@typeai/util/numbers";
 import { Config } from "../config/store";
 import { configEvent } from "../events/config";
 import * as TestState from "../test/test-state";

@@ -9,7 +9,7 @@ import {
   ConfigKey,
   Config as ConfigType,
   CaretStyleSchema,
-} from "@monkeytype/schemas/configs";
+} from "@typeai/schemas/configs";
 import * as FunboxValidation from "../../src/ts/config/funbox-validation";
 import * as ConfigValidation from "../../src/ts/config/validation";
 import { configEvent } from "../../src/ts/events/config";

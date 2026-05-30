@@ -11,7 +11,7 @@ export function Logo(): JSXElement {
     <a
       href={`${location.origin}/`}
       class="-m-2 flex h-6 w-max gap-2 rounded-[0.8rem] p-2 focus-visible:**:data-[ui-element='logoSubtext']:text-transparent"
-      aria-label="Monkeytype Home"
+      aria-label="typeAI home"
       router-link
       style={{
         "box-sizing": "content-box",
@@ -51,7 +51,7 @@ export function Logo(): JSXElement {
           )}
           data-ui-element="logoSubtext"
         >
-          {isDevEnvironment() ? "localhost" : "monkey see"}
+          {isDevEnvironment() ? "localhost" : "type smart"}
         </div>
         <h1
           class={cn("-mt-[0.11em] text-text transition-colors duration-250", {
@@ -59,7 +59,7 @@ export function Logo(): JSXElement {
           })}
           data-ui-element="logoText"
         >
-          monkeytype
+          typeAI
         </h1>
       </div>
     </a>

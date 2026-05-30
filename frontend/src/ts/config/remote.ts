@@ -1,4 +1,4 @@
-import * as ConfigSchemas from "@monkeytype/schemas/configs";
+import * as ConfigSchemas from "@typeai/schemas/configs";
 
 import { migrateConfig } from "./utils";
 import { applyConfig } from "./lifecycle";

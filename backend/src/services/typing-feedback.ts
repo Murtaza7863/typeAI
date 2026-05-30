@@ -5,8 +5,8 @@ import {
   TypingFeedback,
   TypingFeedbackMistake,
   TypingSessionInput,
-} from "@monkeytype/schemas/typing-feedback";
-import { ChartData } from "@monkeytype/schemas/results";
+} from "@typeai/schemas/typing-feedback";
+import { ChartData } from "@typeai/schemas/results";
 import {
   requestTypingCoachJson,
   resolveLlmConfig,
@@ -59,9 +59,10 @@ function avg(nums: number[]): number {
   return nums.reduce((a, b) => a + b, 0) / nums.length;
 }
 
-function chartErrorRates(
-  chartData: ChartData | "toolong" | undefined,
-): { early: number; late: number } {
+function chartErrorRates(chartData: ChartData | "toolong" | undefined): {
+  early: number;
+  late: number;
+} {
   if (chartData === undefined || chartData === "toolong") {
     return { early: 0, late: 0 };
   }
@@ -234,7 +235,9 @@ export async function getTypingFeedbackFromSessions(
   return feedback;
 }
 
-function buildRuleBasedFeedback(summary: TypingFeedbackSummary): TypingFeedback {
+function buildRuleBasedFeedback(
+  summary: TypingFeedbackSummary,
+): TypingFeedback {
   const mistakes: TypingFeedbackMistake[] = [];
   const strengths: string[] = [];
   const practiceTips: string[] = [];
@@ -255,10 +258,7 @@ function buildRuleBasedFeedback(summary: TypingFeedbackSummary): TypingFeedback 
     });
   }
 
-  if (
-    summary.lateTestErrorRate >
-    summary.earlyTestErrorRate + 0.15
-  ) {
+  if (summary.lateTestErrorRate > summary.earlyTestErrorRate + 0.15) {
     mistakes.push({
       issue: "Accuracy drops as tests go on",
       evidence: `Late-test error rate (${summary.lateTestErrorRate}/s) is higher than early (${summary.earlyTestErrorRate}/s).`,
@@ -299,15 +299,21 @@ function buildRuleBasedFeedback(summary: TypingFeedbackSummary): TypingFeedback 
       `Strong accuracy (${summary.avgAcc}%) across ${summary.testsAnalyzed} tests.`,
     );
   } else if (summary.avgAcc >= 94) {
-    strengths.push(`Solid accuracy at ${summary.avgAcc}%—room to push speed safely.`);
+    strengths.push(
+      `Solid accuracy at ${summary.avgAcc}%—room to push speed safely.`,
+    );
   }
 
   if (summary.recentWpmTrend === "improving") {
-    strengths.push("Your recent WPM trend is improving—keep building on that momentum.");
+    strengths.push(
+      "Your recent WPM trend is improving—keep building on that momentum.",
+    );
   }
 
   if (summary.avgConsistency >= 80) {
-    strengths.push(`Good rhythm: ${summary.avgConsistency}% consistency on average.`);
+    strengths.push(
+      `Good rhythm: ${summary.avgConsistency}% consistency on average.`,
+    );
   }
 
   if (mistakes.length === 0) {
@@ -345,9 +351,7 @@ async function enhanceWithLlm(
 ): Promise<TypingFeedback> {
   if (resolveLlmConfig() === null) return base;
 
-  const parsed = await requestTypingCoachJson(
-    JSON.stringify(summary, null, 2),
-  );
+  const parsed = await requestTypingCoachJson(JSON.stringify(summary, null, 2));
   if (parsed === null) return base;
 
   return {

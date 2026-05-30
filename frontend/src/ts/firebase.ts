@@ -30,7 +30,7 @@ import {
   Analytics as AnalyticsType,
   getAnalytics as firebaseGetAnalytics,
 } from "firebase/analytics";
-import { tryCatch } from "@monkeytype/util/trycatch";
+import { tryCatch } from "@typeai/util/trycatch";
 import { googleSignUpEvent } from "./events/google-sign-up";
 import { addBanner } from "./states/banners";
 import { setUserId, setUserVerified } from "./states/core";

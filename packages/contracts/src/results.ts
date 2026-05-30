@@ -12,8 +12,8 @@ import {
   PostResultResponseSchema,
   ResultMinifiedSchema,
   ResultSchema,
-} from "@monkeytype/schemas/results";
-import { IdSchema } from "@monkeytype/schemas/util";
+} from "@typeai/schemas/results";
+import { IdSchema } from "@typeai/schemas/util";
 
 export const GetResultsQuerySchema = z.object({
   onOrAfterTimestamp: z

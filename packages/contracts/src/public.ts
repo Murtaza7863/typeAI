@@ -4,9 +4,9 @@ import { CommonResponses, meta, responseWithData } from "./util/api";
 import {
   SpeedHistogramSchema,
   TypingStatsSchema,
-} from "@monkeytype/schemas/public";
-import { Mode2Schema, ModeSchema } from "@monkeytype/schemas/shared";
-import { LanguageSchema } from "@monkeytype/schemas/languages";
+} from "@typeai/schemas/public";
+import { Mode2Schema, ModeSchema } from "@typeai/schemas/shared";
+import { LanguageSchema } from "@typeai/schemas/languages";
 
 export const GetSpeedHistogramQuerySchema = z
   .object({

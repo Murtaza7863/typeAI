@@ -28,10 +28,10 @@ import { FirebaseError } from "firebase-admin";
 import * as ApeKeysDal from "../../../src/dal/ape-keys";
 import * as LogDal from "../../../src/dal/logs";
 import { ObjectId } from "mongodb";
-import { PersonalBest } from "@monkeytype/schemas/shared";
+import { PersonalBest } from "@typeai/schemas/shared";
 import { mockAuthenticateWithApeKey } from "../../__testData__/auth";
 import { randomUUID } from "node:crypto";
-import { MonkeyMail, UserStreak } from "@monkeytype/schemas/users";
+import { MonkeyMail, UserStreak } from "@typeai/schemas/users";
 import MonkeyError, { isFirebaseError } from "../../../src/utils/error";
 import * as WeeklyXpLeaderboard from "../../../src/services/weekly-xp-leaderboard";
 import * as ConnectionsDal from "../../../src/dal/connections";
@@ -3185,7 +3185,7 @@ describe("user controller test", () => {
         socialProfiles: {
           github: "github",
           twitter: "twitter",
-          website: "https://monkeytype.com",
+          website: "https://typeai.com",
         },
         showActivityOnPublicProfile: false,
       };
@@ -3213,7 +3213,7 @@ describe("user controller test", () => {
           socialProfiles: {
             github: "github",
             twitter: "twitter",
-            website: "https://monkeytype.com",
+            website: "https://typeai.com",
           },
           showActivityOnPublicProfile: false,
         },
@@ -3375,7 +3375,7 @@ describe("user controller test", () => {
         .set("Authorization", `Bearer ${uid}`)
         .send({
           socialProfiles: {
-            website: "http://monkeytype.com",
+            website: "http://typeai.com",
           },
         })
         .expect(422);

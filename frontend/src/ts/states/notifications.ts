@@ -1,6 +1,6 @@
 import { createStore } from "solid-js/store";
 
-import { CommonResponsesType } from "@monkeytype/contracts/util/api";
+import { CommonResponsesType } from "@typeai/contracts/util/api";
 import { createErrorMessage } from "../utils/error";
 
 export type NotificationLevel = "error" | "notice" | "success";

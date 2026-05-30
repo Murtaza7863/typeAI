@@ -1,4 +1,4 @@
-import { mean, roundTo2, stdDev } from "@monkeytype/util/numbers";
+import { mean, roundTo2, stdDev } from "@typeai/util/numbers";
 
 const timings = new Map<string, number[]>();
 
@@ -58,7 +58,7 @@ function logTiming(start: number, funcName: string): void {
     start,
     end,
     funcName,
-    "monkeytype",
+    "typeai",
   );
   console.timeStamp(
     `#${arr.length} profiling overhead`,
@@ -66,6 +66,6 @@ function logTiming(start: number, funcName: string): void {
     end,
     endOverhead,
     funcName,
-    "monkeytype",
+    "typeai",
   );
 }

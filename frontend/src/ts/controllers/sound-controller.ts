@@ -6,10 +6,7 @@ import { capsState } from "../test/caps-warning";
 import { showErrorNotification } from "../states/notifications";
 
 import type { Howl } from "howler";
-import {
-  PlaySoundOnClick,
-  PlaySoundOnError,
-} from "@monkeytype/schemas/configs";
+import { PlaySoundOnClick, PlaySoundOnError } from "@typeai/schemas/configs";
 import {
   clickSoundConfig,
   ScaleSoundConfig,

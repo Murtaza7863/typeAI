@@ -1,4 +1,4 @@
-import * as ConfigSchemas from "@monkeytype/schemas/configs";
+import * as ConfigSchemas from "@typeai/schemas/configs";
 import * as SoundController from "../controllers/sound-controller";
 import * as TestLogic from "../test/test-logic";
 import { getLanguageDisplayString } from "../utils/strings";
@@ -9,7 +9,7 @@ import { Config } from "../config/store";
 import { get as getTypingSpeedUnit } from "../utils/typing-speed-units";
 import { getActivePage, isAuthenticated } from "../states/core";
 import { Fonts } from "../constants/fonts";
-import { KnownFontName } from "@monkeytype/schemas/fonts";
+import { KnownFontName } from "@typeai/schemas/fonts";
 import * as UI from "../ui";
 import { typedKeys } from "../utils/misc";
 import { Validation } from "../types/validation";

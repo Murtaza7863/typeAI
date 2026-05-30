@@ -11,16 +11,16 @@ import {
   Language,
   LanguageObject,
   LanguageObjectSchema,
-} from "@monkeytype/schemas/languages";
-import { Layout, ThemeName } from "@monkeytype/schemas/configs";
+} from "@typeai/schemas/languages";
+import { Layout, ThemeName } from "@typeai/schemas/configs";
 import { LayoutsList } from "../src/ts/constants/layouts";
-import { KnownFontName } from "@monkeytype/schemas/fonts";
+import { KnownFontName } from "@typeai/schemas/fonts";
 import { Fonts } from "../src/ts/constants/fonts";
 import { themes, ThemeSchema, ThemesList } from "../src/ts/constants/themes";
 import { z } from "zod";
-import { ChallengeSchema, Challenge } from "@monkeytype/schemas/challenges";
-import { LayoutObject, LayoutObjectSchema } from "@monkeytype/schemas/layouts";
-import { QuoteDataSchema, QuoteData } from "@monkeytype/schemas/quotes";
+import { ChallengeSchema, Challenge } from "@typeai/schemas/challenges";
+import { LayoutObject, LayoutObjectSchema } from "@typeai/schemas/layouts";
+import { QuoteDataSchema, QuoteData } from "@typeai/schemas/quotes";
 import { clickSoundConfig } from "../src/ts/constants/sounds";
 import * as ghCore from "@actions/core";
 

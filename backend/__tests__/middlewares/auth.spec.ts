@@ -13,7 +13,7 @@ import crypto from "crypto";
 import {
   EndpointMetadata,
   RequestAuthenticationOptions,
-} from "@monkeytype/contracts/util/api";
+} from "@typeai/contracts/util/api";
 import * as Prometheus from "../../src/utils/prometheus";
 import { TsRestRequestWithContext } from "../../src/api/types";
 import { enableMonkeyErrorExpects } from "../__testData__/monkey-error";

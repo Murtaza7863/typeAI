@@ -1,7 +1,7 @@
 import * as DB from "../../src/init/db";
 import * as UserDAL from "../../src/dal/user";
 import { ObjectId } from "mongodb";
-import { PersonalBest } from "@monkeytype/schemas/shared";
+import { PersonalBest } from "@typeai/schemas/shared";
 
 export async function createUser(
   user?: Partial<UserDAL.DBUser>,

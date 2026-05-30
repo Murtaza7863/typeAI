@@ -1,5 +1,5 @@
-import { Quote } from "@monkeytype/schemas/quotes";
 import { createForm } from "@tanstack/solid-form";
+import { Quote } from "@typeai/schemas/quotes";
 import { format } from "date-fns/format";
 import { JSXElement, createSignal, For, Show } from "solid-js";
 

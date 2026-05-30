@@ -1,7 +1,7 @@
 import {
   GetLeaderboardQuery,
   GetLeaderboardRankQuery,
-} from "@monkeytype/contracts/leaderboards";
+} from "@typeai/contracts/leaderboards";
 import { queryOptions } from "@tanstack/solid-query";
 import Ape from "../ape";
 import { pageSize, Selection, setPage } from "../states/leaderboard-selection";

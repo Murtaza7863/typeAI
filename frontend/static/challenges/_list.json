@@ -129,7 +129,7 @@
     "display": "What's this website called again?",
     "autoRole": true,
     "type": "customText",
-    "parameters": ["monkeytype", "repeat", 1000, "word", false]
+    "parameters": ["typeai", "repeat", 1000, "word", false]
   },
   {
     "name": "developd",

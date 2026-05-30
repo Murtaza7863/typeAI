@@ -1,4 +1,4 @@
-import { User as UserType } from "@monkeytype/schemas/users";
+import { User as UserType } from "@typeai/schemas/users";
 import { AnimationParams } from "animejs";
 import { createEffect, createSignal, JSXElement, on, Show } from "solid-js";
 

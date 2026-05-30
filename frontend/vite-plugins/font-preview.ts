@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 
 import subsetFont from "subset-font";
 import { Fonts } from "../src/ts/constants/fonts";
-import { KnownFontName } from "@monkeytype/schemas/fonts";
+import { KnownFontName } from "@typeai/schemas/fonts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

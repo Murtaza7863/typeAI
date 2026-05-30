@@ -34,7 +34,7 @@ import { buildCommandForConfigKey } from "./util";
 import { CommandlineConfigMetadataObject } from "./commandline-metadata";
 import { isAuthAvailable, signOut } from "../firebase";
 import { isAuthenticated } from "../states/core";
-import { ConfigKey } from "@monkeytype/schemas/configs";
+import { ConfigKey } from "@typeai/schemas/configs";
 import {
   hideFpsCounter,
   showFpsCounter,
@@ -359,7 +359,7 @@ export const commands: CommandsSubgroup = {
       display: "Join the Discord server",
       icon: "fa-users",
       exec: (): void => {
-        window.open("https://discord.gg/monkeytype");
+        window.open("https://discord.gg/typeai");
       },
     },
     {

@@ -1,4 +1,4 @@
-import { Config as ConfigType, ConfigKey } from "@monkeytype/schemas/configs";
+import { Config as ConfigType, ConfigKey } from "@typeai/schemas/configs";
 import { Config } from "../../config/store";
 import { setConfig } from "../../config/setters";
 import { showErrorNotification } from "../../states/notifications";

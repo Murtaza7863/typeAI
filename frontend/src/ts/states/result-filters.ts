@@ -1,4 +1,4 @@
-import { ResultFilters, ResultFiltersSchema } from "@monkeytype/schemas/users";
+import { ResultFilters, ResultFiltersSchema } from "@typeai/schemas/users";
 import { mergeWithDefaultFilters } from "../components/pages/account/utils";
 import defaultResultFilters from "../constants/default-result-filters";
 import { useLocalStorageStore } from "../hooks/useLocalStorageStore";

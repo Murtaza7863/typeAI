@@ -1,7 +1,7 @@
 import { initContract } from "@ts-rest/core";
 import { z } from "zod";
 
-import { ConfigurationSchema } from "@monkeytype/schemas/configuration";
+import { ConfigurationSchema } from "@typeai/schemas/configuration";
 import {
   CommonResponses,
   meta,

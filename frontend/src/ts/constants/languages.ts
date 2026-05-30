@@ -1,4 +1,4 @@
-import { Language, LanguageSchema } from "@monkeytype/schemas/languages";
+import { Language, LanguageSchema } from "@typeai/schemas/languages";
 
 export const LanguageList: Language[] = LanguageSchema._def.values;
 

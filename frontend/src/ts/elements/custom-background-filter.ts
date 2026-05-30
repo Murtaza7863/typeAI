@@ -1,4 +1,4 @@
-import { CustomBackgroundFilter } from "@monkeytype/schemas/configs";
+import { CustomBackgroundFilter } from "@typeai/schemas/configs";
 import { setConfig } from "../config/setters";
 import { configEvent } from "../events/config";
 import { debounce } from "throttle-debounce";

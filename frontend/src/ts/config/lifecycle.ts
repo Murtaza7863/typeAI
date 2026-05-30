@@ -1,5 +1,5 @@
-import * as ConfigSchemas from "@monkeytype/schemas/configs";
-import { parseWithSchema as parseJsonWithSchema } from "@monkeytype/util/json";
+import * as ConfigSchemas from "@typeai/schemas/configs";
+import { parseWithSchema as parseJsonWithSchema } from "@typeai/util/json";
 import {
   showSuccessNotification,
   showErrorNotification,

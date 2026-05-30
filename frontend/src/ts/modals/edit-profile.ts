@@ -15,7 +15,7 @@ import {
   TwitterProfileSchema,
   UserProfileDetails,
   WebsiteSchema,
-} from "@monkeytype/schemas/users";
+} from "@typeai/schemas/users";
 import { InputIndicator } from "../elements/input-indicator";
 import { ElementWithUtils, qsr } from "../utils/dom";
 

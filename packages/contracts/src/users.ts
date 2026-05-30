@@ -27,16 +27,16 @@ import {
   UserEmailSchema,
   UserNameSchema,
   FriendSchema,
-} from "@monkeytype/schemas/users";
+} from "@typeai/schemas/users";
 import {
   Mode2Schema,
   ModeSchema,
   PersonalBestSchema,
-} from "@monkeytype/schemas/shared";
-import { IdSchema, StringNumberSchema } from "@monkeytype/schemas/util";
-import { LanguageSchema } from "@monkeytype/schemas/languages";
-import { CustomThemeColorsSchema } from "@monkeytype/schemas/configs";
-import { TypingFeedbackSchema } from "@monkeytype/schemas/typing-feedback";
+} from "@typeai/schemas/shared";
+import { IdSchema, StringNumberSchema } from "@typeai/schemas/util";
+import { LanguageSchema } from "@typeai/schemas/languages";
+import { CustomThemeColorsSchema } from "@typeai/schemas/configs";
+import { TypingFeedbackSchema } from "@typeai/schemas/typing-feedback";
 
 export const GetUserResponseSchema = responseWithData(
   UserSchema.extend({

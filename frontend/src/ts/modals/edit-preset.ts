@@ -11,7 +11,7 @@ import {
   PresetNameSchema,
   PresetType,
   PresetTypeSchema,
-} from "@monkeytype/schemas/presets";
+} from "@typeai/schemas/presets";
 import {
   __nonReactive as __nonReactivePresets,
   addPreset,
@@ -23,7 +23,7 @@ import {
   ConfigGroupNameSchema,
   ConfigKey,
   Config as ConfigType,
-} from "@monkeytype/schemas/configs";
+} from "@typeai/schemas/configs";
 import { getDefaultConfig } from "../constants/default-config";
 import { ValidatedHtmlInputElement } from "../elements/input-validation";
 import { ElementWithUtils } from "../utils/dom";

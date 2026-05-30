@@ -5,7 +5,7 @@
 - [Basic Contributions](#basic-contributions)
 - [Prerequisites](#prerequisites)
 - [Contributing](#contributing)
-  - [Forking Monkeytype](#forking-monkeytype)
+  - [Forking typeAI](#forking-typeai)
   - [Making a Change](#making-a-change)
   - [Creating a Pull Request](#creating-a-pull-request)
   - [Merging a Pull Request](#merging-a-pull-request)
@@ -13,7 +13,7 @@
 
 ### Basic Contributions
 
-This file details how to create basic contributions to Monkeytype purely through the use of GitHub's web UI. This means you will not need to set up a local development environment of any kind; all you'll need is a browser that can access GitHub and a GitHub account.
+This file details how to create basic contributions to typeAI purely through the use of GitHub's web UI. This means you will not need to set up a local development environment of any kind; all you'll need is a browser that can access GitHub and a GitHub account.
 
 Given the above, you should only be using this guide if you plan on making changes that do not impact the functionality of the website. Examples of such cases would be translation fixes, language additions, or quote additions.
 
@@ -27,13 +27,13 @@ The steps for basic contributions are showcased splendidly in [this YouTube vide
 
 ## Contributing
 
-### Forking Monkeytype
+### Forking typeAI
 
-First, you will have to obtain your own copy of the Monkeytype repository, also known as "forking". Click [here](https://github.com/monkeytypegame/monkeytype/fork) to open the fork wizard or go to the top right of your screen and then click the `fork` button.
+First, you will have to obtain your own copy of the typeAI repository, also known as "forking". Click [here](https://github.com/Murtaza7863/monkeytype-typing-coach/fork) to open the fork wizard or go to the top right of your screen and then click the `fork` button.
 
 <img width="1552" alt="Screenshot showing location of the fork button on GitHub." src="https://user-images.githubusercontent.com/83455454/149194972-23343642-7a1f-4c0c-b5f2-36f4b39a2639.png">
 
-This will create a clone of the repository under your own account. Navigate to your profile now and click on the new repository called `monkeytype` under your profile.
+This will create a clone of the repository under your own account. Navigate to your profile now and click on the new repository called `typeai` under your profile.
 
 ### Making a Change
 
@@ -41,7 +41,7 @@ There are two methods for making a change in the code.
 
 #### Option 1 - Visual Studio Code Web Editor (Recommended)
 
-If you are not a developer and wish to contribute themes, new languages, or quotes, having a text editor will make contributions _much_ easier. To make complex edits without installing anything, we recommend using GitHub's VS Code web editor. In your fork of Monkeytype (fork it first), go to the `Code` tab of the repo and press <kbd>.</kbd>(the period/dot key). This will open up the repo in an online VS Code instance you can use to edit files in the browser. Once you are done making your changes, go to the Source Control tab in the activity bar with <kbd>Ctrl/Cmd + Shift + G</kbd>, click the `+` next to the files you've changed to stage them, type a brief message summarizing the changes made in the commit, and press <kbd>Ctrl/Cmd + Enter</kbd> to commit your changes to your fork.
+If you are not a developer and wish to contribute themes, new languages, or quotes, having a text editor will make contributions _much_ easier. To make complex edits without installing anything, we recommend using GitHub's VS Code web editor. In your fork of typeAI (fork it first), go to the `Code` tab of the repo and press <kbd>.</kbd>(the period/dot key). This will open up the repo in an online VS Code instance you can use to edit files in the browser. Once you are done making your changes, go to the Source Control tab in the activity bar with <kbd>Ctrl/Cmd + Shift + G</kbd>, click the `+` next to the files you've changed to stage them, type a brief message summarizing the changes made in the commit, and press <kbd>Ctrl/Cmd + Enter</kbd> to commit your changes to your fork.
 
 Once done, move on to the [next section to create a pull request](#creating-a-pull-request).
 
@@ -70,14 +70,14 @@ Click `Commit changes` once you are ready to proceed.
 You can repeat the steps above for as many changes as needed. Once you are done making all your code changes and you have committed them to your branch, you are ready to make a pull request (PR). Go back to the main page of your forked repository. Ensure that your current branch (which is likely still master at this point) is up to date. You can do so by clicking the following button:
 
 Update branch:
-<img width="1552" alt="Screenshot showing how to update the fork to match the main Monkeytype repository" src="https://user-images.githubusercontent.com/83455454/149186547-5b9fe4fd-b944-4eed-a959-db43f96198bf.png">
+<img width="1552" alt="Screenshot showing how to update the fork to match the main typeAI repository" src="https://user-images.githubusercontent.com/83455454/149186547-5b9fe4fd-b944-4eed-a959-db43f96198bf.png">
 
 Once up to date, you can click the `Contribute` button to open a PR.
 
 Create a pull request:
-<img width="1552" alt="Screenshot showing how to create a pull request to the main Monkeytype repository" src="https://user-images.githubusercontent.com/83455454/149186637-66dae488-05ae-45c4-9217-65bc36c4927b.png">
+<img width="1552" alt="Screenshot showing how to create a pull request to the main typeAI repository" src="https://user-images.githubusercontent.com/83455454/149186637-66dae488-05ae-45c4-9217-65bc36c4927b.png">
 
-Be sure to add a good description to the PR and that the source and destination branches at the top look correct. The `base repository` and `base branch` should be listed as `monkeytypegame/monkeytype` and `master` respectively, and on the right of that should be your forked repository and the branch you have your changes on.
+Be sure to add a good description to the PR and that the source and destination branches at the top look correct. The `base repository` and `base branch` should be listed as `typeaigame/typeai` and `master` respectively, and on the right of that should be your forked repository and the branch you have your changes on.
 
 Once done, click on `Create pull request` to officially publish your PR.
 
@@ -89,4 +89,4 @@ Once your PR is approved, all that is left to do is merge it!
 
 ## Questions
 
-If you have any questions, comments, concerns, or problems, don't hesitate to let us know via [email](mailto:jack@monkeytype.com)(to Miodec), on [GitHub](https://github.com/monkeytypegame/monkeytype/discussions) or on [Discord](https://discord.gg/monkeytype) in the [`#development`](https://discord.com/channels/713194177403420752/713196019206324306) channel and a contributor will be happy to assist you.
+If you have any questions, comments, concerns, or problems, don't hesitate to let us know via [email](mailto:jack@typeai.com)(to Miodec), on [GitHub](https://github.com/Murtaza7863/monkeytype-typing-coach/discussions) or on [Discord](https://discord.gg/typeai) in the [`#development`](https://discord.com/channels/713194177403420752/713196019206324306) channel and a contributor will be happy to assist you.

@@ -1,4 +1,4 @@
-import { QuoteData } from "@monkeytype/schemas/quotes";
+import { QuoteData } from "@typeai/schemas/quotes";
 import * as fs from "fs";
 
 import path, { dirname } from "path";
@@ -19,7 +19,7 @@ async function getShortQuotes(): Promise<void> {
       path.resolve(FRONTEND_ROOT, `static/quotes/${quotefilename}`),
       "utf8",
     );
-    //const quoteJson = await (await fetch(`https://raw.githubusercontent.com/monkeytypegame/monkeytype/refs/heads/master/frontend/static/quotes/${quotefilename}`)).json();
+    //const quoteJson = await (await fetch(`https://raw.githubusercontent.com/typeaigame/typeai/refs/heads/master/frontend/static/quotes/${quotefilename}`)).json();
     const quoteData = JSON.parse(quoteJson) as QuoteData;
     for (const quote of quoteData.quotes) {
       if (quote.length < 60) {

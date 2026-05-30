@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import * as Validation from "@monkeytype/schemas/validation/validation";
+import * as Validation from "@typeai/schemas/validation/validation";
 
 const containsDisallowedWords = Validation.__testing.containsDisallowedWords;
 

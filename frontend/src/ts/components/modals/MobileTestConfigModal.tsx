@@ -1,8 +1,5 @@
-import type {
-  QuoteLength,
-  QuoteLengthConfig,
-} from "@monkeytype/schemas/configs";
-import type { Mode } from "@monkeytype/schemas/shared";
+import type { QuoteLength, QuoteLengthConfig } from "@typeai/schemas/configs";
+import type { Mode } from "@typeai/schemas/shared";
 
 import { For, JSXElement, Show } from "solid-js";
 

@@ -1,4 +1,4 @@
-import { ResultFilters, ResultFiltersSchema } from "@monkeytype/schemas/users";
+import { ResultFilters, ResultFiltersSchema } from "@typeai/schemas/users";
 import { typedKeys } from "../../../utils/misc";
 import defaultResultFilters from "../../../constants/default-result-filters";
 import { sanitize } from "../../../utils/sanitize";

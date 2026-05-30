@@ -1,7 +1,7 @@
-import { roundTo2 } from "@monkeytype/util/numbers";
+import { roundTo2 } from "@typeai/util/numbers";
 import * as db from "../init/db";
 import MonkeyError from "../utils/error";
-import { TypingStats, SpeedHistogram } from "@monkeytype/schemas/public";
+import { TypingStats, SpeedHistogram } from "@typeai/schemas/public";
 
 export type PublicTypingStatsDB = TypingStats & { _id: "stats" };
 export type PublicSpeedStatsDB = {

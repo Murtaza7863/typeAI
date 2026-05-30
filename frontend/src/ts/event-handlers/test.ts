@@ -12,7 +12,7 @@ import { showQuoteReportModal } from "../states/quote-report";
 import * as PractiseWordsModal from "../modals/practise-words";
 import { navigate } from "../controllers/route-controller";
 import { getMode2 } from "../utils/misc";
-import { ConfigKey } from "@monkeytype/schemas/configs";
+import { ConfigKey } from "@typeai/schemas/configs";
 import { ListsObjectKeys } from "../commandline/lists";
 import { qs } from "../utils/dom";
 

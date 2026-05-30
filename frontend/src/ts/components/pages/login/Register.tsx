@@ -1,9 +1,9 @@
+import { createForm } from "@tanstack/solid-form";
 import {
   PasswordSchema,
   UserEmailSchema,
   UserNameSchema,
-} from "@monkeytype/schemas/users";
-import { createForm } from "@tanstack/solid-form";
+} from "@typeai/schemas/users";
 import { JSXElement } from "solid-js";
 import { z } from "zod";
 

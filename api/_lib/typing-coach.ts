@@ -271,7 +271,7 @@ function buildRuleBasedFeedback(
   };
 }
 
-const COACH_SYSTEM_PROMPT = `You are a typing coach analyzing Monkeytype test statistics.
+const COACH_SYSTEM_PROMPT = `You are a typing coach analyzing typeAI test statistics.
 Be specific, actionable, and encouraging. Reference the user's stats.
 Do not invent per-key data that was not provided.`;
 

@@ -14,9 +14,9 @@ import {
   QuoteRatingSchema,
   QuoteReportReasonSchema,
   QuoteSchema,
-} from "@monkeytype/schemas/quotes";
-import { IdSchema, NullableStringSchema } from "@monkeytype/schemas/util";
-import { LanguageSchema } from "@monkeytype/schemas/languages";
+} from "@typeai/schemas/quotes";
+import { IdSchema, NullableStringSchema } from "@typeai/schemas/util";
+import { LanguageSchema } from "@typeai/schemas/languages";
 
 export const GetQuotesResponseSchema = responseWithData(z.array(QuoteSchema));
 export type GetQuotesResponse = z.infer<typeof GetQuotesResponseSchema>;

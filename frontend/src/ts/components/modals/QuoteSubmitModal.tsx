@@ -1,5 +1,5 @@
-import { Language } from "@monkeytype/schemas/languages";
 import { createForm } from "@tanstack/solid-form";
+import { Language } from "@typeai/schemas/languages";
 import { JSXElement } from "solid-js";
 
 import Ape from "../../ape";

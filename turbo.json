@@ -39,26 +39,26 @@
     "start": {
       "dependsOn": ["build"]
     },
-    "@monkeytype/frontend#check-assets": {
-      "dependsOn": ["^parallel", "@monkeytype/schemas#build"]
+    "@typeai/frontend#check-assets": {
+      "dependsOn": ["^parallel", "@typeai/schemas#build"]
     },
     "//#lint-styles": {
       "dependsOn": ["^parallel"]
     },
-    "@monkeytype/frontend#lint-json": {
+    "@typeai/frontend#lint-json": {
       "dependsOn": ["^parallel"]
     },
-    "@monkeytype/frontend#build": {
+    "@typeai/frontend#build": {
       "dependsOn": ["^build"],
       "env": ["BACKEND_URL", "RECAPTCHA_SITE_KEY", "SENTRY"],
       "outputs": ["dist/**"]
     },
-    "@monkeytype/frontend#dev": {
+    "@typeai/frontend#dev": {
       "dependsOn": ["^build"],
       "env": ["BACKEND_URL", "RECAPTCHA_SITE_KEY", "SERVER_OPEN"],
       "persistent": true
     },
-    "@monkeytype/backend#dev": {
+    "@typeai/backend#dev": {
       "dependsOn": ["^build"],
       "env": ["DB_URI", "REDIS_URI", "PORT"],
       "persistent": true

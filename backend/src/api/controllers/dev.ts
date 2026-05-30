@@ -9,21 +9,21 @@ import { ObjectId } from "mongodb";
 import * as LeaderboardDal from "../../dal/leaderboards";
 import MonkeyError from "../../utils/error";
 
-import { Mode, PersonalBest, PersonalBests } from "@monkeytype/schemas/shared";
+import { Mode, PersonalBest, PersonalBests } from "@typeai/schemas/shared";
 import {
   AddDebugInboxItemRequest,
   GenerateDataRequest,
   GenerateDataResponse,
   GetLocalTypingFeedbackRequest,
   GetLocalTypingFeedbackResponse,
-} from "@monkeytype/contracts/dev";
+} from "@typeai/contracts/dev";
 import { getTypingFeedbackFromSessions } from "../../services/typing-feedback";
 import { buildMonkeyMail } from "../../utils/monkey-mail";
-import { roundTo2 } from "@monkeytype/util/numbers";
+import { roundTo2 } from "@typeai/util/numbers";
 import { MonkeyRequest } from "../types";
 import { DBResult } from "../../utils/result";
 import { LbPersonalBests } from "../../utils/pb";
-import { Language } from "@monkeytype/schemas/languages";
+import { Language } from "@typeai/schemas/languages";
 
 const CREATE_RESULT_DEFAULT_OPTIONS = {
   firstTestTimestamp: DateUtils.startOfDay(new UTCDate(Date.now())).valueOf(),

@@ -1,5 +1,5 @@
-import { LanguageSchema } from "@monkeytype/schemas/languages";
-import { ModeSchema } from "@monkeytype/schemas/shared";
+import { LanguageSchema } from "@typeai/schemas/languages";
+import { ModeSchema } from "@typeai/schemas/shared";
 import { Accessor, createEffect, createSignal, Setter } from "solid-js";
 import { z } from "zod";
 import { serialize as serializeUrlSearchParams } from "zod-urlsearchparams";

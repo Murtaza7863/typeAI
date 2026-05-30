@@ -1,4 +1,4 @@
-import type { CustomTextMode } from "@monkeytype/schemas/util";
+import type { CustomTextMode } from "@typeai/schemas/util";
 
 import { createForm } from "@tanstack/solid-form";
 import { batch, createSignal, For, JSXElement, Show, untrack } from "solid-js";

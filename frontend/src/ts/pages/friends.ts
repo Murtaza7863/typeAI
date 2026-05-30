@@ -14,11 +14,11 @@ import {
   showErrorNotification,
   showSuccessNotification,
 } from "../states/notifications";
-import { isSafeNumber } from "@monkeytype/util/numbers";
+import { isSafeNumber } from "@typeai/util/numbers";
 import { getHTMLById as getBadgeHTMLbyId } from "../controllers/badge-controller";
 import { formatXp, getXpDetails } from "../utils/levels";
 import { secondsToString } from "../utils/date-and-time";
-import { PersonalBest } from "@monkeytype/schemas/shared";
+import { PersonalBest } from "@typeai/schemas/shared";
 import Format from "../singletons/format";
 import { getHtmlByUserFlags } from "../controllers/user-flag-controller";
 import { SortedTable, SortSchema } from "../utils/sorted-table";
@@ -30,8 +30,8 @@ import { addFriend, getReceiverUid } from "../db";
 import { getAuthenticatedUser } from "../firebase";
 import * as ServerConfiguration from "../ape/server-configuration";
 import { authEvent } from "../events/auth";
-import { Connection } from "@monkeytype/schemas/connections";
-import { UserNameWithoutFilterSchema, Friend } from "@monkeytype/schemas/users";
+import { Connection } from "@typeai/schemas/connections";
+import { UserNameWithoutFilterSchema, Friend } from "@typeai/schemas/users";
 
 import { showLoaderBar, hideLoaderBar } from "../states/loader-bar";
 import { LocalStorageWithSchema } from "../utils/local-storage-with-schema";

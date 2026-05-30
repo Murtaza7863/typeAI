@@ -3,7 +3,7 @@ import * as RedisClient from "../init/redis";
 import { randomBytes } from "crypto";
 import MonkeyError from "./error";
 import { z } from "zod";
-import { parseWithSchema as parseJsonWithSchema } from "@monkeytype/util/json";
+import { parseWithSchema as parseJsonWithSchema } from "@typeai/util/json";
 
 const BASE_URL = "https://discord.com/api";
 
@@ -47,7 +47,7 @@ export async function getOauthLink(uid: string): Promise<string> {
   return `${BASE_URL}/oauth2/authorize?client_id=798272335035498557&redirect_uri=${
     isDevEnvironment()
       ? `http%3A%2F%2Flocalhost%3A3000%2Fverify`
-      : `https%3A%2F%2Fmonkeytype.com%2Fverify`
+      : `https%3A%2F%2Ftypeai.com%2Fverify`
   }&response_type=token&scope=identify&state=${token}`;
 }
 

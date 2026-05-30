@@ -1,9 +1,9 @@
 import { lastElementFromArray } from "./arrays";
-import { Config } from "@monkeytype/schemas/configs";
-import { Mode, Mode2, PersonalBests } from "@monkeytype/schemas/shared";
-import { Result } from "@monkeytype/schemas/results";
-import { RankAndCount } from "@monkeytype/schemas/users";
-import { roundTo2 } from "@monkeytype/util/numbers";
+import { Config } from "@typeai/schemas/configs";
+import { Mode, Mode2, PersonalBests } from "@typeai/schemas/shared";
+import { Result } from "@typeai/schemas/results";
+import { RankAndCount } from "@typeai/schemas/users";
+import { roundTo2 } from "@typeai/util/numbers";
 import { animate, AnimationParams } from "animejs";
 import { ElementWithUtils } from "./dom";
 import { isDevEnvironment } from "./env";
@@ -485,7 +485,7 @@ export function updateTitle(title?: string): void {
   const local = isDevEnvironment() ? "localhost - " : "";
 
   if (title === undefined || title === "") {
-    document.title = `${local}Monkeytype | A minimalistic, customizable typing test`;
+    document.title = `${local}typeAI | A minimalistic, customizable typing test`;
   } else {
     document.title = local + title;
   }

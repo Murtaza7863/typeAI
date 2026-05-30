@@ -1,7 +1,7 @@
 import * as Settings from "../pages/settings";
 import AnimatedModal, { ShowOptions } from "../utils/animated-modal";
 import { SimpleModal, TextInput } from "../elements/simple-modal";
-import { TagNameSchema } from "@monkeytype/schemas/users";
+import { TagNameSchema } from "@typeai/schemas/users";
 import { IsValidResponse } from "../types/validation";
 import {
   insertTag,

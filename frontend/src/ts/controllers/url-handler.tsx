@@ -7,16 +7,16 @@ import {
   CustomThemeColorsSchema,
   FunboxSchema,
   FunboxName,
-} from "@monkeytype/schemas/configs";
-import { Language } from "@monkeytype/schemas/languages";
-import { CustomTextSettingsSchema } from "@monkeytype/schemas/results";
+} from "@typeai/schemas/configs";
+import { Language } from "@typeai/schemas/languages";
+import { CustomTextSettingsSchema } from "@typeai/schemas/results";
 import {
   DifficultySchema,
   Mode2Schema,
   ModeSchema,
-} from "@monkeytype/schemas/shared";
-import { parseWithSchema as parseJsonWithSchema } from "@monkeytype/util/json";
-import { tryCatchSync } from "@monkeytype/util/trycatch";
+} from "@typeai/schemas/shared";
+import { parseWithSchema as parseJsonWithSchema } from "@typeai/util/json";
+import { tryCatchSync } from "@typeai/util/trycatch";
 import { decompressFromURI } from "lz-ts";
 import { z } from "zod";
 

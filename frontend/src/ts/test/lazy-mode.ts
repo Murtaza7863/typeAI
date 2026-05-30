@@ -1,4 +1,4 @@
-import { LanguageObject } from "@monkeytype/schemas/languages";
+import { LanguageObject } from "@typeai/schemas/languages";
 export type Accents = LanguageObject["additionalAccents"];
 
 const accents: Accents = [

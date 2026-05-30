@@ -1,4 +1,4 @@
-import { QuickRestart } from "@monkeytype/schemas/configs";
+import { QuickRestart } from "@typeai/schemas/configs";
 import { Hotkey } from "@tanstack/solid-hotkeys";
 import { createEffect } from "solid-js";
 import { createStore } from "solid-js/store";

@@ -11,8 +11,8 @@ on:
 jobs:
   push_to_registry:
     env:
-      BE_REPO: monkeytype/monkeytype-backend
-      FE_REPO: monkeytype/monkeytype-frontend
+      BE_REPO: typeai/typeai-backend
+      FE_REPO: typeai/typeai-frontend
       PLATFORMS: linux/amd64,linux/arm64
 
     name: Push Docker image to Docker Hub
@@ -56,7 +56,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
           repository: ${{ env.BE_REPO }}
-          short-description: Official backend server for monkeytype.com
+          short-description: Official backend server for typeai.com
           readme-filepath: ./docs/SELF_HOSTING.md
 
       - name: Frontend extract metadata (tags, labels)
@@ -83,5 +83,5 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
           repository: ${{ env.FE_REPO }}
-          short-description: Official frontend server for monkeytype.com
+          short-description: Official frontend server for typeai.com
           readme-filepath: ./docs/SELF_HOSTING.md

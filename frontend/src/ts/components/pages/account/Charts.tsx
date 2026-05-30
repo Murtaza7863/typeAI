@@ -1,5 +1,5 @@
-import { ResultFilters, ResultFiltersKeys } from "@monkeytype/schemas/users";
 import { useLiveQuery } from "@tanstack/solid-db";
+import { ResultFilters, ResultFiltersKeys } from "@typeai/schemas/users";
 import { Accessor, createMemo, JSXElement } from "solid-js";
 
 import {

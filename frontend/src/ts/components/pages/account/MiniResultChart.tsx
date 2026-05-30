@@ -1,5 +1,5 @@
-import { ChartData } from "@monkeytype/schemas/results";
 import { useQuery } from "@tanstack/solid-query";
+import { ChartData } from "@typeai/schemas/results";
 import { createMemo, JSXElement } from "solid-js";
 
 import { getSingleResultQueryOptions } from "../../../collections/results";

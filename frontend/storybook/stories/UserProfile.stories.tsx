@@ -1,11 +1,11 @@
 import preview from "#.storybook/preview";
-import { UserProfile as UserProfileType } from "@monkeytype/schemas/users";
+import { UserProfile as UserProfileType } from "@typeai/schemas/users";
 
 import { UserProfile } from "../../src/ts/components/pages/profile/UserProfile";
 
 const baseProfile: UserProfileType = {
   uid: "user123",
-  name: "monkeytyper",
+  name: "typeair",
   addedAt: 1700000000000,
   xp: 42000,
   streak: 15,
@@ -106,8 +106,8 @@ const baseProfile: UserProfileType = {
     bio: "Just a monkey typing away",
     keyboard: "Custom 65%",
     socialProfiles: {
-      twitter: "monkeytyper",
-      github: "monkeytyper",
+      twitter: "typeair",
+      github: "typeair",
       website: "https://example.com",
     },
   },

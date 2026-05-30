@@ -18,7 +18,7 @@ export function showIfNotClosedBefore(): void {
         <>
           New merch store now open, including a limited edition metal keycap!{" "}
           <a target="_blank" rel="noopener" href="https://mktp.co/merch">
-            monkeytype.store
+            typeai.store
           </a>
         </>
       ),

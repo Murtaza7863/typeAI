@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { getDefaultConfig } from "../../src/ts/constants/default-config";
 import { Formatting } from "../../src/ts/utils/format";
-import { Config } from "@monkeytype/schemas/configs";
+import { Config } from "@typeai/schemas/configs";
 
 describe("format.ts", () => {
   describe("typingsSpeed", () => {

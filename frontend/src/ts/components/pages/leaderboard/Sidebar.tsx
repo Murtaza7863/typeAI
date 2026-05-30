@@ -1,6 +1,6 @@
-import { ValidModeRule } from "@monkeytype/schemas/configuration";
-import { Language } from "@monkeytype/schemas/languages";
-import { Mode } from "@monkeytype/schemas/shared";
+import { ValidModeRule } from "@typeai/schemas/configuration";
+import { Language } from "@typeai/schemas/languages";
+import { Mode } from "@typeai/schemas/shared";
 import { Accessor, For, JSXElement, Show } from "solid-js";
 
 import { isAuthenticated } from "../../../states/core";

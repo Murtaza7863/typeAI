@@ -1,14 +1,14 @@
 import { generateOpenApi } from "@ts-rest/open-api";
-import { contract } from "@monkeytype/contracts/index";
+import { contract } from "@typeai/contracts/index";
 import { writeFileSync, mkdirSync } from "fs";
-import { EndpointMetadata, PermissionId } from "@monkeytype/contracts/util/api";
+import { EndpointMetadata, PermissionId } from "@typeai/contracts/util/api";
 import type { OpenAPIObject, OperationObject } from "openapi3-ts";
 import {
   RateLimitIds,
   getLimits,
   RateLimiterId,
   Window,
-} from "@monkeytype/contracts/rate-limit/index";
+} from "@typeai/contracts/rate-limit/index";
 import { formatDuration } from "date-fns";
 
 type SecurityRequirementObject = {
@@ -21,17 +21,17 @@ export function getOpenApi(): OpenAPIObject {
     {
       openapi: "3.1.0",
       info: {
-        title: "Monkeytype API",
+        title: "typeAI API",
         description:
-          "Documentation for the endpoints provided by the Monkeytype API server.\n\nNote that authentication is performed with the Authorization HTTP header in the format `Authorization: ApeKey YOUR_APE_KEY`\n\nThere is a rate limit of `30 requests per minute` across all endpoints with some endpoints being more strict. Rate limit rates are shared across all ape keys.",
+          "Documentation for the endpoints provided by the typeAI API server.\n\nNote that authentication is performed with the Authorization HTTP header in the format `Authorization: ApeKey YOUR_APE_KEY`\n\nThere is a rate limit of `30 requests per minute` across all endpoints with some endpoints being more strict. Rate limit rates are shared across all ape keys.",
         version: "2.0.0",
-        termsOfService: "https://monkeytype.com/terms-of-service",
+        termsOfService: "https://typeai.com/terms-of-service",
         contact: {
           name: "Support",
-          email: "support@monkeytype.com",
+          email: "support@typeai.com",
         },
         "x-logo": {
-          url: "https://monkeytype.com/images/mtfulllogo.png",
+          url: "https://typeai.com/images/mtfulllogo.png",
         },
         license: {
           name: "GPL-3.0",
@@ -40,7 +40,7 @@ export function getOpenApi(): OpenAPIObject {
       },
       servers: [
         {
-          url: "https://api.monkeytype.com",
+          url: "https://api.typeai.com",
           description: "Production server",
         },
       ],

@@ -1,14 +1,14 @@
-import { User, UserProfileDetails } from "@monkeytype/schemas/users";
+import { User, UserProfileDetails } from "@typeai/schemas/users";
 import { getDefaultConfig } from "./default-config";
-import { Mode } from "@monkeytype/schemas/shared";
-import { Result } from "@monkeytype/schemas/results";
-import { Difficulty, FunboxName } from "@monkeytype/schemas/configs";
+import { Mode } from "@typeai/schemas/shared";
+import { Result } from "@typeai/schemas/results";
+import { Difficulty, FunboxName } from "@typeai/schemas/configs";
 import {
   ModifiableTestActivityCalendar,
   TestActivityCalendar,
 } from "../elements/test-activity-calendar";
-import { Language } from "@monkeytype/schemas/languages";
-import { ConnectionStatus } from "@monkeytype/schemas/connections";
+import { Language } from "@typeai/schemas/languages";
+import { ConnectionStatus } from "@typeai/schemas/connections";
 
 export type SnapshotResult<M extends Mode> = Omit<
   Result<M>,

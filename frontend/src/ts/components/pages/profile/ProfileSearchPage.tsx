@@ -1,5 +1,5 @@
-import { UserNameWithoutFilterSchema } from "@monkeytype/schemas/users";
 import { createForm } from "@tanstack/solid-form";
+import { UserNameWithoutFilterSchema } from "@typeai/schemas/users";
 import { createEffect, createSignal, JSXElement, Show } from "solid-js";
 
 import { navigationEvent } from "../../../events/navigation";

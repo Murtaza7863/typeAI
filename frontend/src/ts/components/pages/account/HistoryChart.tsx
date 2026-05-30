@@ -1,5 +1,5 @@
-import { AccountChart } from "@monkeytype/schemas/configs";
-import { Mode } from "@monkeytype/schemas/shared";
+import { AccountChart } from "@typeai/schemas/configs";
+import { Mode } from "@typeai/schemas/shared";
 import { format as dateFormat } from "date-fns/format";
 import { createMemo, JSXElement, Show } from "solid-js";
 

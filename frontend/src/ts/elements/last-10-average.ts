@@ -1,5 +1,5 @@
 import * as Misc from "../utils/misc";
-import * as Numbers from "@monkeytype/util/numbers";
+import * as Numbers from "@typeai/util/numbers";
 import { Config } from "../config/store";
 import * as TestWords from "../test/test-words";
 import { getUserAverage10 } from "../collections/results";

@@ -1,6 +1,6 @@
 import { initContract } from "@ts-rest/core";
 import { z } from "zod";
-import { IdSchema } from "@monkeytype/schemas/util";
+import { IdSchema } from "@typeai/schemas/util";
 import {
   CommonResponses,
   meta,

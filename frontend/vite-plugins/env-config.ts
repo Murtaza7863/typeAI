@@ -40,7 +40,7 @@ export function envConfig(options: {
           isDevelopment: false,
           backendUrl: fallback(
             options.env["BACKEND_URL"],
-            "https://api.monkeytype.com",
+            "https://api.typeai.com",
           ),
           liteMode,
           recaptchaSiteKey: options.env["RECAPTCHA_SITE_KEY"] ?? "",

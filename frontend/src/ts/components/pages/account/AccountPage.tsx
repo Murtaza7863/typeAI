@@ -1,4 +1,4 @@
-import { Mode } from "@monkeytype/schemas/shared";
+import { Mode } from "@typeai/schemas/shared";
 import { createMemo, createSignal, JSXElement, Show } from "solid-js";
 
 import {
@@ -16,12 +16,12 @@ import { downloadResultsCSV } from "../../../utils/misc";
 import { Advertisement } from "../../common/Advertisement";
 import AsyncContent from "../../common/AsyncContent";
 import { Button } from "../../common/Button";
+import { TypingFeedbackPanel } from "../test/TypingFeedbackPanel";
 import { Charts } from "./Charts";
 import { Filters } from "./Filters";
 import { MyProfile } from "./MyProfile";
 import { Table } from "./Table";
 import { TestStats } from "./TestStats";
-import { TypingFeedbackPanel } from "../test/TypingFeedbackPanel";
 import { VerifyNotice } from "./VerifyNotice";
 
 export function AccountPage(): JSXElement {

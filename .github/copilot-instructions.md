@@ -1,4 +1,4 @@
-# Monkeytype AI Coding Instructions
+# typeAI AI Coding Instructions
 
 Make the responses extremely concise. Sacrifice grammar for the sake of concision.
 

@@ -1,5 +1,5 @@
 {
-  "installCommand": "pnpm install --filter @monkeytype/frontend... --ignore-scripts",
+  "installCommand": "pnpm install --filter @typeai/frontend... --ignore-scripts",
   "buildCommand": "pnpm build-fe",
   "outputDirectory": "frontend/dist",
   "functions": {

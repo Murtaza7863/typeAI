@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { canSetConfigWithCurrentFunboxes } from "../../../src/ts/config/funbox-validation";
 
-import { FunboxName } from "@monkeytype/schemas/configs";
+import { FunboxName } from "@typeai/schemas/configs";
 describe("funbox-validation", () => {
   describe("canSetConfigWithCurrentFunboxes", () => {
     const testCases = [

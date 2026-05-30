@@ -4,7 +4,7 @@ import { capitalizeFirstLetterOfEachWord } from "../../utils/strings";
 import * as ThemeController from "../../controllers/theme-controller";
 import { Command, CommandsSubgroup } from "../types";
 import { ThemesList, ThemeWithName } from "../../constants/themes";
-import { not } from "@monkeytype/util/predicates";
+import { not } from "@typeai/util/predicates";
 import { configEvent } from "../../events/config";
 import * as getErrorMessage from "../../utils/error";
 

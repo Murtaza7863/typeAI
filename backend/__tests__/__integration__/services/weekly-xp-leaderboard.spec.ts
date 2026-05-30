@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, afterEach } from "vitest";
 import * as WeeklyXpLeaderboard from "../../../src/services/weekly-xp-leaderboard";
-import { Configuration } from "@monkeytype/schemas/configuration";
+import { Configuration } from "@typeai/schemas/configuration";
 import { ObjectId } from "mongodb";
-import { RedisXpLeaderboardEntry } from "@monkeytype/schemas/leaderboards";
+import { RedisXpLeaderboardEntry } from "@typeai/schemas/leaderboards";
 import { cleanupKeys, redisSetup } from "../redis";
 
 const leaderboardsConfig: Configuration["leaderboards"]["weeklyXp"] = {

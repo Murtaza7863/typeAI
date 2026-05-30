@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { CustomThemeColors } from "@monkeytype/schemas/configs";
-import { PersonalBest, PersonalBests } from "@monkeytype/schemas/shared";
-import { MonkeyMail, ResultFilters } from "@monkeytype/schemas/users";
+import { CustomThemeColors } from "@typeai/schemas/configs";
+import { PersonalBest, PersonalBests } from "@typeai/schemas/shared";
+import { MonkeyMail, ResultFilters } from "@typeai/schemas/users";
 import { ObjectId } from "mongodb";
 import * as UserDAL from "../../../src/dal/user";
 import { createConnection as createFriend } from "../../__testData__/connections";

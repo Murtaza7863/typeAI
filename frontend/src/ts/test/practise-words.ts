@@ -7,8 +7,8 @@ import * as CustomText from "./custom-text";
 import * as TestInput from "./test-input";
 import { configEvent } from "../events/config";
 import { setCustomTextName } from "../legacy-states/custom-text-name";
-import { Mode } from "@monkeytype/schemas/shared";
-import { CustomTextSettings } from "@monkeytype/schemas/results";
+import { Mode } from "@typeai/schemas/shared";
+import { CustomTextSettings } from "@typeai/schemas/results";
 
 type Before = {
   mode: Mode | null;

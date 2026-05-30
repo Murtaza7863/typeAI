@@ -1,4 +1,4 @@
-import { ResultFilters } from "@monkeytype/schemas/users";
+import { ResultFilters } from "@typeai/schemas/users";
 import { queryCollectionOptions } from "@tanstack/query-db-collection";
 import {
   createCollection,

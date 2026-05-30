@@ -1,7 +1,7 @@
 import {
   GetTypingFeedbackQuery,
   GetTypingFeedbackResponse,
-} from "@monkeytype/contracts/users";
+} from "@typeai/contracts/users";
 import { MonkeyResponse } from "../../utils/monkey-response";
 import { MonkeyRequest } from "../types";
 import { getTypingFeedbackForUser } from "../../services/typing-feedback";

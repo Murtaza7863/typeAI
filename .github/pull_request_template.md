@@ -15,25 +15,25 @@
 ### Checks
 
 - [ ] Adding quotes?
-  - Make sure to follow the [quotes documentation](https://github.com/monkeytypegame/monkeytype/blob/master/docs/QUOTES.md)
+  - Make sure to follow the [quotes documentation](https://github.com/Murtaza7863/monkeytype-typing-coach/blob/master/docs/QUOTES.md)
   - [ ] Make sure to include translations for the quotes in the description (or another comment) so we can verify their content.
 - [ ] Adding a language?
-  - Make sure to follow the [languages documentation](https://github.com/monkeytypegame/monkeytype/blob/master/docs/LANGUAGES.md)
+  - Make sure to follow the [languages documentation](https://github.com/Murtaza7863/monkeytype-typing-coach/blob/master/docs/LANGUAGES.md)
   - [ ] Add language to `packages/schemas/src/languages.ts`
   - [ ] Add language to exactly one group in `frontend/src/ts/constants/languages.ts`
   - [ ] Add language json file to `frontend/static/languages`
 - [ ] Adding a theme?
-  - Make sure to follow the [themes documentation](https://github.com/monkeytypegame/monkeytype/blob/master/docs/THEMES.md)
+  - Make sure to follow the [themes documentation](https://github.com/Murtaza7863/monkeytype-typing-coach/blob/master/docs/THEMES.md)
   - [ ] Add theme to `packages/schemas/src/themes.ts`
   - [ ] Add theme to `frontend/src/ts/constants/themes.ts`
   - [ ] (optional) Add theme css file to `frontend/static/themes`
   - [ ] Add some screenshots of the theme, especially with different test settings (colorful, flip colors) to your pull request
 - [ ] Adding a layout?
-  - [ ] Make sure to follow the [layouts documentation](https://github.com/monkeytypegame/monkeytype/blob/master/docs/LAYOUTS.md)
+  - [ ] Make sure to follow the [layouts documentation](https://github.com/Murtaza7863/monkeytype-typing-coach/blob/master/docs/LAYOUTS.md)
   - [ ] Add layout to `packages/schemas/src/layouts.ts`
   - [ ] Add layout json file to `frontend/static/layouts`
 - [ ] Adding a font?
-  - Make sure to follow the [fonts documentation](https://github.com/monkeytypegame/monkeytype/blob/master/docs/FONTS.md)
+  - Make sure to follow the [fonts documentation](https://github.com/Murtaza7863/monkeytype-typing-coach/blob/master/docs/FONTS.md)
   - [ ] Add font file to `frontend/static/webfonts`
   - [ ] Add font to `packages/schemas/src/fonts.ts`
   - [ ] Add font to `frontend/src/ts/constants/fonts.ts`
@@ -50,6 +50,6 @@ Closes #
 <!-- The issue(s) your PR resolves if any (delete if that is not the case) -->
 <!-- Please reference any issues and/or PRs related to your pull request -->
 
-<!-- Pro tip: you can mention an issue, PR, or discussion on GitHub by referencing its hash number, e.g.: [#1234](https://github.com/monkeytypegame/monkeytype/pull/1234) -->
+<!-- Pro tip: you can mention an issue, PR, or discussion on GitHub by referencing its hash number, e.g.: [#1234](https://github.com/Murtaza7863/monkeytype-typing-coach/pull/1234) -->
 
 <!-- Pro tip: you can press . (dot or period) in the code tab of any GitHub repo to get access to GitHub's VS Code web editor. Enjoy! :) -->

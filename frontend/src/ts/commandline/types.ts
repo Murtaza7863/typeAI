@@ -1,4 +1,4 @@
-import { Config } from "@monkeytype/schemas/configs";
+import { Config } from "@typeai/schemas/configs";
 import AnimatedModal from "../utils/animated-modal";
 import { Validation } from "../types/validation";
 

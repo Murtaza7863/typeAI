@@ -19,7 +19,7 @@ import { googleSignUpEvent } from "../events/google-sign-up";
 import AnimatedModal from "../utils/animated-modal";
 import { resetIgnoreAuthCallback } from "../firebase";
 import { ValidatedHtmlInputElement } from "../elements/input-validation";
-import { UserNameSchema } from "@monkeytype/schemas/users";
+import { UserNameSchema } from "@typeai/schemas/users";
 import { remoteValidation } from "../utils/remote-validation";
 import { authEvent } from "../events/auth";
 

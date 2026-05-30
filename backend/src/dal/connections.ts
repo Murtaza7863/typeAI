@@ -1,6 +1,6 @@
 import { Collection, Document, Filter, ObjectId } from "mongodb";
 import * as db from "../init/db";
-import { Connection, ConnectionStatus } from "@monkeytype/schemas/connections";
+import { Connection, ConnectionStatus } from "@typeai/schemas/connections";
 import MonkeyError from "../utils/error";
 import { WithObjectId } from "../utils/misc";
 

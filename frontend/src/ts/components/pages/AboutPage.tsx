@@ -185,10 +185,10 @@ export function AboutPage(): JSXElement {
       <section>
         <H2 fa={{ icon: "fa-info-circle" }} text="about" />
         <p>
-          Monkeytype is a minimalistic and customizable typing test. It features
+          typeAI is a minimalistic and customizable typing test. It features
           many test modes, an account system to save your typing speed history,
           and user-configurable features such as themes, sounds, a smooth caret,
-          and more. Monkeytype attempts to emulate the experience of natural
+          and more. typeAI attempts to emulate the experience of natural
           keyboard typing during a typing test, by unobtrusively presenting the
           text prompts and displaying typed characters in-place, providing
           straightforward, real-time feedback on typos, speed, and accuracy.
@@ -303,19 +303,19 @@ export function AboutPage(): JSXElement {
           <Button
             text="twitter"
             fa={{ icon: "fa-twitter", variant: "brand" }}
-            href="https://x.com/monkeytype"
+            href="https://x.com/typeai"
             class="w-full p-8"
           />
           <Button
             text="discord"
             fa={{ icon: "fa-discord", variant: "brand" }}
-            href="https://discord.gg/monkeytype"
+            href="https://discord.gg/typeai"
             class="w-full p-8"
           />
           <Button
             text="github"
             fa={{ icon: "fa-github", variant: "brand" }}
-            href="https://github.com/monkeytypegame/monkeytype"
+            href="https://github.com/Murtaza7863/monkeytype-typing-coach"
             class="w-full p-8"
           />
         </div>
@@ -356,7 +356,7 @@ export function AboutPage(): JSXElement {
           <Button
             variant="text"
             text="Contributors"
-            href="https://github.com/monkeytypegame/monkeytype/graphs/contributors"
+            href="https://github.com/Murtaza7863/monkeytype-typing-coach/graphs/contributors"
             class="p-0 pt-2 pr-2 pb-2"
           />
           on GitHub that have helped with implementing various features, adding

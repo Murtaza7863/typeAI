@@ -1,8 +1,8 @@
+import { createColumnHelper } from "@tanstack/solid-table";
 import {
   LeaderboardEntry,
   XpLeaderboardEntry,
-} from "@monkeytype/schemas/leaderboards";
-import { createColumnHelper } from "@tanstack/solid-table";
+} from "@typeai/schemas/leaderboards";
 import { format as dateFormat } from "date-fns/format";
 import { formatDistanceToNow } from "date-fns/formatDistanceToNow";
 import { Accessor, createMemo, JSXElement, Show } from "solid-js";

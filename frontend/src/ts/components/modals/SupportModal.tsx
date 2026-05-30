@@ -12,11 +12,7 @@ export function SupportModal(): JSXElement {
   const iconScale = 2;
 
   return (
-    <AnimatedModal
-      id="Support"
-      title="Support Monkeytype"
-      modalClass="max-w-4xl"
-    >
+    <AnimatedModal id="Support" title="Support typeAI" modalClass="max-w-4xl">
       <div>
         Thank you so much for thinking about supporting this project. It would
         not be possible without you and your continued support.{" "}
@@ -39,7 +35,7 @@ export function SupportModal(): JSXElement {
         />
         <Button
           variant="button"
-          href="https://ko-fi.com/monkeytype"
+          href="https://ko-fi.com/typeai"
           fa={{
             icon: "fa-donate",
             fixedWidth: true,
@@ -50,7 +46,7 @@ export function SupportModal(): JSXElement {
         />
         <Button
           variant="button"
-          href="https://www.patreon.com/monkeytype"
+          href="https://www.patreon.com/typeai"
           fa={{
             variant: "brand",
             icon: "fa-patreon",
@@ -62,7 +58,7 @@ export function SupportModal(): JSXElement {
         />
         <Button
           variant="button"
-          href="https://monkeytype.store"
+          href="https://typeai.store"
           fa={{
             icon: "fa-tshirt",
             fixedWidth: true,

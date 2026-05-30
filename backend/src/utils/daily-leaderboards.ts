@@ -1,21 +1,18 @@
 import * as RedisClient from "../init/redis";
 import LaterQueue from "../queues/later-queue";
 import { matchesAPattern, kogascore, omit } from "./misc";
-import { parseWithSchema as parseJsonWithSchema } from "@monkeytype/util/json";
-import {
-  Configuration,
-  ValidModeRule,
-} from "@monkeytype/schemas/configuration";
+import { parseWithSchema as parseJsonWithSchema } from "@typeai/util/json";
+import { Configuration, ValidModeRule } from "@typeai/schemas/configuration";
 import {
   LeaderboardEntry,
   RedisDailyLeaderboardEntry,
   RedisDailyLeaderboardEntrySchema,
-} from "@monkeytype/schemas/leaderboards";
+} from "@typeai/schemas/leaderboards";
 import MonkeyError from "./error";
-import { Mode, Mode2 } from "@monkeytype/schemas/shared";
-import { getCurrentDayTimestamp } from "@monkeytype/util/date-and-time";
+import { Mode, Mode2 } from "@typeai/schemas/shared";
+import { getCurrentDayTimestamp } from "@typeai/util/date-and-time";
 
-const dailyLeaderboardNamespace = "monkeytype:dailyleaderboard";
+const dailyLeaderboardNamespace = "typeai:dailyleaderboard";
 const scoresNamespace = `${dailyLeaderboardNamespace}:scores`;
 const resultsNamespace = `${dailyLeaderboardNamespace}:results`;
 

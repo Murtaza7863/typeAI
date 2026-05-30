@@ -6,12 +6,12 @@ import { readFile } from "node:fs/promises";
 import * as db from "../init/db";
 import MonkeyError from "../utils/error";
 import { compareTwoStrings } from "string-similarity";
-import { ApproveQuote, Quote } from "@monkeytype/schemas/quotes";
+import { ApproveQuote, Quote } from "@typeai/schemas/quotes";
 import { WithObjectId } from "../utils/misc";
-import { parseWithSchema as parseJsonWithSchema } from "@monkeytype/util/json";
+import { parseWithSchema as parseJsonWithSchema } from "@typeai/util/json";
 import { z } from "zod";
-import { tryCatchSync } from "@monkeytype/util/trycatch";
-import { Language } from "@monkeytype/schemas/languages";
+import { tryCatchSync } from "@typeai/util/trycatch";
+import { Language } from "@typeai/schemas/languages";
 
 const JsonQuoteSchema = z.object({
   text: z.string(),
@@ -28,7 +28,7 @@ const QuoteDataSchema = z.object({
   groups: z.array(z.tuple([z.number(), z.number()])),
 });
 
-const PATH_TO_REPO = "../../../../monkeytype-new-quotes";
+const PATH_TO_REPO = "../../../../typeai-new-quotes";
 
 const { data: git, error } = tryCatchSync(() =>
   simpleGit(path.join(__dirname, PATH_TO_REPO)),

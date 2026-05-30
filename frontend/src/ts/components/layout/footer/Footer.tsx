@@ -50,7 +50,7 @@ export function Footer(): JSXElement {
               icon: "fa-code",
               fixedWidth: true,
             }}
-            href="https://github.com/monkeytypegame/monkeytype"
+            href="https://github.com/Murtaza7863/monkeytype-typing-coach"
           />
           <Button
             variant="text"
@@ -60,7 +60,7 @@ export function Footer(): JSXElement {
               variant: "brand",
               fixedWidth: true,
             }}
-            href="https://www.discord.gg/monkeytype"
+            href="https://www.discord.gg/typeai"
           />
           <Button
             variant="text"
@@ -70,7 +70,7 @@ export function Footer(): JSXElement {
               variant: "brand",
               fixedWidth: true,
             }}
-            href="https://x.com/monkeytype"
+            href="https://x.com/typeai"
           />
           <Button
             variant="text"

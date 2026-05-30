@@ -3,7 +3,7 @@
   "extends": [
     "../packages/oxlint-config/index.jsonc",
     "../packages/oxlint-config/plugin.jsonc"
-    // "@monkeytype/oxlint-config"
+    // "@typeai/oxlint-config"
   ],
   "jsPlugins": ["eslint-plugin-compat"],
   "rules": {

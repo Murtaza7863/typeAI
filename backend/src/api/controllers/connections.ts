@@ -5,7 +5,7 @@ import {
   GetConnectionsResponse,
   IdPathParams,
   UpdateConnectionRequest,
-} from "@monkeytype/contracts/connections";
+} from "@typeai/contracts/connections";
 import { MonkeyRequest } from "../types";
 import { MonkeyResponse } from "../../utils/monkey-response";
 import * as ConnectionsDal from "../../dal/connections";
@@ -13,7 +13,7 @@ import * as UserDal from "../../dal/user";
 import { replaceObjectId, omit } from "../../utils/misc";
 import MonkeyError from "../../utils/error";
 
-import { Connection } from "@monkeytype/schemas/connections";
+import { Connection } from "@typeai/schemas/connections";
 
 function convert(db: ConnectionsDal.DBConnection): Connection {
   return replaceObjectId(omit(db, ["key"]));

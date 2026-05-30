@@ -1,5 +1,5 @@
 {
-  "name": "@monkeytype/contracts",
+  "name": "@typeai/contracts",
   "private": true,
   "exports": {
     ".": {
@@ -23,11 +23,11 @@
     "lint-fast": "oxlint ."
   },
   "dependencies": {
-    "@monkeytype/schemas": "workspace:*"
+    "@typeai/schemas": "workspace:*"
   },
   "devDependencies": {
-    "@monkeytype/tsup-config": "workspace:*",
-    "@monkeytype/typescript-config": "workspace:*",
+    "@typeai/tsup-config": "workspace:*",
+    "@typeai/typescript-config": "workspace:*",
     "@types/node": "24.9.1",
     "madge": "8.0.0",
     "oxlint": "1.64.0",

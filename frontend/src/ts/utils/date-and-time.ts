@@ -1,4 +1,4 @@
-import { roundTo2 } from "@monkeytype/util/numbers";
+import { roundTo2 } from "@typeai/util/numbers";
 import { Day } from "date-fns";
 
 /**

@@ -1,4 +1,4 @@
-import { usersContract } from "@monkeytype/contracts/users";
+import { usersContract } from "@typeai/contracts/users";
 import { initServer } from "@ts-rest/express";
 import * as UserController from "../controllers/user";
 import * as TypingFeedbackController from "../controllers/typing-feedback";

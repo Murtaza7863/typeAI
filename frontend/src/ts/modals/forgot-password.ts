@@ -8,7 +8,7 @@ import {
 } from "../states/notifications";
 
 import { showLoaderBar, hideLoaderBar } from "../states/loader-bar";
-import { UserEmailSchema } from "@monkeytype/schemas/users";
+import { UserEmailSchema } from "@typeai/schemas/users";
 import { ElementWithUtils } from "../utils/dom";
 
 export function show(): void {

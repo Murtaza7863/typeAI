@@ -1,4 +1,4 @@
-import { Ads } from "@monkeytype/schemas/configs";
+import { Ads } from "@typeai/schemas/configs";
 import { JSXElement, Show } from "solid-js";
 
 import { getConfig } from "../../config/store";

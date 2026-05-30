@@ -1,4 +1,4 @@
-import { PageNumberSchema } from "@monkeytype/schemas/util";
+import { PageNumberSchema } from "@typeai/schemas/util";
 import { JSXElement, Setter, Show } from "solid-js";
 
 import { setPage } from "../../../states/leaderboard-selection";

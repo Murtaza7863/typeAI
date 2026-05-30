@@ -1,6 +1,6 @@
 import { createSignal } from "solid-js";
 import { createEvent } from "../hooks/createEvent";
-import { XpBreakdown } from "@monkeytype/schemas/results";
+import { XpBreakdown } from "@typeai/schemas/results";
 
 export type XpBarData = {
   addedXp: number;

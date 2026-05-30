@@ -9,7 +9,7 @@ import { getActivePage, getGlobalOffsetTop } from "./states/core";
 import { isDevEnvironment } from "./utils/env";
 import { isCustomTextLong } from "./legacy-states/custom-text-name";
 import { canQuickRestart } from "./utils/quick-restart";
-import { FontName } from "@monkeytype/schemas/fonts";
+import { FontName } from "@typeai/schemas/fonts";
 import { qs, qsr } from "./utils/dom";
 import { createEffect } from "solid-js";
 import fileStorage from "./utils/file-storage";

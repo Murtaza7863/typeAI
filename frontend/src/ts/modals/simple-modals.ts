@@ -29,13 +29,13 @@ import {
   TextInput,
 } from "../elements/simple-modal";
 
-import { GenerateDataRequest } from "@monkeytype/contracts/dev";
+import { GenerateDataRequest } from "@typeai/contracts/dev";
 import {
   CustomThemeNameSchema,
   PasswordSchema,
   UserEmailSchema,
   UserNameSchema,
-} from "@monkeytype/schemas/users";
+} from "@typeai/schemas/users";
 import FileStorage from "../utils/file-storage";
 import { z } from "zod";
 import { remoteValidation } from "../utils/remote-validation";
@@ -370,7 +370,7 @@ list.removePasswordAuth = new SimpleModal({
   inputs: [
     {
       type: "checkbox",
-      label: `I understand I will lose access to my Monkeytype account if my Google/GitHub account is lost or disabled.`,
+      label: `I understand I will lose access to my typeAI account if my Google/GitHub account is lost or disabled.`,
     },
   ],
   buttonText: "reauthenticate to remove",

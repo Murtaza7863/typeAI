@@ -4,7 +4,7 @@ import * as Strings from "../utils/strings";
 import * as Misc from "../utils/misc";
 import * as Arrays from "../utils/arrays";
 import * as JSONData from "../utils/json-data";
-import * as Numbers from "@monkeytype/util/numbers";
+import * as Numbers from "@typeai/util/numbers";
 import {
   showNoticeNotification,
   showErrorNotification,
@@ -48,11 +48,11 @@ import * as ConnectionState from "../legacy-states/connection";
 import { highlight } from "../events/keymap";
 import * as LazyModeState from "../legacy-states/remember-lazy-mode";
 import Format from "../singletons/format";
-import { Mode } from "@monkeytype/schemas/shared";
+import { Mode } from "@typeai/schemas/shared";
 import {
   CompletedEvent,
   CompletedEventCustomText,
-} from "@monkeytype/schemas/results";
+} from "@typeai/schemas/results";
 import {
   findSingleActiveFunboxWithFunction,
   getActiveFunboxes,
@@ -61,11 +61,11 @@ import {
   isFunboxActive,
   isFunboxActiveWithProperty,
 } from "./funbox/list";
-import { getFunbox } from "@monkeytype/funbox";
+import { getFunbox } from "@typeai/funbox";
 import * as CompositionState from "../legacy-states/composition";
 import { SnapshotResult } from "../constants/default-snapshot";
 import { WordGenError } from "../utils/word-gen-error";
-import { tryCatch } from "@monkeytype/util/trycatch";
+import { tryCatch } from "@typeai/util/trycatch";
 import * as Sentry from "../sentry";
 import { showLoaderBar, hideLoaderBar } from "../states/loader-bar";
 import * as TestInitFailed from "../elements/test-init-failed";
@@ -1218,13 +1218,11 @@ export async function finish(difficultyFailed = false): Promise<void> {
   );
 
   if (shouldSaveTypingFeedbackLocally) {
-    const { appendLocalTypingSession } = await import(
-      "../typing-feedback/local-history"
-    );
+    const { appendLocalTypingSession } =
+      await import("../typing-feedback/local-history");
     appendLocalTypingSession(completedEvent);
-    const { invalidateTypingFeedback } = await import(
-      "../queries/typing-feedback"
-    );
+    const { invalidateTypingFeedback } =
+      await import("../queries/typing-feedback");
     invalidateTypingFeedback();
   }
 

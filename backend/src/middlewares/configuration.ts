@@ -1,12 +1,12 @@
 import type { Response, NextFunction } from "express";
 import { TsRestRequestHandler } from "@ts-rest/express";
-import { EndpointMetadata } from "@monkeytype/contracts/util/api";
+import { EndpointMetadata } from "@typeai/contracts/util/api";
 import MonkeyError from "../utils/error";
-import { Configuration } from "@monkeytype/schemas/configuration";
+import { Configuration } from "@typeai/schemas/configuration";
 import {
   ConfigurationPath,
   RequireConfiguration,
-} from "@monkeytype/contracts/require-configuration/index";
+} from "@typeai/contracts/require-configuration/index";
 import { getMetadata } from "./utility";
 import { TsRestRequestWithContext } from "../api/types";
 import { AppRoute, AppRouter } from "@ts-rest/core";

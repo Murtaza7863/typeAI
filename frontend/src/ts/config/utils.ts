@@ -3,10 +3,10 @@ import type {
   ConfigValue,
   PartialConfig,
   FunboxName,
-} from "@monkeytype/schemas/configs";
+} from "@typeai/schemas/configs";
 import { typedKeys } from "../utils/misc";
 import { sanitize } from "../utils/sanitize";
-import * as ConfigSchemas from "@monkeytype/schemas/configs";
+import * as ConfigSchemas from "@typeai/schemas/configs";
 import { getDefaultConfig } from "../constants/default-config";
 import { Config } from "./store";
 /**

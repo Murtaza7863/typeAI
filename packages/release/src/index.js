@@ -173,11 +173,11 @@ const buildProject = () => {
 
   if (isFrontend && !isBackend) {
     runProjectRootCommand(
-      "NODE_ENV=production SENTRY=1 npx turbo lint test check-assets build --filter @monkeytype/frontend --force",
+      "NODE_ENV=production SENTRY=1 npx turbo lint test check-assets build --filter @typeai/frontend --force",
     );
   } else if (isBackend && !isFrontend) {
     runProjectRootCommand(
-      "NODE_ENV=production SENTRY=1 npx turbo lint test build --filter @monkeytype/backend --force",
+      "NODE_ENV=production SENTRY=1 npx turbo lint test build --filter @typeai/backend --force",
     );
   } else {
     runProjectRootCommand(
@@ -258,8 +258,8 @@ const createGithubRelease = async (version, changelogContent) => {
   } else {
     const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
     const { owner, repo } = {
-      owner: "monkeytypegame",
-      repo: "monkeytype",
+      owner: "typeaigame",
+      repo: "typeai",
     };
     await octokit.repos.createRelease({
       owner,
@@ -276,7 +276,7 @@ const main = async () => {
     console.log(`Starting frontend preview deployment process...`);
     installDependencies();
     runProjectRootCommand(
-      "NODE_ENV=production npx turbo lint test check-assets build --filter @monkeytype/frontend --force",
+      "NODE_ENV=production npx turbo lint test check-assets build --filter @typeai/frontend --force",
     );
 
     const name = readlineSync.question(

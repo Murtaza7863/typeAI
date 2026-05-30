@@ -2,8 +2,8 @@ import {
   TypingFeedback,
   TypingFeedbackMistake,
   TypingSessionInput,
-} from "@monkeytype/schemas/typing-feedback";
-import { ChartData } from "@monkeytype/schemas/results";
+} from "@typeai/schemas/typing-feedback";
+import { ChartData } from "@typeai/schemas/results";
 
 const MIN_TESTS = 3;
 const MAX_RESULTS = 50;

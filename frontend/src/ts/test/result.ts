@@ -22,7 +22,7 @@ import * as SlowTimer from "../legacy-states/slow-timer";
 import * as DateTime from "../utils/date-and-time";
 import * as Misc from "../utils/misc";
 import * as Strings from "../utils/strings";
-import * as Numbers from "@monkeytype/util/numbers";
+import * as Numbers from "@typeai/util/numbers";
 import * as Arrays from "../utils/arrays";
 import { get as getTypingSpeedUnit } from "../utils/typing-speed-units";
 import * as PbCrown from "./pb-crown";
@@ -42,16 +42,16 @@ import type {
   LabelPosition,
 } from "chartjs-plugin-annotation";
 import Ape from "../ape";
-import { CompletedEvent } from "@monkeytype/schemas/results";
+import { CompletedEvent } from "@typeai/schemas/results";
 import { getActiveFunboxes, isFunboxActiveWithProperty } from "./funbox/list";
-import { getFunbox } from "@monkeytype/funbox";
+import { getFunbox } from "@typeai/funbox";
 import {
   getLocalTagPB,
   saveLocalTagPB,
   type TagItem,
   __nonReactive,
 } from "../collections/tags";
-import { Language } from "@monkeytype/schemas/languages";
+import { Language } from "@typeai/schemas/languages";
 import { canQuickRestart as canQuickRestartFn } from "../utils/quick-restart";
 import { LocalStorageWithSchema } from "../utils/local-storage-with-schema";
 import { z } from "zod";

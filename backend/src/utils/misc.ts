@@ -1,5 +1,5 @@
-import { MILLISECONDS_IN_DAY } from "@monkeytype/util/date-and-time";
-import { roundTo2 } from "@monkeytype/util/numbers";
+import { MILLISECONDS_IN_DAY } from "@typeai/util/date-and-time";
+import { roundTo2 } from "@typeai/util/numbers";
 import uaparser from "ua-parser-js";
 import { MonkeyRequest } from "../api/types";
 import { ObjectId } from "mongodb";
@@ -195,7 +195,7 @@ export function isDevEnvironment(): boolean {
 export function getFrontendUrl(): string {
   return isDevEnvironment()
     ? "http://localhost:3000"
-    : (process.env["FRONTEND_URL"] ?? "https://monkeytype.com");
+    : (process.env["FRONTEND_URL"] ?? "https://typeai.com");
 }
 
 /**

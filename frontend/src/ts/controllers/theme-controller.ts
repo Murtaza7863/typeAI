@@ -8,7 +8,7 @@ import { configEvent } from "../events/config";
 import * as DB from "../db";
 import { showNoticeNotification } from "../states/notifications";
 import { debounce } from "throttle-debounce";
-import { CustomThemeColors, ThemeName } from "@monkeytype/schemas/configs";
+import { CustomThemeColors, ThemeName } from "@typeai/schemas/configs";
 import { Theme, themes, ThemesList } from "../constants/themes";
 import fileStorage from "../utils/file-storage";
 import { qs } from "../utils/dom";

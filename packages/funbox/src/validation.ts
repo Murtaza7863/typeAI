@@ -1,8 +1,8 @@
-import { intersect } from "@monkeytype/util/arrays";
+import { intersect } from "@typeai/util/arrays";
 import { FunboxForcedConfig, FunboxMetadata } from "./types";
 import { getFunbox } from "./list";
-import { ConfigValue, FunboxName } from "@monkeytype/schemas/configs";
-import { safeNumber } from "@monkeytype/util/numbers";
+import { ConfigValue, FunboxName } from "@typeai/schemas/configs";
+import { safeNumber } from "@typeai/util/numbers";
 
 export function checkForcedConfig(
   key: string,

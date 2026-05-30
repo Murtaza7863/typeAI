@@ -1,6 +1,6 @@
-import { Mode, PersonalBest, PersonalBests } from "@monkeytype/schemas/shared";
-import { Result as ResultType } from "@monkeytype/schemas/results";
-import { getFunbox } from "@monkeytype/funbox";
+import { Mode, PersonalBest, PersonalBests } from "@typeai/schemas/shared";
+import { Result as ResultType } from "@typeai/schemas/results";
+import { getFunbox } from "@typeai/funbox";
 
 export type LbPersonalBests = {
   time: Record<number, Record<string, PersonalBest>>;

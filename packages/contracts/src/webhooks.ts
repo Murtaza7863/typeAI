@@ -1,6 +1,6 @@
 import { initContract } from "@ts-rest/core";
 import { z } from "zod";
-import { PSASchema } from "@monkeytype/schemas/psas";
+import { PSASchema } from "@typeai/schemas/psas";
 
 import {
   CommonResponses,

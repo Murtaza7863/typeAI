@@ -9,8 +9,8 @@ export function ContactModal(): JSXElement {
   return (
     <AnimatedModal id="Contact" modalClass="max-w-4xl" title="Contact">
       <div>
-        Feel free to send an email to contact@monkeytype.com. For business
-        inquiries, email jack@monkeytype.com (the buttons below will open the
+        Feel free to send an email to contact@typeai.com. For business
+        inquiries, email jack@typeai.com (the buttons below will open the
         default mail client).
         <br />
         <br />
@@ -21,7 +21,7 @@ export function ContactModal(): JSXElement {
       <div class="mt-4 grid gap-4 md:grid-cols-2">
         <Button
           variant="button"
-          href="mailto:contact@monkeytype.com?subject=[Question] "
+          href="mailto:contact@typeai.com?subject=[Question] "
           text="Question"
           class={buttonClass}
           fa={{
@@ -31,7 +31,7 @@ export function ContactModal(): JSXElement {
         />
         <Button
           variant="button"
-          href="mailto:contact@monkeytype.com?subject=[Feedback] "
+          href="mailto:contact@typeai.com?subject=[Feedback] "
           fa={{
             icon: "fa-comment-dots",
             fixedWidth: true,
@@ -41,7 +41,7 @@ export function ContactModal(): JSXElement {
         />
         <Button
           variant="button"
-          href="mailto:support@monkeytype.com?subject=[Bug] "
+          href="mailto:support@typeai.com?subject=[Bug] "
           fa={{
             icon: "fa-bug",
             fixedWidth: true,
@@ -51,7 +51,7 @@ export function ContactModal(): JSXElement {
         />
         <Button
           variant="button"
-          href="mailto:support@monkeytype.com?subject=[Account] "
+          href="mailto:support@typeai.com?subject=[Account] "
           fa={{
             icon: "fa-user-circle",
             fixedWidth: true,
@@ -61,7 +61,7 @@ export function ContactModal(): JSXElement {
         />
         <Button
           variant="button"
-          href="mailto:jack@monkeytype.com?subject=[Business] "
+          href="mailto:jack@typeai.com?subject=[Business] "
           fa={{
             icon: "fa-briefcase",
             fixedWidth: true,
@@ -71,7 +71,7 @@ export function ContactModal(): JSXElement {
         />
         <Button
           variant="button"
-          href="mailto:contact@monkeytype.com?subject=[Other] "
+          href="mailto:contact@typeai.com?subject=[Other] "
           fa={{
             icon: "fa-ellipsis-h",
             fixedWidth: true,
