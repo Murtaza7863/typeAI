@@ -1,8 +1,8 @@
 /* Fallback theme variables for Storybook (serika_dark) */
 :root {
-  --bg-color: #323437;
-  --main-color: #e2b714;
-  --caret-color: #e2b714;
+  --bg-color: #1a2b2b;
+  --main-color: #2dd4bf;
+  --caret-color: #2dd4bf;
   --sub-color: #646669;
   --sub-alt-color: #2c2e31;
   --text-color: #d1d0c5;
