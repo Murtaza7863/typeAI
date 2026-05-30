@@ -30,7 +30,7 @@
     "@typeai/util": "workspace:*",
     "bcrypt": "5.1.1",
     "bullmq": "1.91.1",
-    "chalk": "4.1.2",
+    "chalk": "5.6.2",
     "cors": "2.8.5",
     "cron": "2.3.0",
     "date-fns": "3.6.0",
