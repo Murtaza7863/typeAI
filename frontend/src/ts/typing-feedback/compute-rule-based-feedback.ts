@@ -4,7 +4,11 @@ import {
   TypingSessionInput,
 } from "@typeai/schemas/typing-feedback";
 import { ChartData } from "@typeai/schemas/results";
-import { mistakesFromProfile, profileInsightSummary } from "./mistake-insights";
+import {
+  mistakesFromProfile,
+  profileInsightSummary,
+  recoveryStrengthsFromProfile,
+} from "./mistake-insights";
 import {
   getMistakeProfile,
   profileHasDrillData,
@@ -231,6 +235,8 @@ function buildRuleBasedFeedback(
     bigrams: summary.sessionBigrams,
     missedWords: summary.sessionMissedWords,
     weakLetterScores: {},
+    cleanStreaks: {},
+    recovered: [],
     testsRecorded: 0,
     updatedAt: 0,
   };
@@ -291,6 +297,12 @@ function buildRuleBasedFeedback(
     );
   }
 
+  for (const line of recoveryStrengthsFromProfile()) {
+    if (!strengths.includes(line)) {
+      strengths.push(line);
+    }
+  }
+
   if (mistakes.length === 0) {
     practiceTips.push(
       "No major patterns flagged—try pushing WPM by 5% while keeping accuracy above 95%.",
@@ -325,7 +337,7 @@ function buildRuleBasedFeedback(
     generatedAt: Date.now(),
     summary: summaryParts.join(" "),
     frequentMistakes: mistakes.slice(0, 6),
-    strengths: strengths.slice(0, 4),
+    strengths: strengths.slice(0, 6),
     practiceTips: practiceTips.slice(0, 4),
     poweredByAi: false,
     source: "local",

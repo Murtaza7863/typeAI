@@ -1,5 +1,8 @@
 import {
+  activeTopEntries,
   getMistakeProfile,
+  getRecentRecoveries,
+  getRecoveryProgressSummary,
   topEntries,
   type MistakeProfile,
 } from "./mistake-profile";
@@ -17,7 +20,7 @@ export function mistakesFromProfile(
 ): TypingFeedbackMistake[] {
   const out: TypingFeedbackMistake[] = [];
 
-  const letters = topEntries(profile.wrongLetters, 5);
+  const letters = activeTopEntries(profile.wrongLetters, "letter", 5);
   if (letters.length > 0) {
     out.push({
       issue: "Letters you miss most often",
@@ -26,7 +29,7 @@ export function mistakesFromProfile(
     });
   }
 
-  const bigrams = topEntries(profile.bigrams, 5);
+  const bigrams = activeTopEntries(profile.bigrams, "bigram", 5);
   if (bigrams.length > 0) {
     const combos = bigrams.map((b) => `"${b.key}"`).join(", ");
     out.push({
@@ -36,7 +39,7 @@ export function mistakesFromProfile(
     });
   }
 
-  const swaps = topEntries(profile.typedInstead, 4);
+  const swaps = activeTopEntries(profile.typedInstead, "swap", 4);
   if (swaps.length > 0) {
     out.push({
       issue: "Common wrong-key substitutions",
@@ -45,7 +48,7 @@ export function mistakesFromProfile(
     });
   }
 
-  const words = topEntries(profile.missedWords, 5);
+  const words = activeTopEntries(profile.missedWords, "word", 5);
   if (words.length > 0) {
     out.push({
       issue: "Words you stumble on repeatedly",
@@ -66,15 +69,50 @@ export function mistakesFromProfile(
   return out;
 }
 
+export function recoveryStrengthsFromProfile(): string[] {
+  const strengths: string[] = [];
+  const summary = getRecoveryProgressSummary();
+  if (summary !== null && summary.length > 0) strengths.push(summary);
+
+  const recent = getRecentRecoveries(5);
+  const inProgress = Object.entries(getMistakeProfile().cleanStreaks).filter(
+    ([, streak]) => streak === 1,
+  );
+  if (inProgress.length > 0) {
+    const keys = inProgress
+      .slice(0, 3)
+      .map(([sk]) => sk.split(":")[1] ?? sk)
+      .join(", ");
+    strengths.push(
+      `Almost there: clean streak building on ${keys}—one more accurate test may clear them from your weak list.`,
+    );
+  }
+
+  if (recent.length > 0 && strengths.length === 0) {
+    strengths.push(
+      `${recent.length} weakness${recent.length === 1 ? "" : "es"} faded after consistent clean tests—keep it up.`,
+    );
+  }
+
+  return strengths;
+}
+
 export function profileInsightSummary(profile = getMistakeProfile()): string {
   if (profile.testsRecorded === 0) return "";
   const parts: string[] = [];
-  const letters = topEntries(profile.wrongLetters, 1)[0];
-  const bigrams = topEntries(profile.bigrams, 1)[0];
-  const words = topEntries(profile.missedWords, 1)[0];
+  const letters = activeTopEntries(profile.wrongLetters, "letter", 1)[0];
+  const bigrams = activeTopEntries(profile.bigrams, "bigram", 1)[0];
+  const words = activeTopEntries(profile.missedWords, "word", 1)[0];
   if (letters) parts.push(`letter "${letters.key}"`);
   if (bigrams) parts.push(`combo "${bigrams.key}"`);
   if (words) parts.push(`word "${words.key}"`);
+  const recovery = getRecoveryProgressSummary();
+  if (parts.length === 0 && recovery !== null && recovery.length > 0) {
+    return recovery;
+  }
   if (parts.length === 0) return "";
-  return `Tracked across ${profile.testsRecorded} tests — weakest spots: ${parts.join(", ")}.`;
+  const base = `Tracked across ${profile.testsRecorded} tests — focus: ${parts.join(", ")}.`;
+  return recovery !== null && recovery.length > 0
+    ? `${base} ${recovery}`
+    : base;
 }
