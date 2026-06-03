@@ -6,13 +6,18 @@ import {
   invalidateTypingFeedback,
 } from "../../../queries/typing-feedback";
 import { isAuthenticated } from "../../../states/core";
+import { showNoticeNotification } from "../../../states/notifications";
 import { getResultVisible } from "../../../states/test";
+import * as TestLogic from "../../../test/test-logic";
 import {
   clearLocalTypingHistory,
   getLocalTypingHistoryVersion,
   getLocalTypingSessionCount,
 } from "../../../typing-feedback/local-history";
-import { showNoticeNotification } from "../../../states/notifications";
+import {
+  clearMistakeProfile,
+  profileHasDrillData,
+} from "../../../typing-feedback/mistake-profile";
 import { cn } from "../../../utils/cn";
 import AsyncContent from "../../common/AsyncContent";
 import { Button } from "../../common/Button";
@@ -44,6 +49,7 @@ export function TypingFeedbackPanel(props: {
 
   const resetLocalHistory = (): void => {
     clearLocalTypingHistory();
+    clearMistakeProfile();
     invalidateTypingFeedback();
     void query.refetch();
     showNoticeNotification("Coach history cleared on this device.", {
@@ -54,7 +60,7 @@ export function TypingFeedbackPanel(props: {
   return (
     <div
       class={cn(
-        "rounded-lg border border-sub/30 bg-bg-2 text-text",
+        "bg-bg-2 rounded-lg border border-sub/30 text-text",
         variant() === "result" ? "mx-auto mt-6 max-w-240 p-6" : "p-6",
       )}
     >
@@ -88,6 +94,15 @@ export function TypingFeedbackPanel(props: {
               onClick={() => {
                 invalidateTypingFeedback();
                 void query.refetch();
+              }}
+            />
+          </Show>
+          <Show when={variant() === "result" && profileHasDrillData()}>
+            <Button
+              variant="text"
+              text="Drill weak spots"
+              onClick={() => {
+                TestLogic.restart({ adaptiveNext: true });
               }}
             />
           </Show>
@@ -134,7 +149,9 @@ export function TypingFeedbackPanel(props: {
                         {(mistake) => (
                           <li class="rounded-md bg-bg p-4">
                             <div class="mb-1 font-medium">{mistake.issue}</div>
-                            <p class="mb-2 text-sm text-sub">{mistake.evidence}</p>
+                            <p class="mb-2 text-sm text-sub">
+                              {mistake.evidence}
+                            </p>
                             <p class="text-sm">
                               <span class="text-sub">Fix: </span>
                               {mistake.fix}

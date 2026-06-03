@@ -72,3 +72,14 @@ export function getWord(wordset: Wordset): string {
   }
   return randomWord;
 }
+
+/** Snapshot weak-letter timing scores for persistence (higher = more hesitation). */
+export function getWeakLetterScores(): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [char, entry] of Object.entries(scores)) {
+    if (entry.count > 0) {
+      out[char] = Math.round(entry.average);
+    }
+  }
+  return out;
+}

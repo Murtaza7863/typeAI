@@ -19,6 +19,15 @@ export const TypingSessionInputSchema = z.object({
     .optional(),
   keySpacingStats: KeyStatsSchema.optional(),
   keyDurationStats: KeyStatsSchema.optional(),
+  topWrongLetters: z
+    .array(z.object({ key: z.string(), count: z.number().int().positive() }))
+    .optional(),
+  topBigrams: z
+    .array(z.object({ key: z.string(), count: z.number().int().positive() }))
+    .optional(),
+  topMissedWords: z
+    .array(z.object({ key: z.string(), count: z.number().int().positive() }))
+    .optional(),
 });
 export type TypingSessionInput = z.infer<typeof TypingSessionInputSchema>;
 

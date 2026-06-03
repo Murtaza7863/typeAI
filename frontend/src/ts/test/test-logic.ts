@@ -14,6 +14,7 @@ import * as CustomText from "./custom-text";
 import * as CustomTextState from "../legacy-states/custom-text-name";
 import * as TestStats from "./test-stats";
 import * as PractiseWords from "./practise-words";
+import * as AdaptiveTest from "../typing-feedback/adaptive-test";
 import * as ShiftTracker from "./shift-tracker";
 import * as AltTracker from "./alt-tracker";
 import * as Funbox from "./funbox/funbox";
@@ -176,6 +177,7 @@ type RestartOptions = {
   nosave?: boolean;
   event?: KeyboardEvent;
   practiseMissed?: boolean;
+  adaptiveNext?: boolean;
   noAnim?: boolean;
   isQuickRestart?: boolean;
 };
@@ -184,6 +186,7 @@ export function restart(options = {} as RestartOptions): void {
   const defaultOptions = {
     withSameWordset: false,
     practiseMissed: false,
+    adaptiveNext: false,
     noAnim: false,
     nosave: false,
     isQuickRestart: false,
@@ -191,6 +194,14 @@ export function restart(options = {} as RestartOptions): void {
 
   options = { ...defaultOptions, ...options };
   Strings.clearWordDirectionCache();
+
+  if (options.adaptiveNext) {
+    const applied = AdaptiveTest.applyAdaptiveTest();
+    if (!applied) {
+      options.event?.preventDefault();
+      return;
+    }
+  }
 
   const animationTime = options.noAnim ? 0 : Misc.applyReducedMotion(125);
 
@@ -271,16 +282,21 @@ export function restart(options = {} as RestartOptions): void {
   }
 
   if (
-    PractiseWords.before.mode !== null &&
+    (PractiseWords.before.mode !== null || AdaptiveTest.before.mode !== null) &&
     !options.withSameWordset &&
-    !options.practiseMissed
+    !options.practiseMissed &&
+    !options.adaptiveNext
   ) {
     showNoticeNotification("Reverting to previous settings.");
     if (PractiseWords.before.punctuation !== null) {
       setConfig("punctuation", PractiseWords.before.punctuation);
+    } else if (AdaptiveTest.before.punctuation !== null) {
+      setConfig("punctuation", AdaptiveTest.before.punctuation);
     }
     if (PractiseWords.before.numbers !== null) {
       setConfig("numbers", PractiseWords.before.numbers);
+    } else if (AdaptiveTest.before.numbers !== null) {
+      setConfig("numbers", AdaptiveTest.before.numbers);
     }
 
     if (PractiseWords.before.customText) {
@@ -290,10 +306,19 @@ export function restart(options = {} as RestartOptions): void {
       CustomText.setPipeDelimiter(
         PractiseWords.before.customText.pipeDelimiter,
       );
+    } else if (AdaptiveTest.before.customText) {
+      CustomText.setText(AdaptiveTest.before.customText.text);
+      CustomText.setLimitMode(AdaptiveTest.before.customText.limit.mode);
+      CustomText.setLimitValue(AdaptiveTest.before.customText.limit.value);
+      CustomText.setPipeDelimiter(AdaptiveTest.before.customText.pipeDelimiter);
     }
 
-    setConfig("mode", PractiseWords.before.mode);
+    const priorMode = PractiseWords.before.mode ?? AdaptiveTest.before.mode;
+    if (priorMode !== null) {
+      setConfig("mode", priorMode);
+    }
     PractiseWords.resetBefore();
+    AdaptiveTest.resetAdaptiveBefore();
   }
 
   TestTimer.clear();
@@ -1217,6 +1242,16 @@ export async function finish(difficultyFailed = false): Promise<void> {
     dontSave,
   );
 
+  const {
+    mergeMissedWordsFromInput,
+    getSessionMistakeSnapshot,
+    resetSessionMistakes,
+  } = await import("../typing-feedback/session-mistakes");
+  const { recordSessionToProfile } =
+    await import("../typing-feedback/mistake-profile");
+  const { getWeakLetterScores } = await import("./weak-spot");
+  mergeMissedWordsFromInput(TestInput.missedWords);
+
   if (shouldSaveTypingFeedbackLocally) {
     const { appendLocalTypingSession } =
       await import("../typing-feedback/local-history");
@@ -1225,6 +1260,9 @@ export async function finish(difficultyFailed = false): Promise<void> {
       await import("../queries/typing-feedback");
     invalidateTypingFeedback();
   }
+
+  recordSessionToProfile(getSessionMistakeSnapshot(), getWeakLetterScores());
+  resetSessionMistakes();
 
   await Promise.all([savingResultPromise, resultUpdatePromise]);
 }

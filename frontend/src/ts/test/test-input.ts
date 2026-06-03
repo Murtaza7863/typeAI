@@ -3,6 +3,7 @@ import { mean, roundTo2 } from "@typeai/util/numbers";
 import * as TestState from "./test-state";
 import { Config } from "../config/store";
 import { getInputElementValue } from "../input/input-element";
+import { resetSessionMistakes } from "../typing-feedback/session-mistakes";
 
 const keysToTrack = new Set([
   "NumpadMultiply",
@@ -553,5 +554,6 @@ export function restart(): void {
     incorrect: 0,
   };
 
+  resetSessionMistakes();
   resetKeypressTimings();
 }

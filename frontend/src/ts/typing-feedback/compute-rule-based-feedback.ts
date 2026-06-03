@@ -4,6 +4,12 @@ import {
   TypingSessionInput,
 } from "@typeai/schemas/typing-feedback";
 import { ChartData } from "@typeai/schemas/results";
+import { mistakesFromProfile, profileInsightSummary } from "./mistake-insights";
+import {
+  getMistakeProfile,
+  profileHasDrillData,
+  type MistakeProfile,
+} from "./mistake-profile";
 
 const MIN_TESTS = 3;
 const MAX_RESULTS = 50;
@@ -24,6 +30,9 @@ type TypingFeedbackSummary = {
   weakestModes: { label: string; avgAcc: number; count: number }[];
   weakestLanguages: { label: string; avgAcc: number; count: number }[];
   recentWpmTrend: "improving" | "declining" | "stable";
+  sessionWrongLetters: Record<string, number>;
+  sessionBigrams: Record<string, number>;
+  sessionMissedWords: Record<string, number>;
 };
 
 function round(n: number, digits = 1): number {
@@ -67,6 +76,9 @@ function buildSummary(sessions: TypingSessionInput[]): TypingFeedbackSummary {
   let incompleteCount = 0;
   const keySpacingSds: number[] = [];
   const keyDurationSds: number[] = [];
+  const sessionLetters = new Map<string, number>();
+  const sessionBigrams = new Map<string, number>();
+  const sessionWords = new Map<string, number>();
 
   const modeAcc = new Map<string, { sum: number; count: number }>();
   const languageAcc = new Map<string, { sum: number; count: number }>();
@@ -108,6 +120,15 @@ function buildSummary(sessions: TypingSessionInput[]): TypingFeedbackSummary {
     }
     if (r.keyDurationStats?.sd !== undefined) {
       keyDurationSds.push(r.keyDurationStats.sd);
+    }
+    for (const e of r.topWrongLetters ?? []) {
+      sessionLetters.set(e.key, (sessionLetters.get(e.key) ?? 0) + e.count);
+    }
+    for (const e of r.topBigrams ?? []) {
+      sessionBigrams.set(e.key, (sessionBigrams.get(e.key) ?? 0) + e.count);
+    }
+    for (const e of r.topMissedWords ?? []) {
+      sessionWords.set(e.key, (sessionWords.get(e.key) ?? 0) + e.count);
     }
   }
 
@@ -158,6 +179,9 @@ function buildSummary(sessions: TypingSessionInput[]): TypingFeedbackSummary {
     weakestModes,
     weakestLanguages,
     recentWpmTrend,
+    sessionWrongLetters: Object.fromEntries(sessionLetters),
+    sessionBigrams: Object.fromEntries(sessionBigrams),
+    sessionMissedWords: Object.fromEntries(sessionWords),
   };
 }
 
@@ -192,12 +216,37 @@ function buildRuleBasedFeedback(
     });
   }
 
-  if (summary.incompleteTestRate > 0.15) {
+  if (summary.incompleteTestRate > 0.15 && mistakes.length < 2) {
     mistakes.push({
       issue: "Frequent restarts or abandoned tests",
       evidence: `${round(summary.incompleteTestRate * 100)}% of recent tests had incomplete attempts.`,
-      fix: "Finish tests even when a run feels bad—completed data helps you learn. Restart only after the result saves.",
+      fix: "Finish tests even when a run feels bad—completed data helps the coach spot real typing patterns. Restart only after the result saves.",
     });
+  }
+
+  const profileMistakes = mistakesFromProfile(getMistakeProfile());
+  const sessionOnlyProfile: MistakeProfile = {
+    wrongLetters: summary.sessionWrongLetters,
+    typedInstead: {},
+    bigrams: summary.sessionBigrams,
+    missedWords: summary.sessionMissedWords,
+    weakLetterScores: {},
+    testsRecorded: 0,
+    updatedAt: 0,
+  };
+  const hasSessionMistakes =
+    Object.keys(summary.sessionWrongLetters).length > 0 ||
+    Object.keys(summary.sessionBigrams).length > 0;
+  const sessionMistakes = hasSessionMistakes
+    ? mistakesFromProfile(sessionOnlyProfile)
+    : [];
+
+  const seenIssues = new Set(mistakes.map((m) => m.issue));
+  for (const pm of [...profileMistakes, ...sessionMistakes]) {
+    if (!seenIssues.has(pm.issue)) {
+      mistakes.push(pm);
+      seenIssues.add(pm.issue);
+    }
   }
 
   for (const mode of summary.weakestModes) {
@@ -250,6 +299,11 @@ function buildRuleBasedFeedback(
     practiceTips.push(
       "Pick one mistake pattern and drill it for a single session before moving to the next.",
     );
+    if (profileHasDrillData()) {
+      practiceTips.push(
+        "Use “Next test” on the result screen or “Drill weak spots” below—the next round will focus on your tracked errors.",
+      );
+    }
   }
 
   if (summary.recentWpmTrend === "declining") {
@@ -258,13 +312,19 @@ function buildRuleBasedFeedback(
     );
   }
 
+  const profileLine = profileInsightSummary();
+  const summaryParts = [
+    `Based on ${summary.testsAnalyzed} tests: ${summary.avgWpm} WPM average, ${summary.avgAcc}% accuracy, ${summary.avgConsistency}% consistency.`,
+    profileLine,
+  ].filter(Boolean);
+
   return {
     ready: true,
     testsAnalyzed: summary.testsAnalyzed,
     minTestsRequired: MIN_TESTS,
     generatedAt: Date.now(),
-    summary: `Based on ${summary.testsAnalyzed} tests: ${summary.avgWpm} WPM average, ${summary.avgAcc}% accuracy, ${summary.avgConsistency}% consistency.`,
-    frequentMistakes: mistakes.slice(0, 5),
+    summary: summaryParts.join(" "),
+    frequentMistakes: mistakes.slice(0, 6),
     strengths: strengths.slice(0, 4),
     practiceTips: practiceTips.slice(0, 4),
     poweredByAi: false,

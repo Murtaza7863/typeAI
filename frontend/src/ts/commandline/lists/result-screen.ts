@@ -1,4 +1,5 @@
 import * as TestLogic from "../../test/test-logic";
+import { profileHasDrillData } from "../../typing-feedback/mistake-profile";
 import * as TestUI from "../../test/test-ui";
 import * as PractiseWordsModal from "../../modals/practise-words";
 import {
@@ -70,7 +71,11 @@ const commands: Command[] = [
       return TestState.resultVisible;
     },
     exec: (): void => {
-      TestLogic.restart();
+      if (profileHasDrillData()) {
+        TestLogic.restart({ adaptiveNext: true });
+      } else {
+        TestLogic.restart();
+      }
     },
   },
   {
@@ -84,6 +89,17 @@ const commands: Command[] = [
     },
     available: (): boolean => {
       return TestState.resultVisible;
+    },
+  },
+  {
+    id: "adaptiveDrill",
+    display: "Drill weak spots (adaptive)",
+    icon: "fa-bullseye",
+    available: (): boolean => {
+      return TestState.resultVisible && profileHasDrillData();
+    },
+    exec: (): void => {
+      TestLogic.restart({ adaptiveNext: true });
     },
   },
   {

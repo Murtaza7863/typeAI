@@ -23,6 +23,7 @@ import * as Replay from "../../test/replay";
 import { Config } from "../../config/store";
 import { flash } from "../../events/keymap";
 import * as WeakSpot from "../../test/weak-spot";
+import * as SessionMistakes from "../../typing-feedback/session-mistakes";
 import * as CompositionState from "../../legacy-states/composition";
 import {
   isCorrectShiftUsed,
@@ -170,6 +171,10 @@ export async function onInsertText(options: OnInsertTextParams): Promise<void> {
   if (!correct) {
     TestInput.incrementKeypressErrors();
     TestInput.pushMissedWord(TestWords.words.getCurrentText());
+    const expectedChar = currentWord[testInput.length] ?? "";
+    const previousExpected =
+      testInput.length > 0 ? (currentWord[testInput.length - 1] ?? "") : "";
+    SessionMistakes.recordKeyMistake(expectedChar, data, previousExpected);
   }
   if (Config.keymapMode === "react") {
     flash(data, correct);

@@ -1,6 +1,8 @@
 import { CompletedEvent, KeyStats } from "@typeai/schemas/results";
 import { TypingSessionInput } from "@typeai/schemas/typing-feedback";
 import { createSignal } from "solid-js";
+import { topEntries } from "./mistake-profile";
+import { getSessionMistakeSnapshot } from "./session-mistakes";
 
 const STORAGE_KEY = "typeai-local-typing-history";
 const MAX_SESSIONS = 50;
@@ -24,6 +26,7 @@ function statsFromTimings(
 export function completedEventToSessionInput(
   event: CompletedEvent,
 ): TypingSessionInput {
+  const snap = getSessionMistakeSnapshot();
   return {
     wpm: event.wpm,
     acc: event.acc,
@@ -38,6 +41,9 @@ export function completedEventToSessionInput(
     incompleteTests: event.incompleteTests,
     keySpacingStats: statsFromTimings(event.keySpacing),
     keyDurationStats: statsFromTimings(event.keyDuration),
+    topWrongLetters: topEntries(snap.wrongLetters, 5),
+    topBigrams: topEntries(snap.bigrams, 5),
+    topMissedWords: topEntries(snap.missedWords, 5),
   };
 }
 
@@ -68,6 +74,7 @@ export function getLocalTypingSessionCount(): number {
 
 export function clearLocalTypingHistory(): void {
   localStorage.removeItem(STORAGE_KEY);
+  void import("./mistake-profile").then((m) => m.clearMistakeProfile());
   setHistoryVersion((version) => version + 1);
 }
 
