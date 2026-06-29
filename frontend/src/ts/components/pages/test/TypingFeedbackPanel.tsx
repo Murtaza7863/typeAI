@@ -5,6 +5,7 @@ import {
   getTypingFeedbackQueryOptions,
   invalidateTypingFeedback,
 } from "../../../queries/typing-feedback";
+import { getCoachMode, setCoachMode } from "../../../states/coach-mode";
 import { isAuthenticated } from "../../../states/core";
 import { showNoticeNotification } from "../../../states/notifications";
 import { getResultVisible } from "../../../states/test";
@@ -100,8 +101,19 @@ export function TypingFeedbackPanel(props: {
           <Show when={variant() === "result" && profileHasDrillData()}>
             <Button
               variant="text"
-              text="Drill weak spots"
+              text="Adaptive"
+              active={getCoachMode() === "adaptive"}
               onClick={() => {
+                setCoachMode("adaptive");
+                TestLogic.restart({ adaptivePatternNext: true });
+              }}
+            />
+            <Button
+              variant="text"
+              text="Drill weak spots"
+              active={getCoachMode() === "drill"}
+              onClick={() => {
+                setCoachMode("drill");
                 TestLogic.restart({ adaptiveNext: true });
               }}
             />

@@ -15,6 +15,8 @@ import * as CustomTextState from "../legacy-states/custom-text-name";
 import * as TestStats from "./test-stats";
 import * as PractiseWords from "./practise-words";
 import * as AdaptiveTest from "../typing-feedback/adaptive-test";
+import * as AdaptivePatternTest from "../typing-feedback/adaptive-pattern-test";
+import { getCoachMode } from "../states/coach-mode";
 import * as ShiftTracker from "./shift-tracker";
 import * as AltTracker from "./alt-tracker";
 import * as Funbox from "./funbox/funbox";
@@ -178,15 +180,37 @@ type RestartOptions = {
   event?: KeyboardEvent;
   practiseMissed?: boolean;
   adaptiveNext?: boolean;
+  adaptivePatternNext?: boolean;
   noAnim?: boolean;
   isQuickRestart?: boolean;
 };
+
+async function applyCoachModeForRestart(
+  options: RestartOptions,
+): Promise<boolean> {
+  if (options.withSameWordset || options.practiseMissed) return true;
+
+  if (options.adaptiveNext === true || getCoachMode() === "drill") {
+    return AdaptiveTest.applyAdaptiveTest();
+  }
+
+  if (options.adaptivePatternNext === true || getCoachMode() === "adaptive") {
+    const { data: language } = await tryCatch(
+      JSONData.getLanguage(Config.language),
+    );
+    if (!language) return false;
+    return AdaptivePatternTest.applyAdaptivePatternTest(language.words);
+  }
+
+  return true;
+}
 
 export function restart(options = {} as RestartOptions): void {
   const defaultOptions = {
     withSameWordset: false,
     practiseMissed: false,
     adaptiveNext: false,
+    adaptivePatternNext: false,
     noAnim: false,
     nosave: false,
     isQuickRestart: false,
@@ -195,13 +219,13 @@ export function restart(options = {} as RestartOptions): void {
   options = { ...defaultOptions, ...options };
   Strings.clearWordDirectionCache();
 
-  if (options.adaptiveNext) {
-    const applied = AdaptiveTest.applyAdaptiveTest();
-    if (!applied) {
-      options.event?.preventDefault();
-      return;
-    }
-  }
+  const coachMode = getCoachMode();
+  const applyingCoach =
+    options.adaptiveNext === true ||
+    options.adaptivePatternNext === true ||
+    (!options.withSameWordset &&
+      !options.practiseMissed &&
+      (coachMode === "drill" || coachMode === "adaptive"));
 
   const animationTime = options.noAnim ? 0 : Misc.applyReducedMotion(125);
 
@@ -285,7 +309,7 @@ export function restart(options = {} as RestartOptions): void {
     (PractiseWords.before.mode !== null || AdaptiveTest.before.mode !== null) &&
     !options.withSameWordset &&
     !options.practiseMissed &&
-    !options.adaptiveNext
+    !applyingCoach
   ) {
     showNoticeNotification("Reverting to previous settings.");
     if (PractiseWords.before.punctuation !== null) {
@@ -381,6 +405,20 @@ export function restart(options = {} as RestartOptions): void {
       TestState.setPaceRepeat(repeatWithPace);
       TestInitFailed.hide();
       TestState.setTestInitSuccess(true);
+
+      if (!options.withSameWordset && !options.practiseMissed) {
+        const coachApplied = await applyCoachModeForRestart(options);
+        if (!coachApplied) {
+          TestState.setTestRestarting(false);
+          animate(document.querySelector("#typingTest") as HTMLElement, {
+            opacity: [0, 1],
+            duration: animationTime,
+          });
+          options.event?.preventDefault();
+          return;
+        }
+      }
+
       const initResult = await init();
 
       if (!initResult) {

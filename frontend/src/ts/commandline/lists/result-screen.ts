@@ -1,5 +1,6 @@
 import * as TestLogic from "../../test/test-logic";
 import { profileHasDrillData } from "../../typing-feedback/mistake-profile";
+import { getCoachMode } from "../../states/coach-mode";
 import * as TestUI from "../../test/test-ui";
 import * as PractiseWordsModal from "../../modals/practise-words";
 import {
@@ -71,8 +72,11 @@ const commands: Command[] = [
       return TestState.resultVisible;
     },
     exec: (): void => {
-      if (profileHasDrillData()) {
+      const coachMode = getCoachMode();
+      if (coachMode === "drill" && profileHasDrillData()) {
         TestLogic.restart({ adaptiveNext: true });
+      } else if (coachMode === "adaptive" && profileHasDrillData()) {
+        TestLogic.restart({ adaptivePatternNext: true });
       } else {
         TestLogic.restart();
       }

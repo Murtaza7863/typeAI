@@ -19,6 +19,7 @@ import { LeaderboardPage } from "./pages/leaderboard/LeaderboardPage";
 import { LoginPage } from "./pages/login/LoginPage";
 import { ProfilePage } from "./pages/profile/ProfilePage";
 import { ProfileSearchPage } from "./pages/profile/ProfileSearchPage";
+import { CoachModeSelector } from "./pages/test/CoachModeSelector";
 import { TestConfig } from "./pages/test/TestConfig";
 import { TypingFeedbackPanel } from "./pages/test/TypingFeedbackPanel";
 import { Popups } from "./popups/Popups";
@@ -39,6 +40,7 @@ const fullComponents: Record<string, () => JSXElement> = {
   header: () => <Header />,
   devtools: () => <DevTools />,
   testconfig: () => <TestConfig />,
+  coachmodeselector: () => <CoachModeSelector />,
   typingfeedbackpanel: () => <TypingFeedbackPanel variant="result" />,
   commandlinehotkey: () => <CommandlineHotkey />,
 };
@@ -50,6 +52,7 @@ const liteComponents: Record<string, () => JSXElement> = {
   theme: () => <Theme />,
   header: () => <Header />,
   testconfig: () => <TestConfig />,
+  coachmodeselector: () => <CoachModeSelector />,
 };
 
 function mountToMountpoint(name: string, component: () => JSXElement): void {

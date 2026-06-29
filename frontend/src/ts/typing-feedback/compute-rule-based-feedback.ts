@@ -313,7 +313,7 @@ function buildRuleBasedFeedback(
     );
     if (profileHasDrillData()) {
       practiceTips.push(
-        "Use “Next test” on the result screen or “Drill weak spots” below—the next round will focus on your tracked errors.",
+        "Use Adaptive on the main page for real words with your weak patterns, or Drill weak spots for focused repetition.",
       );
     }
   }
