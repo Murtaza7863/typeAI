@@ -14,6 +14,7 @@ import { areUnsortedArraysEqual } from "../../../utils/arrays";
 import { cn } from "../../../utils/cn";
 import { Anime, AnimeShow } from "../../common/anime";
 import { Button } from "../../common/Button";
+import { CoachModeButtons } from "./CoachModeButtons";
 
 const variables = cn(
   "[--card-gap:0.25em] [--font-size:0.5em] [--horizontal-padding:0.4em] [--vertical-padding:0.5rem]",
@@ -120,9 +121,11 @@ function PuncAndNum(): JSXElement {
 
 function Mode(): JSXElement {
   const modeOptions = ["time", "words", "quote", "zen", "custom"] as const;
+  const showCoachModes = (): boolean =>
+    getConfig.mode !== "zen" && getConfig.mode !== "quote";
 
   return (
-    <div class={cn("z-2", cardClass)}>
+    <div class={cn("z-2 flex flex-wrap items-center", cardClass)}>
       <For each={modeOptions}>
         {(modeOption) => (
           <TCButton
@@ -142,6 +145,9 @@ function Mode(): JSXElement {
           />
         )}
       </For>
+      <Show when={showCoachModes()}>
+        <CoachModeButtons disabled={getFocus() || getResultVisible()} />
+      </Show>
     </div>
   );
 }

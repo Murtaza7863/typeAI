@@ -1,6 +1,9 @@
 import { Config } from "../config/store";
 import { setConfig, setQuoteLengthAll, toggleFunbox } from "../config/setters";
 import * as CustomText from "./custom-text";
+import { resolveCoachWordList } from "../typing-feedback/coach-words";
+import { getCoachMode } from "../states/coach-mode";
+import { showNoticeNotification } from "../states/notifications";
 import { Wordset, FunboxWordsFrequency, withWords } from "./wordset";
 import QuotesController, {
   Quote,
@@ -640,6 +643,16 @@ export async function generateWords(
     wordList = await getQuoteWordList(language, wordOrder);
   } else if (Config.mode === "zen") {
     wordList = [];
+  } else if (Config.mode === "time" || Config.mode === "words") {
+    const coachWords = resolveCoachWordList(wordList);
+    if (coachWords !== null) {
+      wordList = coachWords;
+    } else if (getCoachMode() !== "original") {
+      showNoticeNotification(
+        "Could not build a coach word list for this mode. Using normal words.",
+        { durationMs: 4000 },
+      );
+    }
   }
 
   const customAndUsingPipeDelimiter =

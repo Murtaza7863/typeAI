@@ -1,15 +1,8 @@
-import { Config } from "../config/store";
-import { setConfig } from "../config/setters";
-import * as CustomText from "../test/custom-text";
-import { showNoticeNotification } from "../states/notifications";
-import { setCustomTextName } from "../legacy-states/custom-text-name";
 import { Mode } from "@typeai/schemas/shared";
 import { CustomTextSettings } from "@typeai/schemas/results";
-import {
-  activeTopEntries,
-  getMistakeProfile,
-  profileHasDrillData,
-} from "./mistake-profile";
+import { setConfig } from "../config/setters";
+import * as CustomText from "../test/custom-text";
+import { activeTopEntries, getMistakeProfile } from "./mistake-profile";
 
 type Before = {
   mode: Mode | null;
@@ -82,45 +75,6 @@ export function buildAdaptiveWordList(limit = 140): string[] {
   const pool = [...priority, ...priority, ...rest];
   const shuffled = pool.sort(() => Math.random() - 0.5);
   return shuffled.slice(0, limit);
-}
-
-export function applyAdaptiveTest(): boolean {
-  if (Config.mode === "zen") {
-    showNoticeNotification("Adaptive drills are not available in zen mode.");
-    return false;
-  }
-
-  if (!profileHasDrillData()) {
-    showNoticeNotification(
-      "Complete a few tests with mistakes first—we need data to build your drill.",
-    );
-    return false;
-  }
-
-  const wordList = buildAdaptiveWordList();
-  if (wordList.length === 0) {
-    showNoticeNotification(
-      "Not enough active weak spots to drill—you may have recovered them. Run a normal test to find new patterns.",
-    );
-    return false;
-  }
-
-  before.mode = Config.mode;
-  before.punctuation = Config.punctuation;
-  before.numbers = Config.numbers;
-  if (Config.mode === "custom") {
-    before.customText = CustomText.getData();
-  }
-
-  setConfig("mode", "custom", { nosave: true });
-  CustomText.setPipeDelimiter(true);
-  CustomText.setText(wordList);
-  CustomText.setLimitMode("section");
-  CustomText.setMode("shuffle");
-  CustomText.setLimitValue(Math.max(25, Math.ceil(wordList.length / 2)));
-  setCustomTextName("adaptive", undefined);
-
-  return true;
 }
 
 export function resetAdaptiveBefore(): void {

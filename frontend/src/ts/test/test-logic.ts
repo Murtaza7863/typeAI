@@ -15,8 +15,8 @@ import * as CustomTextState from "../legacy-states/custom-text-name";
 import * as TestStats from "./test-stats";
 import * as PractiseWords from "./practise-words";
 import * as AdaptiveTest from "../typing-feedback/adaptive-test";
-import * as AdaptivePatternTest from "../typing-feedback/adaptive-pattern-test";
-import { getCoachMode } from "../states/coach-mode";
+import { validateCoachMode } from "../typing-feedback/coach-words";
+import { getCoachMode, setCoachMode } from "../states/coach-mode";
 import * as ShiftTracker from "./shift-tracker";
 import * as AltTracker from "./alt-tracker";
 import * as Funbox from "./funbox/funbox";
@@ -185,26 +185,6 @@ type RestartOptions = {
   isQuickRestart?: boolean;
 };
 
-async function applyCoachModeForRestart(
-  options: RestartOptions,
-): Promise<boolean> {
-  if (options.withSameWordset || options.practiseMissed) return true;
-
-  if (options.adaptiveNext === true || getCoachMode() === "drill") {
-    return AdaptiveTest.applyAdaptiveTest();
-  }
-
-  if (options.adaptivePatternNext === true || getCoachMode() === "adaptive") {
-    const { data: language } = await tryCatch(
-      JSONData.getLanguage(Config.language),
-    );
-    if (!language) return false;
-    return AdaptivePatternTest.applyAdaptivePatternTest(language.words);
-  }
-
-  return true;
-}
-
 export function restart(options = {} as RestartOptions): void {
   const defaultOptions = {
     withSameWordset: false,
@@ -219,13 +199,36 @@ export function restart(options = {} as RestartOptions): void {
   options = { ...defaultOptions, ...options };
   Strings.clearWordDirectionCache();
 
+  if (options.adaptiveNext === true) {
+    setCoachMode("drill");
+  }
+  if (options.adaptivePatternNext === true) {
+    setCoachMode("adaptive");
+  }
+
   const coachMode = getCoachMode();
-  const applyingCoach =
-    options.adaptiveNext === true ||
-    options.adaptivePatternNext === true ||
-    (!options.withSameWordset &&
-      !options.practiseMissed &&
-      (coachMode === "drill" || coachMode === "adaptive"));
+  if (
+    !options.withSameWordset &&
+    !options.practiseMissed &&
+    coachMode !== "original" &&
+    !validateCoachMode(coachMode)
+  ) {
+    options.event?.preventDefault();
+    return;
+  }
+
+  if (
+    coachMode !== "original" &&
+    !options.withSameWordset &&
+    !options.practiseMissed &&
+    (Config.mode === "zen" || Config.mode === "quote")
+  ) {
+    showNoticeNotification(
+      "Coach modes are not available in zen or quote mode.",
+    );
+    options.event?.preventDefault();
+    return;
+  }
 
   const animationTime = options.noAnim ? 0 : Misc.applyReducedMotion(125);
 
@@ -309,7 +312,7 @@ export function restart(options = {} as RestartOptions): void {
     (PractiseWords.before.mode !== null || AdaptiveTest.before.mode !== null) &&
     !options.withSameWordset &&
     !options.practiseMissed &&
-    !applyingCoach
+    coachMode === "original"
   ) {
     showNoticeNotification("Reverting to previous settings.");
     if (PractiseWords.before.punctuation !== null) {
@@ -405,19 +408,6 @@ export function restart(options = {} as RestartOptions): void {
       TestState.setPaceRepeat(repeatWithPace);
       TestInitFailed.hide();
       TestState.setTestInitSuccess(true);
-
-      if (!options.withSameWordset && !options.practiseMissed) {
-        const coachApplied = await applyCoachModeForRestart(options);
-        if (!coachApplied) {
-          TestState.setTestRestarting(false);
-          animate(document.querySelector("#typingTest") as HTMLElement, {
-            opacity: [0, 1],
-            duration: animationTime,
-          });
-          options.event?.preventDefault();
-          return;
-        }
-      }
 
       const initResult = await init();
 

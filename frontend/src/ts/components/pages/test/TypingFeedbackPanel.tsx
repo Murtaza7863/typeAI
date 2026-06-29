@@ -105,7 +105,7 @@ export function TypingFeedbackPanel(props: {
               active={getCoachMode() === "adaptive"}
               onClick={() => {
                 setCoachMode("adaptive");
-                TestLogic.restart({ adaptivePatternNext: true });
+                TestLogic.restart();
               }}
             />
             <Button
@@ -114,7 +114,7 @@ export function TypingFeedbackPanel(props: {
               active={getCoachMode() === "drill"}
               onClick={() => {
                 setCoachMode("drill");
-                TestLogic.restart({ adaptiveNext: true });
+                TestLogic.restart();
               }}
             />
           </Show>

@@ -1,4 +1,4 @@
-import { JSXElement, Show, For } from "solid-js";
+import { For, JSXElement, Show } from "solid-js";
 
 import { restartTestEvent } from "../../../events/test";
 import {
@@ -7,7 +7,6 @@ import {
   CoachMode,
 } from "../../../states/coach-mode";
 import { showNoticeNotification } from "../../../states/notifications";
-import { getFocus, getResultVisible } from "../../../states/test";
 import { profileHasDrillData } from "../../../typing-feedback/mistake-profile";
 import { cn } from "../../../utils/cn";
 import { Button } from "../../common/Button";
@@ -15,30 +14,21 @@ import { Button } from "../../common/Button";
 const modes: {
   id: CoachMode;
   label: string;
-  hint: string;
 }[] = [
-  {
-    id: "original",
-    label: "original",
-    hint: "Standard word lists with no coaching bias.",
-  },
-  {
-    id: "adaptive",
-    label: "adaptive",
-    hint: "Real words that contain your weak patterns, not the exact words you missed.",
-  },
-  {
-    id: "drill",
-    label: "drill weak spots",
-    hint: "Focused repetition on your tracked mistakes and patterns.",
-  },
+  { id: "original", label: "original" },
+  { id: "adaptive", label: "adaptive" },
+  { id: "drill", label: "drill" },
 ];
 
-export function CoachModeSelector(): JSXElement {
-  const disabled = (): boolean => getFocus() || getResultVisible();
+export function CoachModeButtons(props: {
+  class?: string;
+  disabled?: boolean;
+}): JSXElement {
   const hasCoachData = (): boolean => profileHasDrillData();
 
   const selectMode = (mode: CoachMode): void => {
+    if (props.disabled) return;
+
     if (mode !== "original" && !hasCoachData()) {
       showNoticeNotification(
         "Complete a few tests with mistakes first—we need data to personalize practice.",
@@ -54,23 +44,22 @@ export function CoachModeSelector(): JSXElement {
 
   return (
     <div
-      class={cn(
-        "mx-auto mb-4 flex w-max max-w-full flex-wrap place-self-center rounded-(--roundness) bg-sub-alt px-1 py-1 text-[0.85rem]",
-        "transition-opacity duration-125",
-        disabled() ? "pointer-events-none opacity-0" : "",
-      )}
+      class={cn("flex flex-wrap items-center gap-0.5", props.class)}
       data-ui-element="coachModeSelector"
       aria-label="Typing coach mode"
     >
+      <span class="mx-0.5 hidden text-sub sm:inline">|</span>
       <For each={modes}>
         {(mode) => (
           <Button
             variant="text"
-            class="px-3 py-1.5 capitalize"
+            class="px-2 py-1 capitalize"
             text={mode.label}
             active={getCoachMode() === mode.id}
-            disabled={disabled() || (mode.id !== "original" && !hasCoachData())}
-            aria-label={mode.hint}
+            disabled={
+              props.disabled === true ||
+              (mode.id !== "original" && !hasCoachData())
+            }
             onClick={() => {
               selectMode(mode.id);
             }}
@@ -78,8 +67,8 @@ export function CoachModeSelector(): JSXElement {
         )}
       </For>
       <Show when={!hasCoachData()}>
-        <span class="px-2 py-1.5 text-xs text-sub">
-          complete tests to unlock
+        <span class="hidden px-1 text-[0.65rem] text-sub lg:inline">
+          unlock with mistakes
         </span>
       </Show>
     </div>
