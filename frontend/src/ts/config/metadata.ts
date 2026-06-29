@@ -3,8 +3,6 @@ import * as DB from "../db";
 import { showNoticeNotification } from "../states/notifications";
 import { isAuthenticated } from "../states/core";
 import { canSetFunboxWithConfig } from "./funbox-validation";
-import { reloadAfter } from "../utils/misc";
-import { isDevEnvironment } from "../utils/env";
 import * as ConfigSchemas from "@typeai/schemas/configs";
 import { roundTo1 } from "@typeai/util/numbers";
 import { capitalizeFirstLetter } from "../utils/strings";
@@ -1043,32 +1041,5 @@ export const configMetadata: ConfigMetadataObject = {
     displayString: "monkey power level",
     changeRequiresRestart: false,
     group: "hidden",
-  },
-
-  // ads
-  ads: {
-    key: "ads",
-    fa: { icon: "fa-ad" },
-    changeRequiresRestart: false,
-    group: "ads",
-    overrideValue: ({ value }) => {
-      if (isDevEnvironment()) {
-        return "off";
-      }
-      return value;
-    },
-    isBlocked: ({ value }) => {
-      if (value !== "off" && isDevEnvironment()) {
-        showNoticeNotification("Ads are disabled in development mode.");
-        return true;
-      }
-      return false;
-    },
-    afterSet: ({ nosave }) => {
-      if (!nosave && !isDevEnvironment()) {
-        reloadAfter(3);
-        showNoticeNotification("Ad settings changed. Refreshing...");
-      }
-    },
   },
 };

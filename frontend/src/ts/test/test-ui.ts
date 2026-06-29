@@ -51,7 +51,6 @@ import {
 import * as MonkeyPower from "../elements/monkey-power";
 import * as SlowTimer from "../legacy-states/slow-timer";
 import * as CompositionDisplay from "../elements/composition-display";
-import * as AdController from "../controllers/ad-controller";
 import * as Ligatures from "./break-ligatures";
 import * as LayoutfluidFunboxTimer from "../test/funbox/layoutfluid-funbox-timer";
 import * as Keymap from "../elements/keymap";
@@ -68,7 +67,7 @@ import {
 } from "../utils/dom";
 import { getTheme } from "../states/theme";
 import { skipBreakdownEvent } from "../states/header";
-import { wordsHaveNewline } from "../states/test";
+import { setTestProgressContext, wordsHaveNewline } from "../states/test";
 
 export const updateHintsPositionDebounced = Misc.debounceUntilResolved(
   updateHintsPosition,
@@ -1914,13 +1913,10 @@ export function onTestRestart(source: "testPage" | "resultPage"): void {
       void ThemeController.randomizeTheme();
     }
     skipBreakdownEvent.dispatch();
+    setTestProgressContext(null);
   }
 
   currentTestLine = 0;
-  if (getActivePage() === "test") {
-    AdController.updateFooterAndVerticalAds(false);
-  }
-  AdController.destroyResult();
   if (Config.compositionDisplay === "below") {
     CompositionDisplay.update(" ");
     CompositionDisplay.show();

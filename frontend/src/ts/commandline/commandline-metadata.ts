@@ -758,11 +758,4 @@ export const commandlineConfigMetadata: CommandlineConfigMetadataObject = {
       options: "fromSchema",
     },
   },
-
-  //danger zone
-  ads: {
-    subgroup: {
-      options: "fromSchema",
-    },
-  },
 };

@@ -3,7 +3,6 @@ import { Chart, type PluginChartOptions } from "chart.js";
 
 import { Config } from "../config/store";
 import { setConfig } from "../config/setters";
-import * as AdController from "../controllers/ad-controller";
 import * as ChartController from "../controllers/chart-controller";
 import QuotesController, { Quote } from "../controllers/quotes-controller";
 import * as DB from "../db";
@@ -976,11 +975,6 @@ export async function update(
   } else {
     qs("#result .loginTip")?.show();
   }
-  if (Config.ads === "off" || Config.ads === "result") {
-    qs("#result #watchVideoAdButton")?.hide();
-  } else {
-    qs("#result #watchVideoAdButton")?.show();
-  }
 
   if (!ConnectionState.get()) {
     ConnectionState.showOfflineBanner();
@@ -1096,7 +1090,6 @@ export async function update(
   if (Config.alwaysShowWordsHistory && canQuickRestart && !GlarsesMode.get()) {
     void TestUI.toggleResultWords(true);
   }
-  AdController.updateFooterAndVerticalAds(true);
   void Funbox.clear();
 
   qs(".pageTest .loading")?.hide();
@@ -1113,7 +1106,6 @@ export async function update(
   });
 
   Misc.scrollToCenterOrTop(resultEl?.native ?? null);
-  void AdController.renderResult();
   TestUI.setResultCalculating(false);
   qs("#words")?.empty();
   ChartController.result.resize();

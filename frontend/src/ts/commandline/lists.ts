@@ -27,7 +27,6 @@ import {
   showSuccessNotification,
   clearAllNotifications,
 } from "../states/notifications";
-import * as VideoAdPopup from "../popups/video-ad-popup";
 import * as TestStats from "../test/test-stats";
 import { Command, CommandsSubgroup } from "./types";
 import { buildCommandForConfigKey } from "./util";
@@ -54,8 +53,6 @@ challengesPromise
       ),
     );
   });
-
-const adsCommands = buildCommands("ads");
 
 export const commands: CommandsSubgroup = {
   title: "",
@@ -224,20 +221,10 @@ export const commands: CommandsSubgroup = {
     ),
 
     //danger zone
-    ...adsCommands,
 
     //other
     ...LoadChallengeCommands,
     ...NavigationCommands,
-    {
-      id: "watchVideoAd",
-      display: "Watch video ad",
-      alias: "support donate",
-      icon: "fa-ad",
-      exec: (): void => {
-        void VideoAdPopup.show();
-      },
-    },
     {
       id: "importSettingsJSON",
       display: "Import settings JSON",
@@ -382,7 +369,6 @@ const lists = {
   minBurst: MinBurstCommands[0]?.subgroup,
   funbox: FunboxCommands[0]?.subgroup,
   tags: TagsCommands[0]?.subgroup,
-  ads: adsCommands[0]?.subgroup,
 };
 
 const subgroupByConfigKey = Object.fromEntries(

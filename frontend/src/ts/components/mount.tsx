@@ -19,6 +19,7 @@ import { LeaderboardPage } from "./pages/leaderboard/LeaderboardPage";
 import { LoginPage } from "./pages/login/LoginPage";
 import { ProfilePage } from "./pages/profile/ProfilePage";
 import { ProfileSearchPage } from "./pages/profile/ProfileSearchPage";
+import { ResultProgressPanel } from "./pages/test/ResultProgressPanel";
 import { TestConfig } from "./pages/test/TestConfig";
 import { TypingFeedbackPanel } from "./pages/test/TypingFeedbackPanel";
 import { Popups } from "./popups/Popups";
@@ -40,6 +41,7 @@ const fullComponents: Record<string, () => JSXElement> = {
   devtools: () => <DevTools />,
   testconfig: () => <TestConfig />,
   typingfeedbackpanel: () => <TypingFeedbackPanel variant="result" />,
+  resultprogresspanel: () => <ResultProgressPanel />,
   commandlinehotkey: () => <CommandlineHotkey />,
 };
 

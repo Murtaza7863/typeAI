@@ -305,21 +305,6 @@ describe("Config", () => {
 
       expect(miscTriggerResizeMock).not.toHaveBeenCalled();
     });
-
-    it("calls afterSet", () => {
-      //GIVEN
-      isDevEnvironmentMock.mockReturnValue(false);
-      replaceConfig({ ads: "off" });
-
-      //WHEN
-      Config.setConfig("ads", "sellout");
-
-      //THEN
-      expect(notificationAddMock).toHaveBeenCalledWith(
-        "Ad settings changed. Refreshing...",
-      );
-      expect(miscReloadAfterMock).toHaveBeenCalledWith(3);
-    });
   });
 
   describe("apply", () => {

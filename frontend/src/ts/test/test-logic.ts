@@ -1279,6 +1279,14 @@ export async function finish(difficultyFailed = false): Promise<void> {
     await import("../typing-feedback/mistake-profile");
   const { getWeakLetterScores } = await import("./weak-spot");
   mergeMissedWordsFromInput(TestInput.missedWords);
+  const sessionMistakes = getSessionMistakeSnapshot();
+  const { setTestProgressContext } = await import("../states/test");
+  const { recordDailyProgress } = await import("../utils/result-progress");
+  setTestProgressContext({
+    completedEvent: completedEvent,
+    sessionMistakes,
+  });
+  recordDailyProgress(completedEvent);
 
   if (shouldSaveTypingFeedbackLocally) {
     const { appendLocalTypingSession } =
@@ -1289,7 +1297,7 @@ export async function finish(difficultyFailed = false): Promise<void> {
     invalidateTypingFeedback();
   }
 
-  recordSessionToProfile(getSessionMistakeSnapshot(), getWeakLetterScores());
+  recordSessionToProfile(sessionMistakes, getWeakLetterScores());
   resetSessionMistakes();
 
   await Promise.all([savingResultPromise, resultUpdatePromise]);

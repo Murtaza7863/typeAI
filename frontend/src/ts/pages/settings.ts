@@ -156,7 +156,6 @@ async function initGroups(): Promise<void> {
   groups["blindMode"] = new SettingsGroup("blindMode", "button");
   groups["quickEnd"] = new SettingsGroup("quickEnd", "button");
   groups["repeatQuotes"] = new SettingsGroup("repeatQuotes", "button");
-  groups["ads"] = new SettingsGroup("ads", "button");
   groups["alwaysShowWordsHistory"] = new SettingsGroup(
     "alwaysShowWordsHistory",
     "button",

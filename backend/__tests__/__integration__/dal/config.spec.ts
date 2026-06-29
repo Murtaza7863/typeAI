@@ -12,7 +12,6 @@ describe("ConfigDal", () => {
       await getConfigCollection().insertOne({
         uid,
         config: {
-          ads: "on",
           time: 60,
           quickTab: true, //legacy value
         },
@@ -20,19 +19,16 @@ describe("ConfigDal", () => {
 
       //WHEN
       await ConfigDal.saveConfig(uid, {
-        ads: "on",
         difficulty: "normal",
       } as any);
 
       //WHEN
-      await ConfigDal.saveConfig(uid, { ads: "off" });
 
       //THEN
       const savedConfig = (await ConfigDal.getConfig(
         uid,
       )) as ConfigDal.DBConfig;
 
-      expect(savedConfig.config.ads).toBe("off");
       expect(savedConfig.config.time).toBe(60);
 
       //should remove legacy values

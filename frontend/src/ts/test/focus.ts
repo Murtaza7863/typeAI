@@ -25,10 +25,6 @@ function initializeCache(): void {
     "main",
     "#bannerCenter",
     "#capsWarning",
-    "#ad-vertical-right-wrapper",
-    "#ad-vertical-left-wrapper",
-    "#ad-footer-wrapper",
-    "#ad-footer-small-wrapper",
   ].join(",");
 
   cache.focus = qsa(elementsSelector);
