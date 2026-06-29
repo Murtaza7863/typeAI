@@ -16,7 +16,7 @@ import { ThemeName } from "@typeai/schemas/configs";
 import { captureException } from "../../sentry";
 import { ColorName, ThemesList, ThemeWithName } from "../../constants/themes";
 import { qs, qsa, qsr } from "../../utils/dom";
-import { getTheme, updateThemeColor } from "../../states/theme";
+import { getTheme, setTheme, updateThemeColor } from "../../states/theme";
 import { saveFullConfigToLocalStorage } from "../../config/persistence";
 
 export const sortedThemes: ThemeWithName[] = [...ThemesList].sort((a, b) => {
@@ -387,6 +387,19 @@ qsa(".pageSettings .section.themes .tabContainer .customTheme input.input")
       target.removeAttribute("disabled");
     }
   });
+
+function resetCustomThemeColors(): void {
+  const theme = ThemeController.convertCustomColorsToTheme(
+    Config.customThemeColors,
+  );
+  setTheme({ ...theme, name: "custom" });
+  setCustomInputs();
+  showNoticeNotification("Colors reset to your saved theme");
+}
+
+qs(".pageSettings #resetCustomThemeColors")?.on("click", () => {
+  resetCustomThemeColors();
+});
 
 qs(".pageSettings #loadCustomColorsFromPreset")?.on("click", async () => {
   ThemeController.applyPreset(Config.theme);

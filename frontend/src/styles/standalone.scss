@@ -2,7 +2,7 @@
 @import "core.scss";
 
 @font-face {
-  font-family: "Roboto Mono";
+  font-family: "JetBrains Mono";
   font-style: normal;
   font-weight: 400;
   font-display: block;
@@ -17,7 +17,7 @@
 }
 
 :root {
-  --font: "Roboto Mono", monospace;
+  --font: "JetBrains Mono", monospace;
   --bg-color: #1a2b2b;
   --main-color: #2dd4bf;
   --caret-color: #2dd4bf;

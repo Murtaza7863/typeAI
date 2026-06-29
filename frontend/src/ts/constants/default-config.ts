@@ -59,7 +59,7 @@ const obj: Config = {
   keymapLayout: "overrideSync",
   keymapShowTopRow: "layout",
   keymapSize: 1,
-  fontFamily: "Roboto_Mono",
+  fontFamily: "JetBrains_Mono",
   smoothLineScroll: false,
   alwaysShowDecimalPlaces: false,
   alwaysShowWordsHistory: false,
