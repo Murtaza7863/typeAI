@@ -1259,17 +1259,6 @@ export async function finish(difficultyFailed = false): Promise<void> {
     dontSave = true;
   }
 
-  const resultUpdatePromise = Result.update(
-    completedEvent,
-    difficultyFailed,
-    failReason,
-    afkDetected,
-    TestState.isRepeated,
-    tooShort,
-    TestWords.currentQuote,
-    dontSave,
-  );
-
   const {
     mergeMissedWordsFromInput,
     getSessionMistakeSnapshot,
@@ -1287,6 +1276,17 @@ export async function finish(difficultyFailed = false): Promise<void> {
     sessionMistakes,
   });
   recordDailyProgress(completedEvent);
+
+  const resultUpdatePromise = Result.update(
+    completedEvent,
+    difficultyFailed,
+    failReason,
+    afkDetected,
+    TestState.isRepeated,
+    tooShort,
+    TestWords.currentQuote,
+    dontSave,
+  );
 
   if (shouldSaveTypingFeedbackLocally) {
     const { appendLocalTypingSession } =
