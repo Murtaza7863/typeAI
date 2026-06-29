@@ -5,20 +5,15 @@ import {
   getTypingFeedbackQueryOptions,
   invalidateTypingFeedback,
 } from "../../../queries/typing-feedback";
-import { getCoachMode, setCoachMode } from "../../../states/coach-mode";
 import { isAuthenticated } from "../../../states/core";
 import { showNoticeNotification } from "../../../states/notifications";
 import { getResultVisible } from "../../../states/test";
-import * as TestLogic from "../../../test/test-logic";
 import {
   clearLocalTypingHistory,
   getLocalTypingHistoryVersion,
   getLocalTypingSessionCount,
 } from "../../../typing-feedback/local-history";
-import {
-  clearMistakeProfile,
-  profileHasDrillData,
-} from "../../../typing-feedback/mistake-profile";
+import { clearMistakeProfile } from "../../../typing-feedback/mistake-profile";
 import { cn } from "../../../utils/cn";
 import AsyncContent from "../../common/AsyncContent";
 import { Button } from "../../common/Button";
@@ -95,26 +90,6 @@ export function TypingFeedbackPanel(props: {
               onClick={() => {
                 invalidateTypingFeedback();
                 void query.refetch();
-              }}
-            />
-          </Show>
-          <Show when={variant() === "result" && profileHasDrillData()}>
-            <Button
-              variant="text"
-              text="Adaptive"
-              active={getCoachMode() === "adaptive"}
-              onClick={() => {
-                setCoachMode("adaptive");
-                TestLogic.restart();
-              }}
-            />
-            <Button
-              variant="text"
-              text="Drill weak spots"
-              active={getCoachMode() === "drill"}
-              onClick={() => {
-                setCoachMode("drill");
-                TestLogic.restart();
               }}
             />
           </Show>

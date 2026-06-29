@@ -15,6 +15,7 @@ import { cn } from "../../../utils/cn";
 import { Anime, AnimeShow } from "../../common/anime";
 import { Button } from "../../common/Button";
 import { CoachModeButtons } from "./CoachModeButtons";
+import { CoachModeSubtext } from "./CoachModeSubtext";
 
 const variables = cn(
   "[--card-gap:0.25em] [--font-size:0.5em] [--horizontal-padding:0.4em] [--vertical-padding:0.5rem]",
@@ -45,6 +46,7 @@ export function TestConfig(): JSXElement {
         <Mode />
         <Mode2 />
       </div>
+      <CoachModeSubtext class="-mt-5 mb-2 hidden md:block" />
       <Button
         class={cn(
           "mx-auto flex place-self-center px-4 py-2 text-sub md:hidden",
@@ -58,6 +60,7 @@ export function TestConfig(): JSXElement {
           icon: "fa-cog",
         }}
       />
+      <CoachModeSubtext class="mb-4 md:hidden" />
     </>
   );
 }
