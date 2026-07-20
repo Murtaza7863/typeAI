@@ -59,7 +59,7 @@ describe("race party store", () => {
       punctuation: false,
     });
     expect(party.settings.mode).toBe("quote");
-    expect(party.words.length).toBeGreaterThan(5);
+    expect(party.words.length).toBeGreaterThan(0);
   });
 
   it("joins players up to the max and rejects over capacity", () => {

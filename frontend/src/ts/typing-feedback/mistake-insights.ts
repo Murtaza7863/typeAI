@@ -8,9 +8,7 @@ import {
 } from "./mistake-profile";
 import { TypingFeedbackMistake } from "@typeai/schemas/typing-feedback";
 
-export function formatLetterList(
-  entries: { key: string; count: number }[],
-): string {
+function formatLetterList(entries: { key: string; count: number }[]): string {
   if (entries.length === 0) return "";
   return entries.map((e) => `"${e.key}" (${e.count}×)`).join(", ");
 }

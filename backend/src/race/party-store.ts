@@ -28,7 +28,6 @@ export type RaceParty = {
 };
 
 const parties = new Map<string, RaceParty>();
-const playerToParty = new Map<string, string>();
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -83,7 +82,6 @@ export function createParty(
   };
 
   parties.set(code, party);
-  playerToParty.set(hostId, code);
   return party;
 }
 
@@ -97,12 +95,6 @@ export function applySettings(party: RaceParty, settings: RaceSettings): void {
 
 export function getParty(code: string): RaceParty | undefined {
   return parties.get(code.toUpperCase());
-}
-
-export function getPartyByPlayer(playerId: string): RaceParty | undefined {
-  const code = playerToParty.get(playerId);
-  if (code === undefined) return undefined;
-  return parties.get(code);
 }
 
 export function addPlayer(
@@ -128,7 +120,6 @@ export function addPlayer(
     lastProgressAt: 0,
   };
   party.players.set(playerId, player);
-  playerToParty.set(playerId, party.code);
   return player;
 }
 
@@ -139,7 +130,6 @@ export function reconnectPlayer(
   const player = party.players.get(playerId);
   if (player === undefined) return undefined;
   player.connected = true;
-  playerToParty.set(playerId, party.code);
   return player;
 }
 
@@ -149,7 +139,6 @@ export function removePlayer(party: RaceParty, playerId: string): void {
 
   if (party.status === "lobby") {
     party.players.delete(playerId);
-    playerToParty.delete(playerId);
     if (playerId === party.hostId) {
       const next = [...party.players.values()][0];
       if (next !== undefined) {
@@ -162,7 +151,6 @@ export function removePlayer(party: RaceParty, playerId: string): void {
     }
   } else {
     player.connected = false;
-    playerToParty.delete(playerId);
   }
 }
 
@@ -171,9 +159,6 @@ export function deleteParty(code: string): void {
   if (party === undefined) return;
   if (party.finishTimeout !== null) clearTimeout(party.finishTimeout);
   if (party.countdownTimeout !== null) clearTimeout(party.countdownTimeout);
-  for (const id of party.players.keys()) {
-    playerToParty.delete(id);
-  }
   parties.delete(code);
 }
 

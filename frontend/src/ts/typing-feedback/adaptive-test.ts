@@ -1,7 +1,5 @@
 import { Mode } from "@typeai/schemas/shared";
 import { CustomTextSettings } from "@typeai/schemas/results";
-import { setConfig } from "../config/setters";
-import * as CustomText from "../test/custom-text";
 import { activeTopEntries, getMistakeProfile } from "./mistake-profile";
 
 type Before = {
@@ -82,23 +80,4 @@ export function resetAdaptiveBefore(): void {
   before.punctuation = null;
   before.numbers = null;
   before.customText = null;
-}
-
-export function revertAdaptiveSettings(): void {
-  if (before.mode === null) return;
-
-  if (before.punctuation !== null) {
-    setConfig("punctuation", before.punctuation);
-  }
-  if (before.numbers !== null) {
-    setConfig("numbers", before.numbers);
-  }
-  if (before.customText) {
-    CustomText.setText(before.customText.text);
-    CustomText.setLimitMode(before.customText.limit.mode);
-    CustomText.setLimitValue(before.customText.limit.value);
-    CustomText.setPipeDelimiter(before.customText.pipeDelimiter);
-  }
-  setConfig("mode", before.mode);
-  resetAdaptiveBefore();
 }

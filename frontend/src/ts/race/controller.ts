@@ -113,7 +113,3 @@ export function reportRaceFinished(): void {
   sendProgress(100);
   sendFinished(timeMs);
 }
-
-export function shouldBlockConfigDuringRace(): boolean {
-  return isRaceActive();
-}

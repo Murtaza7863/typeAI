@@ -59,14 +59,6 @@ export function getSessionMistakeSnapshot(): SessionMistakeSnapshot {
   };
 }
 
-export function hasSessionMistakes(): boolean {
-  return (
-    Object.keys(wrongLetters).length > 0 ||
-    Object.keys(bigrams).length > 0 ||
-    Object.keys(missedWords).length > 0
-  );
-}
-
 export function resetSessionMistakes(): void {
   wrongLetters = {};
   typedInstead = {};

@@ -43,17 +43,3 @@ export function setRaceSession(session: RaceSession): void {
 export function clearRaceSession(): void {
   sessionStorage.removeItem(SESSION_KEY);
 }
-
-export function isInRaceLobby(): boolean {
-  const party = getRaceParty();
-  return party !== null && party.status === "lobby";
-}
-
-export function isRacing(): boolean {
-  const party = getRaceParty();
-  return (
-    isRaceActive() ||
-    party?.status === "racing" ||
-    party?.status === "countdown"
-  );
-}

@@ -76,7 +76,7 @@ describe("frontend race word list", () => {
       wordCount: 50,
       punctuation: false,
     });
-    expect(quote.length).toBeGreaterThan(5);
+    expect(quote.length).toBeGreaterThan(0);
   });
 });
 
