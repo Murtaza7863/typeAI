@@ -8,6 +8,29 @@ export const RacePartyStatusSchema = z.enum([
 ]);
 export type RacePartyStatus = z.infer<typeof RacePartyStatusSchema>;
 
+export const RaceModeSchema = z.enum(["words", "quote"]);
+export type RaceMode = z.infer<typeof RaceModeSchema>;
+
+export const RaceWordCountSchema = z.union([
+  z.literal(25),
+  z.literal(50),
+  z.literal(100),
+]);
+export type RaceWordCount = z.infer<typeof RaceWordCountSchema>;
+
+export const RaceSettingsSchema = z.object({
+  mode: RaceModeSchema.default("words"),
+  wordCount: RaceWordCountSchema.default(50),
+  punctuation: z.boolean().default(false),
+});
+export type RaceSettings = z.infer<typeof RaceSettingsSchema>;
+
+export const DEFAULT_RACE_SETTINGS: RaceSettings = {
+  mode: "words",
+  wordCount: 50,
+  punctuation: false,
+};
+
 export const RacePlayerSchema = z.object({
   id: z.string(),
   displayName: z.string().min(1).max(24),
@@ -24,6 +47,7 @@ export const RacePartyStateSchema = z.object({
   status: RacePartyStatusSchema,
   hostId: z.string(),
   words: z.array(z.string()),
+  settings: RaceSettingsSchema.optional(),
   players: z.array(RacePlayerSchema),
   inviteUrl: z.string().optional(),
   startedAt: z.number().nullable().optional(),
@@ -36,6 +60,7 @@ export const RaceClientMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("createParty"),
     displayName: z.string().min(1).max(24),
+    settings: RaceSettingsSchema.optional(),
   }),
   z.object({
     type: z.literal("joinParty"),
@@ -44,7 +69,12 @@ export const RaceClientMessageSchema = z.discriminatedUnion("type", [
     playerId: z.string().optional(),
   }),
   z.object({
+    type: z.literal("updateSettings"),
+    settings: RaceSettingsSchema,
+  }),
+  z.object({
     type: z.literal("startRace"),
+    settings: RaceSettingsSchema.optional(),
   }),
   z.object({
     type: z.literal("progress"),
@@ -80,6 +110,7 @@ export const RaceServerMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("raceStart"),
     startedAt: z.number(),
     words: z.array(z.string()),
+    settings: RaceSettingsSchema.optional(),
   }),
   z.object({
     type: z.literal("progressUpdate"),

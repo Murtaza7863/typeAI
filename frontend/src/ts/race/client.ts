@@ -1,9 +1,11 @@
 import {
+  DEFAULT_RACE_SETTINGS,
   RaceClientMessage,
   RacePartyState,
   RacePlayer,
   RaceServerMessage,
   RaceServerMessageSchema,
+  RaceSettings,
 } from "@typeai/schemas/race";
 import { Peer, type DataConnection } from "peerjs";
 import { envConfig } from "virtual:env-config";
@@ -285,7 +287,10 @@ async function createPeerWithId(id?: string): Promise<Peer> {
   });
 }
 
-async function hostCreateParty(displayName: string): Promise<void> {
+async function hostCreateParty(
+  displayName: string,
+  settings: RaceSettings = DEFAULT_RACE_SETTINGS,
+): Promise<void> {
   destroyPeer();
   let code = "";
   let lastError: unknown;
@@ -322,7 +327,7 @@ async function hostCreateParty(displayName: string): Promise<void> {
     },
     sendTo: sendJson,
   });
-  peerHost.createParty(displayName);
+  peerHost.createParty(displayName, settings);
 }
 
 async function guestJoinParty(
@@ -437,14 +442,17 @@ function send(message: RaceClientMessage): void {
   }
 }
 
-export function createParty(displayName: string): void {
+export function createParty(
+  displayName: string,
+  settings: RaceSettings = DEFAULT_RACE_SETTINGS,
+): void {
   if (mode === "peer") {
-    void hostCreateParty(displayName).catch((e: unknown) => {
+    void hostCreateParty(displayName, settings).catch((e: unknown) => {
       setRaceError(e instanceof Error ? e.message : "Failed to create party");
     });
     return;
   }
-  send({ type: "createParty", displayName });
+  send({ type: "createParty", displayName, settings });
 }
 
 export function joinParty(
@@ -466,8 +474,12 @@ export function joinParty(
   });
 }
 
-export function startRace(): void {
-  send({ type: "startRace" });
+export function updateRaceSettings(settings: RaceSettings): void {
+  send({ type: "updateSettings", settings });
+}
+
+export function startRace(settings?: RaceSettings): void {
+  send({ type: "startRace", settings });
 }
 
 export function sendProgress(progress: number): void {

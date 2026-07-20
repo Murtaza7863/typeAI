@@ -1,4 +1,5 @@
 import {
+  DEFAULT_RACE_SETTINGS,
   RACE_COUNTDOWN_SECONDS,
   RACE_FINISH_TIMEOUT_MS,
   RACE_MAX_PLAYERS,
@@ -6,10 +7,11 @@ import {
   RacePartyState,
   RacePlayer,
   RaceServerMessage,
+  RaceSettings,
 } from "@typeai/schemas/race";
 import type { DataConnection, Peer } from "peerjs";
 
-import { generateRaceWordList } from "./word-list";
+import { generateRaceText } from "./word-list";
 
 type PlayerInternal = RacePlayer & {
   connection: DataConnection | null;
@@ -21,6 +23,7 @@ type PartyInternal = {
   hostId: string;
   status: RacePartyState["status"];
   words: string[];
+  settings: RaceSettings;
   players: Map<string, PlayerInternal>;
   startedAt: number | null;
   countdownEndsAt: number | null;
@@ -79,7 +82,10 @@ export class PeerRaceHost {
     return this.party?.code ?? null;
   }
 
-  createParty(displayName: string): string {
+  createParty(
+    displayName: string,
+    settings: RaceSettings = DEFAULT_RACE_SETTINGS,
+  ): string {
     const code = this.peer.id.toUpperCase();
     const hostId = this.peer.id;
     const host: PlayerInternal = {
@@ -97,7 +103,8 @@ export class PeerRaceHost {
       code,
       hostId,
       status: "lobby",
-      words: generateRaceWordList(),
+      settings: { ...settings },
+      words: generateRaceText(settings),
       players: new Map([[hostId, host]]),
       startedAt: null,
       countdownEndsAt: null,
@@ -151,8 +158,11 @@ export class PeerRaceHost {
       case "joinParty":
         this.handleJoin(conn, message.displayName, message.playerId);
         break;
+      case "updateSettings":
+        this.handleUpdateSettings(message.settings);
+        break;
       case "startRace":
-        this.handleStart();
+        this.handleStart(message.settings);
         break;
       case "progress":
         this.handleProgress(conn, message.progress);
@@ -169,6 +179,13 @@ export class PeerRaceHost {
       default:
         break;
     }
+  }
+
+  private handleUpdateSettings(settings: RaceSettings): void {
+    if (this.party === null || this.party.status !== "lobby") return;
+    this.party.settings = { ...settings };
+    this.party.words = generateRaceText(this.party.settings);
+    this.broadcastPartyState();
   }
 
   private handleJoin(
@@ -231,7 +248,7 @@ export class PeerRaceHost {
     this.broadcastPartyState();
   }
 
-  private handleStart(): void {
+  private handleStart(settings?: RaceSettings): void {
     if (this.party === null || this.party.status !== "lobby") return;
     if (this.party.players.size < 2) {
       this.emitToPlayer(this.party.hostId, {
@@ -240,6 +257,11 @@ export class PeerRaceHost {
       });
       return;
     }
+
+    if (settings !== undefined) {
+      this.party.settings = { ...settings };
+    }
+    this.party.words = generateRaceText(this.party.settings);
 
     this.party.status = "countdown";
     const endsAt = Date.now() + RACE_COUNTDOWN_SECONDS * 1000;
@@ -266,6 +288,7 @@ export class PeerRaceHost {
         type: "raceStart",
         startedAt: this.party.startedAt,
         words: this.party.words,
+        settings: this.party.settings,
       });
       this.broadcastPartyState();
     }, RACE_COUNTDOWN_SECONDS * 1000);
@@ -407,6 +430,7 @@ export class PeerRaceHost {
         status: party.status,
         hostId: party.hostId,
         words: party.words,
+        settings: party.settings,
         players: playersList(party),
         inviteUrl: `${window.location.origin}/race/${party.code}`,
         startedAt: party.startedAt,

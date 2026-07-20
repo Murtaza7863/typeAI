@@ -2,14 +2,17 @@ import { randomUUID } from "crypto";
 import { Server as HttpServer, IncomingMessage } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import {
+  DEFAULT_RACE_SETTINGS,
   RaceClientMessage,
   RaceClientMessageSchema,
   RaceServerMessage,
+  RaceSettings,
   RACE_COUNTDOWN_SECONDS,
   RACE_FINISH_TIMEOUT_MS,
 } from "@typeai/schemas/race";
 import Logger from "../utils/logger";
 import * as Store from "./party-store";
+import { generateRaceText } from "./word-list";
 
 type ClientMeta = {
   playerId: string;
@@ -51,6 +54,7 @@ function partyStatePayload(
       status: party.status,
       hostId: party.hostId,
       words: party.words,
+      settings: party.settings,
       players: Store.playersList(party),
       inviteUrl: inviteUrl(party.code),
       startedAt: party.startedAt,
@@ -99,7 +103,11 @@ function maybeCompleteRace(party: Store.RaceParty): void {
   }
 }
 
-function handleCreateParty(ws: WebSocket, displayName: string): void {
+function handleCreateParty(
+  ws: WebSocket,
+  displayName: string,
+  settings?: RaceSettings,
+): void {
   const meta = sockets.get(ws);
   if (meta === undefined) return;
 
@@ -113,7 +121,11 @@ function handleCreateParty(ws: WebSocket, displayName: string): void {
 
   const playerId = randomUUID();
   meta.playerId = playerId;
-  const party = Store.createParty(playerId, displayName);
+  const party = Store.createParty(
+    playerId,
+    displayName,
+    settings ?? DEFAULT_RACE_SETTINGS,
+  );
   meta.partyCode = party.code;
   const you = party.players.get(playerId);
   if (you === undefined) {
@@ -184,7 +196,7 @@ function handleReconnect(ws: WebSocket, code: string, playerId: string): void {
   broadcastPartyState(party);
 }
 
-function handleStartRace(ws: WebSocket): void {
+function handleStartRace(ws: WebSocket, settings?: RaceSettings): void {
   const meta = sockets.get(ws);
   if (meta === undefined || meta.partyCode === null) return;
 
@@ -204,6 +216,20 @@ function handleStartRace(ws: WebSocket): void {
   if (party.players.size < 2) {
     send(ws, { type: "error", message: "Need at least 2 players to start" });
     return;
+  }
+
+  if (settings !== undefined) {
+    try {
+      Store.applySettings(party, settings);
+    } catch (e) {
+      send(ws, {
+        type: "error",
+        message: e instanceof Error ? e.message : "Invalid settings",
+      });
+      return;
+    }
+  } else {
+    party.words = generateRaceText(party.settings);
   }
 
   party.status = "countdown";
@@ -231,9 +257,33 @@ function handleStartRace(ws: WebSocket): void {
       type: "raceStart",
       startedAt: party.startedAt,
       words: party.words,
+      settings: party.settings,
     });
     broadcastPartyState(party);
   }, RACE_COUNTDOWN_SECONDS * 1000);
+}
+
+function handleUpdateSettings(ws: WebSocket, settings: RaceSettings): void {
+  const meta = sockets.get(ws);
+  if (meta === undefined || meta.partyCode === null) return;
+  const party = Store.getParty(meta.partyCode);
+  if (party === undefined) {
+    send(ws, { type: "error", message: "Party not found" });
+    return;
+  }
+  if (meta.playerId !== party.hostId) {
+    send(ws, { type: "error", message: "Only the host can change settings" });
+    return;
+  }
+  try {
+    Store.applySettings(party, settings);
+    broadcastPartyState(party);
+  } catch (e) {
+    send(ws, {
+      type: "error",
+      message: e instanceof Error ? e.message : "Invalid settings",
+    });
+  }
 }
 
 function handleProgress(ws: WebSocket, progress: number): void {
@@ -354,7 +404,7 @@ function handleMessage(ws: WebSocket, raw: string): void {
   const msg: RaceClientMessage = result.data;
   switch (msg.type) {
     case "createParty":
-      handleCreateParty(ws, msg.displayName);
+      handleCreateParty(ws, msg.displayName, msg.settings);
       break;
     case "joinParty":
       handleJoinParty(ws, msg.code, msg.displayName, msg.playerId);
@@ -362,8 +412,11 @@ function handleMessage(ws: WebSocket, raw: string): void {
     case "reconnect":
       handleReconnect(ws, msg.code, msg.playerId);
       break;
+    case "updateSettings":
+      handleUpdateSettings(ws, msg.settings);
+      break;
     case "startRace":
-      handleStartRace(ws);
+      handleStartRace(ws, msg.settings);
       break;
     case "progress":
       handleProgress(ws, msg.progress);

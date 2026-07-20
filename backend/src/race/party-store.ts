@@ -1,10 +1,12 @@
 import { randomBytes } from "crypto";
 import {
+  DEFAULT_RACE_SETTINGS,
   RACE_MAX_PLAYERS,
   RacePartyStatus,
   RacePlayer,
+  RaceSettings,
 } from "@typeai/schemas/race";
-import { generateRaceWordList } from "./word-list";
+import { generateRaceText } from "./word-list";
 
 export type RacePlayerInternal = RacePlayer & {
   lastProgressAt: number;
@@ -15,6 +17,7 @@ export type RaceParty = {
   hostId: string;
   status: RacePartyStatus;
   words: string[];
+  settings: RaceSettings;
   players: Map<string, RacePlayerInternal>;
   createdAt: number;
   startedAt: number | null;
@@ -47,7 +50,11 @@ export function createPartyCode(): string {
   throw new Error("Failed to allocate party code");
 }
 
-export function createParty(hostId: string, displayName: string): RaceParty {
+export function createParty(
+  hostId: string,
+  displayName: string,
+  settings: RaceSettings = DEFAULT_RACE_SETTINGS,
+): RaceParty {
   const code = createPartyCode();
   const host: RacePlayerInternal = {
     id: hostId,
@@ -64,7 +71,8 @@ export function createParty(hostId: string, displayName: string): RaceParty {
     code,
     hostId,
     status: "lobby",
-    words: generateRaceWordList(),
+    settings: { ...settings },
+    words: generateRaceText(settings),
     players: new Map([[hostId, host]]),
     createdAt: Date.now(),
     startedAt: null,
@@ -77,6 +85,14 @@ export function createParty(hostId: string, displayName: string): RaceParty {
   parties.set(code, party);
   playerToParty.set(hostId, code);
   return party;
+}
+
+export function applySettings(party: RaceParty, settings: RaceSettings): void {
+  if (party.status !== "lobby") {
+    throw new Error("Can only change settings in the lobby");
+  }
+  party.settings = { ...settings };
+  party.words = generateRaceText(party.settings);
 }
 
 export function getParty(code: string): RaceParty | undefined {

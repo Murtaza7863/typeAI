@@ -1,4 +1,10 @@
 import {
+  DEFAULT_RACE_SETTINGS,
+  RaceMode,
+  RaceSettings,
+  RaceWordCount,
+} from "@typeai/schemas/race";
+import {
   createEffect,
   createMemo,
   createSignal,
@@ -16,6 +22,7 @@ import {
   leaveParty,
   onRaceMessage,
   startRace,
+  updateRaceSettings,
 } from "../../../race/client";
 import { getActivePage } from "../../../states/core";
 import { showErrorNotification } from "../../../states/notifications";
@@ -35,6 +42,7 @@ import { Fa } from "../../common/Fa";
 import { RaceProgressBars } from "./RaceProgressBars";
 
 const NAME_KEY = "typeai-race-display-name";
+const WORD_COUNTS: RaceWordCount[] = [25, 50, 100];
 
 function loadSavedName(): string {
   return localStorage.getItem(NAME_KEY) ?? "";
@@ -44,11 +52,30 @@ function saveName(name: string): void {
   localStorage.setItem(NAME_KEY, name);
 }
 
+function settingsFromParty(settings: RaceSettings | undefined): RaceSettings {
+  return {
+    mode: settings?.mode ?? DEFAULT_RACE_SETTINGS.mode,
+    wordCount: settings?.wordCount ?? DEFAULT_RACE_SETTINGS.wordCount,
+    punctuation: settings?.punctuation ?? DEFAULT_RACE_SETTINGS.punctuation,
+  };
+}
+
+function settingsSummary(settings: RaceSettings): string {
+  if (settings.mode === "quote") {
+    return "Quote race";
+  }
+  const punct = settings.punctuation ? " · punctuation" : "";
+  return `${settings.wordCount} words${punct}`;
+}
+
 export function RacePage(): JSXElement {
   const isOpen = (): boolean => getActivePage() === "race";
   const [displayName, setDisplayName] = createSignal(loadSavedName());
   const [joinCode, setJoinCode] = createSignal("");
   const [busy, setBusy] = createSignal(false);
+  const [draftSettings, setDraftSettings] = createSignal<RaceSettings>({
+    ...DEFAULT_RACE_SETTINGS,
+  });
 
   const party = createMemo(() => getRaceParty());
   const you = createMemo(() => getRaceYou());
@@ -59,6 +86,13 @@ export function RacePage(): JSXElement {
     }
     if (p === null) return "";
     return `${window.location.origin}/race/${p.code}`;
+  });
+
+  createEffect(() => {
+    const p = party();
+    if (p?.settings !== undefined) {
+      setDraftSettings(settingsFromParty(p.settings));
+    }
   });
 
   createEffect(() => {
@@ -118,12 +152,20 @@ export function RacePage(): JSXElement {
     return name;
   };
 
+  const patchSettings = (patch: Partial<RaceSettings>): void => {
+    const next = { ...draftSettings(), ...patch };
+    setDraftSettings(next);
+    if (party() !== null && you()?.isHost) {
+      updateRaceSettings(next);
+    }
+  };
+
   const onCreate = async (): Promise<void> => {
     const name = ensureName();
     if (name === null) return;
     setBusy(true);
     await connectRaceWs();
-    createParty(name);
+    createParty(name, draftSettings());
   };
 
   const onJoin = async (): Promise<void> => {
@@ -144,6 +186,66 @@ export function RacePage(): JSXElement {
     return match?.[1] ?? "";
   };
 
+  const settingsControls = (editable: boolean): JSXElement => (
+    <div class="flex flex-col gap-4">
+      <div>
+        <div class="mb-2 text-sm text-sub">Mode</div>
+        <div class="flex flex-wrap gap-2">
+          <For each={["words", "quote"] as RaceMode[]}>
+            {(mode) => (
+              <Button
+                text={mode === "words" ? "Words" : "Quote"}
+                variant="text"
+                active={draftSettings().mode === mode}
+                disabled={!editable}
+                onClick={() => patchSettings({ mode })}
+              />
+            )}
+          </For>
+        </div>
+      </div>
+
+      <Show when={draftSettings().mode === "words"}>
+        <div>
+          <div class="mb-2 text-sm text-sub">Word count</div>
+          <div class="flex flex-wrap gap-2">
+            <For each={WORD_COUNTS}>
+              {(count) => (
+                <Button
+                  text={`${count}`}
+                  variant="text"
+                  active={draftSettings().wordCount === count}
+                  disabled={!editable}
+                  onClick={() => patchSettings({ wordCount: count })}
+                />
+              )}
+            </For>
+          </div>
+        </div>
+
+        <div>
+          <div class="mb-2 text-sm text-sub">Punctuation</div>
+          <div class="flex flex-wrap gap-2">
+            <Button
+              text="Off"
+              variant="text"
+              active={!draftSettings().punctuation}
+              disabled={!editable}
+              onClick={() => patchSettings({ punctuation: false })}
+            />
+            <Button
+              text="On"
+              variant="text"
+              active={draftSettings().punctuation}
+              disabled={!editable}
+              onClick={() => patchSettings({ punctuation: true })}
+            />
+          </div>
+        </div>
+      </Show>
+    </div>
+  );
+
   return (
     <Show when={isOpen()}>
       <div class="mx-auto flex w-full max-w-180 flex-col gap-8 p-4">
@@ -152,8 +254,8 @@ export function RacePage(): JSXElement {
           <div>
             <h1 class="text-2xl text-text">Competitive</h1>
             <p class="text-sm text-sub">
-              Race up to 8 players on the same 50-word test. First to finish
-              wins — everyone keeps typing until the race ends.
+              Race up to 8 players on a shared test — 25/50/100 words,
+              punctuation, or quotes. First to finish wins.
             </p>
           </div>
         </div>
@@ -176,6 +278,8 @@ export function RacePage(): JSXElement {
                   onInput={(e) => setDisplayName(e.currentTarget.value)}
                 />
               </label>
+
+              {settingsControls(true)}
 
               <div class="flex flex-wrap gap-3">
                 <Button
@@ -215,6 +319,7 @@ export function RacePage(): JSXElement {
         >
           {(p) => {
             const partyData = p();
+            const liveSettings = settingsFromParty(partyData.settings);
             return (
               <div class="flex flex-col gap-6">
                 <Show when={partyData.status === "lobby"}>
@@ -244,6 +349,22 @@ export function RacePage(): JSXElement {
                     </div>
 
                     <p class="mb-2 text-xs break-all text-sub">{inviteUrl()}</p>
+
+                    <div class="mb-6 rounded bg-bg px-3 py-3">
+                      <div class="mb-3 text-sm text-sub">
+                        Race settings · {settingsSummary(liveSettings)}
+                      </div>
+                      <Show
+                        when={you()?.isHost}
+                        fallback={
+                          <p class="text-sm text-text">
+                            {settingsSummary(liveSettings)}
+                          </p>
+                        }
+                      >
+                        {settingsControls(true)}
+                      </Show>
+                    </div>
 
                     <h2 class="mb-3 text-sm text-sub">
                       Players ({partyData.players.length}/8)
@@ -278,7 +399,7 @@ export function RacePage(): JSXElement {
                       <Button
                         text="Start race"
                         disabled={partyData.players.length < 2}
-                        onClick={() => startRace()}
+                        onClick={() => startRace(draftSettings())}
                       />
                       <Show when={partyData.players.length < 2}>
                         <p class="mt-2 text-xs text-sub">
@@ -366,7 +487,7 @@ export function RacePage(): JSXElement {
                           onClick={() => {
                             leaveParty();
                             const name = displayName().trim() || "Host";
-                            createParty(name);
+                            createParty(name, draftSettings());
                           }}
                         />
                       </Show>

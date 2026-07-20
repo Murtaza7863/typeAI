@@ -5,7 +5,10 @@ import {
   RACE_WORD_COUNT,
 } from "@typeai/schemas/race";
 import type { DataConnection, Peer } from "peerjs";
-import { generateRaceWordList } from "../../src/ts/race/word-list";
+import {
+  generateRaceText,
+  generateRaceWordList,
+} from "../../src/ts/race/word-list";
 import { PeerRaceHost } from "../../src/ts/race/peer-host";
 
 function mockPeer(id = "abcdef"): {
@@ -54,6 +57,27 @@ describe("frontend race word list", () => {
     const words = generateRaceWordList();
     expect(words).toHaveLength(RACE_WORD_COUNT);
   });
+
+  it("supports 25/100 words, punctuation, and quotes", () => {
+    expect(
+      generateRaceText({ mode: "words", wordCount: 25, punctuation: false }),
+    ).toHaveLength(25);
+    expect(
+      generateRaceText({ mode: "words", wordCount: 100, punctuation: false }),
+    ).toHaveLength(100);
+    const punctuated = generateRaceText({
+      mode: "words",
+      wordCount: 50,
+      punctuation: true,
+    });
+    expect(punctuated.some((w) => /[.,!?;:]/.test(w))).toBe(true);
+    const quote = generateRaceText({
+      mode: "quote",
+      wordCount: 50,
+      punctuation: false,
+    });
+    expect(quote.length).toBeGreaterThan(5);
+  });
 });
 
 describe("PeerRaceHost", () => {
@@ -66,14 +90,38 @@ describe("PeerRaceHost", () => {
     expect(onMessage).toHaveBeenCalled();
     const first = onMessage.mock.calls[0]?.[1] as {
       type: string;
-      party?: { status: string; words: string[] };
+      party?: {
+        status: string;
+        words: string[];
+        settings?: { wordCount: number };
+      };
       you?: { isHost: boolean; displayName: string };
     };
     expect(first.type).toBe("partyState");
     expect(first.party?.status).toBe("lobby");
     expect(first.party?.words).toHaveLength(RACE_WORD_COUNT);
+    expect(first.party?.settings?.wordCount).toBe(50);
     expect(first.you?.isHost).toBe(true);
     expect(first.you?.displayName).toBe("Alice");
+  });
+
+  it("updates settings in the lobby", () => {
+    const onMessage = vi.fn();
+    const { peer } = mockPeer("hostid1");
+    const host = new PeerRaceHost(peer, { onMessage, sendTo: vi.fn() });
+    host.createParty("Alice");
+    onMessage.mockClear();
+    host.handleLocalMessage({
+      type: "updateSettings",
+      settings: { mode: "words", wordCount: 25, punctuation: true },
+    });
+    const state = onMessage.mock.calls[0]?.[1] as {
+      type: string;
+      party?: { words: string[]; settings: { wordCount: number } };
+    };
+    expect(state.type).toBe("partyState");
+    expect(state.party?.settings.wordCount).toBe(25);
+    expect(state.party?.words).toHaveLength(25);
   });
 
   it("adds guests over the data channel and enforces max players", () => {

@@ -34,9 +34,32 @@ describe("race party store", () => {
     expect(party.status).toBe("lobby");
     expect(party.hostId).toBe("host-1");
     expect(party.words).toHaveLength(RACE_WORD_COUNT);
+    expect(party.settings).toEqual({
+      mode: "words",
+      wordCount: 50,
+      punctuation: false,
+    });
     expect(party.players.size).toBe(1);
     expect(party.players.get("host-1")?.displayName).toBe("Alice");
     expect(party.players.get("host-1")?.isHost).toBe(true);
+  });
+
+  it("applies lobby settings for word count, punctuation, and quotes", () => {
+    const party = Store.createParty("h", "Host", {
+      mode: "words",
+      wordCount: 25,
+      punctuation: true,
+    });
+    expect(party.words).toHaveLength(25);
+    expect(party.words.some((w) => /[.,!?;:]/.test(w))).toBe(true);
+
+    Store.applySettings(party, {
+      mode: "quote",
+      wordCount: 50,
+      punctuation: false,
+    });
+    expect(party.settings.mode).toBe("quote");
+    expect(party.words.length).toBeGreaterThan(5);
   });
 
   it("joins players up to the max and rejects over capacity", () => {
@@ -125,6 +148,18 @@ describe("race protocol schemas", () => {
       RaceClientMessageSchema.safeParse({
         type: "createParty",
         displayName: "Ada",
+      }).success,
+    ).toBe(true);
+    expect(
+      RaceClientMessageSchema.safeParse({
+        type: "updateSettings",
+        settings: { mode: "quote", wordCount: 50, punctuation: false },
+      }).success,
+    ).toBe(true);
+    expect(
+      RaceClientMessageSchema.safeParse({
+        type: "startRace",
+        settings: { mode: "words", wordCount: 100, punctuation: true },
       }).success,
     ).toBe(true);
     expect(

@@ -26,6 +26,7 @@ export function mistakesFromProfile(
       issue: "Letters you miss most often",
       evidence: formatLetterList(letters),
       fix: "Slow down on words containing these letters. Type them in isolation 20 times before your next speed run.",
+      practiceKind: "letters",
     });
   }
 
@@ -36,6 +37,7 @@ export function mistakesFromProfile(
       issue: "Key combinations that trip you up",
       evidence: `Frequent errors on pairs: ${combos}.`,
       fix: `Drill these pairs as syllables (e.g. ${bigrams[0]?.key ?? "th"} in short words) at 70% of your max WPM until they feel automatic.`,
+      practiceKind: "bigrams",
     });
   }
 
@@ -45,6 +47,7 @@ export function mistakesFromProfile(
       issue: "Common wrong-key substitutions",
       evidence: swaps.map((s) => `${s.key} (${s.count}×)`).join("; "),
       fix: "When you feel a finger slip, pause and re-type the syllable instead of correcting mid-word.",
+      practiceKind: "swaps",
     });
   }
 
@@ -53,7 +56,8 @@ export function mistakesFromProfile(
     out.push({
       issue: "Words you stumble on repeatedly",
       evidence: words.map((w) => `"${w.key}" (${w.count}×)`).join(", "),
-      fix: "Use “Practice words” or the adaptive next test to repeat these words until accuracy is above 98%.",
+      fix: "Use “Practice” on this finding to drill these words until accuracy is above 98%.",
+      practiceKind: "words",
     });
   }
 
@@ -63,6 +67,7 @@ export function mistakesFromProfile(
       issue: "Slow or hesitant key timing",
       evidence: `Highest hesitation scores on: ${weak.map((w) => w.key).join(", ")}.`,
       fix: "Run 30s accuracy tests focusing on rhythm on those keys before increasing speed.",
+      practiceKind: "timing",
     });
   }
 

@@ -35,8 +35,15 @@ export const TypingFeedbackMistakeSchema = z.object({
   issue: z.string(),
   evidence: z.string(),
   fix: z.string(),
+  /** Structured target for one-click practice drills. */
+  practiceKind: z
+    .enum(["letters", "bigrams", "swaps", "words", "timing", "all"])
+    .optional(),
 });
 export type TypingFeedbackMistake = z.infer<typeof TypingFeedbackMistakeSchema>;
+export type TypingFeedbackPracticeKind = NonNullable<
+  TypingFeedbackMistake["practiceKind"]
+>;
 
 export const TypingFeedbackSchema = z.object({
   ready: z.boolean(),

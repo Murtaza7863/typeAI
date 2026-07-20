@@ -14,6 +14,11 @@ import {
   getLocalTypingSessionCount,
 } from "../../../typing-feedback/local-history";
 import { clearMistakeProfile } from "../../../typing-feedback/mistake-profile";
+import {
+  canPracticeFindings,
+  startPracticeAllWeakSpots,
+  startPracticeFromFinding,
+} from "../../../typing-feedback/practice-from-finding";
 import { cn } from "../../../utils/cn";
 import AsyncContent from "../../common/AsyncContent";
 import { Button } from "../../common/Button";
@@ -128,14 +133,37 @@ export function TypingFeedbackPanel(props: {
 
                 <Show when={(data.frequentMistakes?.length ?? 0) > 0}>
                   <div>
-                    <h4 class="mb-2 text-sm font-medium text-sub">
-                      Frequent patterns
-                    </h4>
+                    <div class="mb-2 flex items-center justify-between gap-3">
+                      <h4 class="text-sm font-medium text-sub">
+                        Frequent patterns
+                      </h4>
+                      <Show when={canPracticeFindings()}>
+                        <Button
+                          variant="text"
+                          text="Practice all weak spots"
+                          onClick={() => {
+                            startPracticeAllWeakSpots();
+                          }}
+                        />
+                      </Show>
+                    </div>
                     <ul class="flex flex-col gap-3">
                       <For each={data.frequentMistakes ?? []}>
                         {(mistake) => (
                           <li class="rounded-md bg-bg p-4">
-                            <div class="mb-1 font-medium">{mistake.issue}</div>
+                            <div class="mb-1 flex items-start justify-between gap-3">
+                              <div class="font-medium">{mistake.issue}</div>
+                              <Show when={canPracticeFindings()}>
+                                <Button
+                                  class="shrink-0"
+                                  variant="text"
+                                  text="Practice"
+                                  onClick={() => {
+                                    startPracticeFromFinding(mistake);
+                                  }}
+                                />
+                              </Show>
+                            </div>
                             <p class="mb-2 text-sm text-sub">
                               {mistake.evidence}
                             </p>
