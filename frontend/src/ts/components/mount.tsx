@@ -19,6 +19,8 @@ import { LeaderboardPage } from "./pages/leaderboard/LeaderboardPage";
 import { LoginPage } from "./pages/login/LoginPage";
 import { ProfilePage } from "./pages/profile/ProfilePage";
 import { ProfileSearchPage } from "./pages/profile/ProfileSearchPage";
+import { RacePage } from "./pages/race/RacePage";
+import { RaceProgressBars } from "./pages/race/RaceProgressBars";
 import { ResultProgressPanel } from "./pages/test/ResultProgressPanel";
 import { TestConfig } from "./pages/test/TestConfig";
 import { TypingFeedbackPanel } from "./pages/test/TypingFeedbackPanel";
@@ -30,6 +32,8 @@ const fullComponents: Record<string, () => JSXElement> = {
   accountpage: () => <AccountPage />,
   loginpage: () => <LoginPage />,
   leaderboardpage: () => <LeaderboardPage />,
+  racepage: () => <RacePage />,
+  raceprogressbars: () => <RaceProgressBars testOverlay />,
   profilepage: () => <ProfilePage />,
   profilesearchpage: () => <ProfileSearchPage />,
   myprofile: () => <MyProfile />,

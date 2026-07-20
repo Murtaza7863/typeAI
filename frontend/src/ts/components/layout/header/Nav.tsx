@@ -127,6 +127,19 @@ export function Nav(): JSXElement {
           <Button
             variant="text"
             fa={{
+              icon: "fa-flag-checkered",
+              fixedWidth: true,
+            }}
+            router-link
+            dataset={{
+              "data-nav-item": "competitive",
+            }}
+            class={buttonClass()}
+            href="/race"
+          />
+          <Button
+            variant="text"
+            fa={{
               icon: "fa-info",
               fixedWidth: true,
             }}

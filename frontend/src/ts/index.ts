@@ -44,6 +44,7 @@ import { mountComponents } from "./components/mount";
 import "./ready";
 import { setVersion } from "./states/core";
 import { loadFromLocalStorage } from "./config/lifecycle";
+import { initRaceController } from "./race/controller";
 
 import "./input/hotkeys";
 
@@ -101,3 +102,4 @@ addToGlobal({
 });
 
 mountComponents();
+initRaceController();

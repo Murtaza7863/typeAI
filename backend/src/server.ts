@@ -89,9 +89,14 @@ async function bootServer(port: number): Promise<Server> {
     return process.exit(1);
   }
 
-  return app.listen(port, () => {
+  const httpServer = app.listen(port, () => {
     Logger.success(`API server listening on port ${port}`);
   });
+
+  const { attachRaceWebSocket } = await import("./race/ws-server.js");
+  attachRaceWebSocket(httpServer);
+
+  return httpServer;
 }
 
 const PORT = parseInt(process.env["PORT"] ?? "5005", 10);

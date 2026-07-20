@@ -36,6 +36,22 @@
 - run `docker compose up -d`
 - after the command exits successfully you can access [http://localhost:8080](http://localhost:8080)
 
+### Competitive race WebSockets
+
+Competitive race parties use a native WebSocket endpoint on the backend at `/race-ws` (override with `RACE_WS_PATH`). If you terminate TLS or reverse-proxy the API, enable WebSocket upgrade for that path:
+
+```nginx
+location /race-ws {
+  proxy_pass http://backend:5005;
+  proxy_http_version 1.1;
+  proxy_set_header Upgrade $http_upgrade;
+  proxy_set_header Connection "upgrade";
+  proxy_set_header Host $host;
+}
+```
+
+Set `FRONTEND_URL` on the backend so invite links point at your frontend (e.g. `http://localhost:8080`).
+
 ## Account System
 
 By default, user sign-up and login are disabled. To enable this, you'll need to set up a Firebase project.

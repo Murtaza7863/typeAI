@@ -80,6 +80,9 @@ const pages = {
   }),
   profileSearch: solidPage("profileSearch"),
   friends: Friends.page,
+  race: solidPage("race", {
+    path: "/race",
+  }),
   404: Page404.page,
   accountSettings: PageAccountSettings.page,
   leaderboards: solidPage("leaderboards", {

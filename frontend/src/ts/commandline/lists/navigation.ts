@@ -26,6 +26,15 @@ const commands: Command[] = [
     },
   },
   {
+    id: "viewCompetitive",
+    display: "View Competitive",
+    alias: "navigate go to race party multiplayer",
+    icon: "fa-flag-checkered",
+    exec: (): void => {
+      void navigate("/race");
+    },
+  },
+  {
     id: "viewAbout",
     display: "View About Page",
     alias: "navigate go to",

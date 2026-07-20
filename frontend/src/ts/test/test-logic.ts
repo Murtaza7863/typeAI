@@ -56,6 +56,8 @@ import {
   CompletedEvent,
   CompletedEventCustomText,
 } from "@typeai/schemas/results";
+import { reportRaceFinished } from "../race/controller";
+import { isRaceActive } from "../states/race";
 import {
   findSingleActiveFunboxWithFunction,
   getActiveFunboxes,
@@ -1055,6 +1057,11 @@ export async function finish(difficultyFailed = false): Promise<void> {
 
   let dontSave = false;
 
+  if (isRaceActive()) {
+    reportRaceFinished();
+    dontSave = true;
+  }
+
   if (countUndefined(ce) > 0) {
     console.log(ce);
     showErrorNotification(
@@ -1276,6 +1283,16 @@ export async function finish(difficultyFailed = false): Promise<void> {
     sessionMistakes,
   });
   recordDailyProgress(completedEvent);
+
+  if (isRaceActive()) {
+    qs(".pageTest .loading")?.hide();
+    const typingTest = qs(".pageTest #typingTest");
+    typingTest?.show().setStyle({ opacity: "1" });
+    setResultVisible(false);
+    TestState.setResultVisible(false);
+    TestUI.setResultCalculating(false);
+    return;
+  }
 
   const resultUpdatePromise = Result.update(
     completedEvent,

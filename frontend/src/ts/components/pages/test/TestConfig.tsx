@@ -8,6 +8,7 @@ import { createEffectOn } from "../../../hooks/effects";
 import { useRefWithUtils } from "../../../hooks/useRefWithUtils";
 import { isAuthenticated } from "../../../states/core";
 import { showModal } from "../../../states/modals";
+import { isRaceActive } from "../../../states/race";
 import { getResultVisible, getFocus } from "../../../states/test";
 import { FaObject } from "../../../types/font-awesome";
 import { areUnsortedArraysEqual } from "../../../utils/arrays";
@@ -29,6 +30,9 @@ const cardClass =
 const durationMs = 250;
 
 export function TestConfig(): JSXElement {
+  const settingsLocked = (): boolean =>
+    getFocus() || getResultVisible() || isRaceActive();
+
   return (
     <>
       <div
@@ -36,9 +40,7 @@ export function TestConfig(): JSXElement {
           variables,
           "group relative mb-8 hidden w-max grid-cols-[1fr_auto_1fr] justify-center place-self-center [font-size:var(--font-size)] md:grid",
           "mx-auto transition-opacity duration-125",
-          getFocus() || getResultVisible()
-            ? "pointer-events-none opacity-0"
-            : "",
+          settingsLocked() ? "pointer-events-none opacity-0" : "",
         )}
         data-ui-element="testConfig"
       >
@@ -59,6 +61,7 @@ export function TestConfig(): JSXElement {
         fa={{
           icon: "fa-cog",
         }}
+        disabled={isRaceActive()}
       />
       <CoachModeSubtext class="mb-4 md:hidden" />
     </>

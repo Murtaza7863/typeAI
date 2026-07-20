@@ -14,6 +14,7 @@ import { typedKeys, triggerResize, escapeHTML } from "../utils/misc";
 import { camelCaseToWords, capitalizeFirstLetter } from "../utils/strings";
 import { Config, setConfigStore } from "./store";
 import { FunboxName } from "@typeai/schemas/configs";
+import { isRaceActive } from "../states/race";
 
 export function setConfig<T extends keyof ConfigSchemas.Config>(
   key: T,
@@ -54,6 +55,13 @@ export function setConfig<T extends keyof ConfigSchemas.Config>(
         value,
       )}" - no quit funbox active.`,
     );
+    return false;
+  }
+
+  if (isRaceActive() && !options?.nosave) {
+    showNoticeNotification("Settings are locked during a competitive race.", {
+      important: true,
+    });
     return false;
   }
 

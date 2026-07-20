@@ -1753,6 +1753,10 @@ function afterAnyTestInput(
   Focus.set(true);
   Caret.stopAnimation();
   Caret.updatePosition();
+
+  void import("../race/controller").then(({ reportRaceProgressFromTest }) => {
+    reportRaceProgressFromTest();
+  });
 }
 
 export function afterTestTextInput(
