@@ -27,3 +27,7 @@ Optional: `LLM_MODEL` (default `gpt-4o-mini`), `TYPING_FEEDBACK_MIN_TESTS` (defa
 3. Network tab should show `POST /api/typing-feedback` (not `api.typeai.com/dev/...`).
 
 If AI times out, you still get rule-based feedback (no error).
+
+## Competitive races on Vercel
+
+When `BACKEND_URL` points at `api.typeai.com` (no `/race-ws`), race parties use browser peer-to-peer (PeerJS). Self-hosted backends that expose `/race-ws` still use WebSockets.

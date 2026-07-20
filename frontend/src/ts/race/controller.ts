@@ -1,10 +1,5 @@
 import { navigationEvent } from "../events/navigation";
-import {
-  connectRaceWs,
-  onRaceMessage,
-  sendFinished,
-  sendProgress,
-} from "./client";
+import { onRaceMessage, sendFinished, sendProgress } from "./client";
 import {
   getLocalFinished,
   getRaceParty,
@@ -28,9 +23,8 @@ export function initRaceController(): void {
   if (initialized) return;
   initialized = true;
 
-  void connectRaceWs().catch(() => {
-    // race server optional until user opens competitive
-  });
+  // Connect lazily when the race page opens — avoid background WS errors
+  // against APIs that do not host /race-ws.
 
   onRaceMessage((message) => {
     if (message.type === "countdown") {
