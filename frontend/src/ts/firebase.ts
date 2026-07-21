@@ -34,6 +34,7 @@ import { tryCatch } from "@typeai/util/trycatch";
 import { googleSignUpEvent } from "./events/google-sign-up";
 import { addBanner } from "./states/banners";
 import { setUserId, setUserVerified } from "./states/core";
+import { envConfig } from "virtual:env-config";
 
 let app: FirebaseApp | undefined;
 let Auth: AuthType | undefined;
@@ -60,24 +61,28 @@ function hasFirebaseConfig(config: FirebaseOptions): boolean {
 
 export async function init(callback: ReadyCallback): Promise<void> {
   try {
-    let firebaseConfig: FirebaseOptions | null;
+    let firebaseConfig: FirebaseOptions | null = null;
 
-    try {
-      firebaseConfig = (
-        (await import("./constants/firebase-config")) as {
-          firebaseConfig: FirebaseOptions;
-        }
-      ).firebaseConfig;
-    } catch {
-      firebaseConfig = (
-        (await import("./constants/firebase-config-example")) as {
-          firebaseConfig: FirebaseOptions;
-        }
-      ).firebaseConfig;
+    if (envConfig.firebaseConfig !== null) {
+      firebaseConfig = envConfig.firebaseConfig;
+    } else {
+      try {
+        firebaseConfig = (
+          (await import("./constants/firebase-config")) as {
+            firebaseConfig: FirebaseOptions;
+          }
+        ).firebaseConfig;
+      } catch {
+        firebaseConfig = (
+          (await import("./constants/firebase-config-example")) as {
+            firebaseConfig: FirebaseOptions;
+          }
+        ).firebaseConfig;
+      }
     }
 
     readyCallback = callback;
-    if (!hasFirebaseConfig(firebaseConfig)) {
+    if (firebaseConfig === null || !hasFirebaseConfig(firebaseConfig)) {
       app = undefined;
       Auth = undefined;
       await callback(false, null);

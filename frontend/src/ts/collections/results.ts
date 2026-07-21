@@ -641,8 +641,24 @@ export function isResultsReady(): boolean {
   return resultsCollection.isReady();
 }
 
-export async function waitForResultsReady(): Promise<void> {
-  await resultsCollection.stateWhenReady();
+export async function waitForResultsReady(timeoutMs = 30_000): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      resultsCollection.stateWhenReady(),
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => {
+          reject(
+            new Error(
+              "Timed out downloading results. Please refresh the page and try again.",
+            ),
+          );
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
 }
 
 export function getResultsSize(): number {

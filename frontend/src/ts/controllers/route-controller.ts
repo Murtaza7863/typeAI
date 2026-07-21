@@ -39,7 +39,23 @@ type Route = {
 };
 
 function isAllowedLitePath(pathname: string): boolean {
-  return pathname === "/" || pathname === "/verify";
+  return (
+    pathname === "/" ||
+    pathname === "/verify" ||
+    pathname === "/login" ||
+    pathname === "/account" ||
+    pathname === "/account-settings" ||
+    pathname === "/race" ||
+    pathname.startsWith("/race/") ||
+    pathname === "/settings"
+  );
+}
+
+function notifyAuthUnavailable(): void {
+  showNoticeNotification(
+    "Sign-in is not available on this deployment — Firebase config is missing. Set FIREBASE_CONFIG (or firebase-config.ts) and redeploy.",
+    { important: true, durationMs: 8000 },
+  );
 }
 
 const route404: Route = {
@@ -85,6 +101,7 @@ const routes: Route[] = [
     path: "/login",
     load: async (_params, options) => {
       if (!isAuthAvailable()) {
+        notifyAuthUnavailable();
         await navigate("/", options);
         return;
       }
@@ -99,6 +116,7 @@ const routes: Route[] = [
     path: "/account",
     load: async (_params, options) => {
       if (!isAuthAvailable()) {
+        notifyAuthUnavailable();
         await navigate("/", options);
         return;
       }
@@ -113,6 +131,7 @@ const routes: Route[] = [
     path: "/account-settings",
     load: async (_params, options) => {
       if (!isAuthAvailable()) {
+        notifyAuthUnavailable();
         await navigate("/", options);
         return;
       }
@@ -262,11 +281,12 @@ window.addEventListener("popstate", () => {
 
 document.addEventListener("DOMContentLoaded", () => {
   document.body.addEventListener("click", (e) => {
-    const target = e?.target as HTMLLinkElement;
-    if (target.matches("[router-link]") && target?.href) {
-      e.preventDefault();
-      void navigate(target.href);
-    }
+    const target = e.target;
+    if (!(target instanceof Element)) return;
+    const link = target.closest("a[router-link]");
+    if (!(link instanceof HTMLAnchorElement) || !link.href) return;
+    e.preventDefault();
+    void navigate(link.href);
   });
 });
 

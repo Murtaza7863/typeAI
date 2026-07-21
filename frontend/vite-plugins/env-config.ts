@@ -9,6 +9,53 @@ function fallback(value: string | undefined | null, fallback: string): string {
   return value;
 }
 
+function parseFirebaseConfig(
+  raw: string | undefined,
+): EnvConfig["firebaseConfig"] {
+  if (raw === undefined || raw.trim() === "") return null;
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const apiKey = typeof parsed["apiKey"] === "string" ? parsed["apiKey"] : "";
+    const authDomain =
+      typeof parsed["authDomain"] === "string" ? parsed["authDomain"] : "";
+    const projectId =
+      typeof parsed["projectId"] === "string" ? parsed["projectId"] : "";
+    const appId = typeof parsed["appId"] === "string" ? parsed["appId"] : "";
+    if (
+      apiKey.trim() === "" ||
+      authDomain.trim() === "" ||
+      projectId.trim() === "" ||
+      appId.trim() === ""
+    ) {
+      console.warn(
+        "FIREBASE_CONFIG is set but missing apiKey/authDomain/projectId/appId",
+      );
+      return null;
+    }
+    return {
+      apiKey,
+      authDomain,
+      projectId,
+      appId,
+      storageBucket:
+        typeof parsed["storageBucket"] === "string"
+          ? parsed["storageBucket"]
+          : undefined,
+      messagingSenderId:
+        typeof parsed["messagingSenderId"] === "string"
+          ? parsed["messagingSenderId"]
+          : undefined,
+      databaseURL:
+        typeof parsed["databaseURL"] === "string"
+          ? parsed["databaseURL"]
+          : undefined,
+    };
+  } catch (error) {
+    console.warn("Failed to parse FIREBASE_CONFIG JSON", error);
+    return null;
+  }
+}
+
 export function envConfig(options: {
   isDevelopment: boolean;
   clientVersion: string;
@@ -23,6 +70,9 @@ export function envConfig(options: {
     load(id) {
       if (id === resolvedVirtualModuleId) {
         const liteMode = options.env["LITE_MODE"] === "true";
+        const firebaseConfig = parseFirebaseConfig(
+          options.env["FIREBASE_CONFIG"],
+        );
         const devConfig: EnvConfig = {
           isDevelopment: true,
           backendUrl: fallback(
@@ -34,6 +84,7 @@ export function envConfig(options: {
           recaptchaSiteKey: "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI",
           quickLoginEmail: options.env["QUICK_LOGIN_EMAIL"],
           quickLoginPassword: options.env["QUICK_LOGIN_PASSWORD"],
+          firebaseConfig,
         };
 
         const prodConfig: EnvConfig = {
@@ -47,6 +98,7 @@ export function envConfig(options: {
           quickLoginEmail: undefined,
           quickLoginPassword: undefined,
           clientVersion: options.clientVersion,
+          firebaseConfig,
         };
 
         const envConfig = options.isDevelopment ? devConfig : prodConfig;

@@ -56,6 +56,12 @@ const liteComponents: Record<string, () => JSXElement> = {
   theme: () => <Theme />,
   header: () => <Header />,
   testconfig: () => <TestConfig />,
+  accountpage: () => <AccountPage />,
+  loginpage: () => <LoginPage />,
+  racepage: () => <RacePage />,
+  raceprogressbars: () => <RaceProgressBars testOverlay />,
+  typingfeedbackpanel: () => <TypingFeedbackPanel variant="result" />,
+  resultprogresspanel: () => <ResultProgressPanel />,
 };
 
 function mountToMountpoint(name: string, component: () => JSXElement): void {
