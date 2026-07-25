@@ -1276,15 +1276,42 @@ export async function finish(difficultyFailed = false): Promise<void> {
   const { getWeakLetterScores } = await import("./weak-spot");
   mergeMissedWordsFromInput(TestInput.missedWords);
   const sessionMistakes = getSessionMistakeSnapshot();
+  const newlyRecovered = recordSessionToProfile(
+    sessionMistakes,
+    getWeakLetterScores(),
+  );
   const { setTestProgressContext } = await import("../states/test");
   const { recordDailyProgress } = await import("../utils/result-progress");
   setTestProgressContext({
     completedEvent: completedEvent,
     sessionMistakes,
   });
-  recordDailyProgress(completedEvent);
+  const progressUpdate = recordDailyProgress(completedEvent, {
+    coachMode: getCoachMode(),
+    recoveries: newlyRecovered.length,
+  });
+
+  if (newlyRecovered.length > 0) {
+    const labels = newlyRecovered
+      .slice(0, 3)
+      .map((entry) => `"${entry.key}"`)
+      .join(", ");
+    showSuccessNotification(
+      newlyRecovered.length === 1
+        ? `Weak spot cleared: ${labels}`
+        : `Weak spots cleared: ${labels}`,
+      { durationMs: 4000 },
+    );
+  }
+
+  if (progressUpdate.justCompletedAllGoals) {
+    showSuccessNotification("Daily quests complete — +momentum unlocked.", {
+      durationMs: 4500,
+    });
+  }
 
   if (isRaceActive()) {
+    resetSessionMistakes();
     qs(".pageTest .loading")?.hide();
     const typingTest = qs(".pageTest #typingTest");
     typingTest?.show().setStyle({ opacity: "1" });
@@ -1314,7 +1341,6 @@ export async function finish(difficultyFailed = false): Promise<void> {
     invalidateTypingFeedback();
   }
 
-  recordSessionToProfile(sessionMistakes, getWeakLetterScores());
   resetSessionMistakes();
 
   await Promise.all([savingResultPromise, resultUpdatePromise]);

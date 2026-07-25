@@ -98,7 +98,7 @@ function decayWeakness(
   profile: MistakeProfile,
   key: string,
   kind: RecoveryEntry["kind"],
-): void {
+): RecoveryEntry | null {
   const map =
     kind === "letter"
       ? profile.wrongLetters
@@ -108,7 +108,7 @@ function decayWeakness(
           ? profile.missedWords
           : profile.typedInstead;
   const current = map[key] ?? 0;
-  if (current <= 0) return;
+  if (current <= 0) return null;
 
   const next = Math.floor(current * DECAY_FACTOR);
   const sk = streakKey(kind, key);
@@ -116,26 +116,29 @@ function decayWeakness(
   if (next <= MIN_COUNT_AFTER_DECAY) {
     const wasCount = current;
     setMapForKind(profile, kind, removeKey(map, key));
-    profile.recovered = [
-      { key, kind, at: Date.now(), wasCount },
-      ...profile.recovered,
-    ].slice(0, MAX_RECOVERED_LOG);
+    const entry: RecoveryEntry = { key, kind, at: Date.now(), wasCount };
+    profile.recovered = [entry, ...profile.recovered].slice(
+      0,
+      MAX_RECOVERED_LOG,
+    );
     const streakRest = { ...profile.cleanStreaks };
     const nextStreaks: Record<string, number> = {};
     for (const [k, v] of Object.entries(streakRest)) {
       if (k !== sk) nextStreaks[k] = v;
     }
     profile.cleanStreaks = nextStreaks;
-  } else {
-    map[key] = next;
-    profile.cleanStreaks[sk] = 0;
+    return entry;
   }
+  map[key] = next;
+  profile.cleanStreaks[sk] = 0;
+  return null;
 }
 
 function applyRecoveryTracking(
   profile: MistakeProfile,
   snapshot: SessionMistakeSnapshot,
-): void {
+): RecoveryEntry[] {
+  const newlyRecovered: RecoveryEntry[] = [];
   const track = (
     map: Record<string, number>,
     sessionMap: Record<string, number>,
@@ -152,7 +155,8 @@ function applyRecoveryTracking(
         const streak = (profile.cleanStreaks[sk] ?? 0) + 1;
         profile.cleanStreaks[sk] = streak;
         if (streak >= CLEAN_SESSIONS_TO_RECOVER) {
-          decayWeakness(profile, key, kind);
+          const recovered = decayWeakness(profile, key, kind);
+          if (recovered !== null) newlyRecovered.push(recovered);
         }
       }
     }
@@ -162,6 +166,7 @@ function applyRecoveryTracking(
   track(profile.bigrams, snapshot.bigrams, "bigram");
   track(profile.missedWords, snapshot.missedWords, "word");
   track(profile.typedInstead, snapshot.typedInstead, "swap");
+  return newlyRecovered;
 }
 
 export function getMistakeProfile(): MistakeProfile {
@@ -183,10 +188,10 @@ export function getMistakeProfile(): MistakeProfile {
 export function recordSessionToProfile(
   snapshot: SessionMistakeSnapshot,
   weakLetterScores?: Record<string, number>,
-): void {
+): RecoveryEntry[] {
   const profile = getMistakeProfile();
 
-  applyRecoveryTracking(profile, snapshot);
+  const newlyRecovered = applyRecoveryTracking(profile, snapshot);
 
   profile.wrongLetters = mergeCountMaps(
     profile.wrongLetters,
@@ -213,6 +218,7 @@ export function recordSessionToProfile(
   profile.testsRecorded += 1;
   profile.updatedAt = Date.now();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+  return newlyRecovered;
 }
 
 export function clearMistakeProfile(): void {

@@ -544,31 +544,72 @@ export async function addResult(
   }
 
   const streak = await UserDAL.updateStreak(uid, completedEvent.timestamp);
-  const badgeWaitingInInbox = (
-    user.inbox?.flatMap((i) =>
-      (i.rewards ?? []).map((r) => (r.type === "badge" ? r.item.id : null)),
-    ) ?? []
-  ).includes(14);
+  const pendingBadgeIds = new Set(
+    (
+      user.inbox?.flatMap((i) =>
+        (i.rewards ?? []).map((r) => (r.type === "badge" ? r.item.id : null)),
+      ) ?? []
+    ).filter((id): id is number => typeof id === "number"),
+  );
+  const ownedBadgeIds = new Set(
+    (user.inventory?.badges ?? []).map((badge) => badge.id),
+  );
 
-  const shouldGetBadge =
-    streak >= 365 &&
-    user.inventory?.badges?.find((b) => b.id === 14) === undefined &&
-    !badgeWaitingInInbox;
-
-  if (shouldGetBadge) {
-    const mail = buildMonkeyMail({
-      subject: "Badge",
+  const streakBadgeMilestones: {
+    days: number;
+    badgeId: number;
+    body: string;
+  }[] = [
+    {
+      days: 7,
+      badgeId: 18,
+      body: "Congrats on a 7-day streak! Claim your Week Warrior badge.",
+    },
+    {
+      days: 30,
+      badgeId: 19,
+      body: "Congrats on a 30-day streak! Claim your Monthly Momentum badge.",
+    },
+    {
+      days: 100,
+      badgeId: 20,
+      body: "Congrats on a 100-day streak! Claim your Century Club badge.",
+    },
+    {
+      days: 365,
+      badgeId: 14,
       body: "Congratulations for reaching a 365 day streak! You have been awarded a special badge. Now, go touch some grass.",
-      rewards: [
-        {
-          type: "badge",
-          item: {
-            id: 14,
+    },
+  ];
+
+  const streakBadgeMail = streakBadgeMilestones
+    .filter(
+      (milestone) =>
+        streak >= milestone.days &&
+        !ownedBadgeIds.has(milestone.badgeId) &&
+        !pendingBadgeIds.has(milestone.badgeId),
+    )
+    .map((milestone) =>
+      buildMonkeyMail({
+        subject: "Badge",
+        body: milestone.body,
+        rewards: [
+          {
+            type: "badge",
+            item: {
+              id: milestone.badgeId,
+            },
           },
-        },
-      ],
-    });
-    await UserDAL.addToInbox(uid, [mail], req.ctx.configuration.users.inbox);
+        ],
+      }),
+    );
+
+  if (streakBadgeMail.length > 0) {
+    await UserDAL.addToInbox(
+      uid,
+      streakBadgeMail,
+      req.ctx.configuration.users.inbox,
+    );
   }
 
   const xpGained = await calculateXp(

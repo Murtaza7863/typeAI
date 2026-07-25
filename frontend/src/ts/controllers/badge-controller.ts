@@ -180,6 +180,30 @@ export const badges: Record<number, UserBadge> = {
         "linear-gradient(45deg in hsl longer hue, hsl(330, 90%, 30%) 0%, hsl(250, 90%, 30%) 100%)",
     },
   },
+  18: {
+    id: 18,
+    name: "Week Warrior",
+    description: "Reached a streak of 7 days",
+    icon: "fa-fire",
+    color: "var(--bg-color)",
+    background: "var(--main-color)",
+  },
+  19: {
+    id: 19,
+    name: "Monthly Momentum",
+    description: "Reached a streak of 30 days",
+    icon: "fa-fire",
+    color: "var(--bg-color)",
+    background: "var(--main-color)",
+  },
+  20: {
+    id: 20,
+    name: "Century Club",
+    description: "Reached a streak of 100 days",
+    icon: "fa-fire",
+    color: "var(--bg-color)",
+    background: "var(--main-color)",
+  },
 };
 
 export function getHTMLById(

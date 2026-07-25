@@ -1,5 +1,5 @@
 import { ChartData } from "chart.js";
-import { createMemo, createSignal, JSXElement, Show } from "solid-js";
+import { createMemo, createSignal, For, JSXElement, Show } from "solid-js";
 
 import { getConfig } from "../../../config/store";
 import { createEffectOn } from "../../../hooks/effects";
@@ -153,6 +153,52 @@ export function ResultProgressPanel(): JSXElement {
                       · day {progress.today.streak} streak
                     </Show>
                   </p>
+                </Section>
+
+                <Section title="daily quests">
+                  <div class="flex flex-col gap-2">
+                    <For each={progress.today.goals}>
+                      {(goal) => (
+                        <div class="flex items-center gap-3">
+                          <Fa
+                            icon={
+                              goal.complete ? "fa-check-circle" : "fa-circle"
+                            }
+                            class={
+                              goal.complete
+                                ? "shrink-0 text-main"
+                                : "shrink-0 text-sub"
+                            }
+                          />
+                          <div class="min-w-0 flex-1">
+                            <div class="flex justify-between gap-2 text-xs">
+                              <span>{goal.label}</span>
+                              <span class="text-sub">
+                                {Math.min(goal.current, goal.target)}/
+                                {goal.target} {goal.unit}
+                              </span>
+                            </div>
+                            <div class="mt-1 h-1.5 overflow-hidden rounded bg-sub/20">
+                              <div
+                                class="h-full rounded bg-main transition-[width] duration-300"
+                                style={{
+                                  width: `${Math.min(
+                                    100,
+                                    (goal.current / goal.target) * 100,
+                                  )}%`,
+                                }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </For>
+                    <Show when={progress.today.allGoalsComplete}>
+                      <p class="text-xs text-main">
+                        Daily quests complete — nice work.
+                      </p>
+                    </Show>
+                  </div>
                 </Section>
 
                 <Show

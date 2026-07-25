@@ -11,18 +11,38 @@ import { recoveryStrengthsFromProfile } from "../typing-feedback/mistake-insight
 import { SessionMistakeSnapshot } from "../typing-feedback/session-mistakes";
 import { LocalStorageWithSchema } from "./local-storage-with-schema";
 
+export const DAILY_GOALS = {
+  tests: 3,
+  seconds: 10 * 60,
+  drills: 1,
+} as const;
+
 const dailyDaySchema = z.object({
   tests: z.number(),
   totalWpm: z.number(),
   totalAcc: z.number(),
   seconds: z.number(),
+  drills: z.number().default(0),
+  recoveries: z.number().default(0),
+  goalsCelebrated: z.boolean().default(false),
 });
+
+export type DailyDayProgress = z.infer<typeof dailyDaySchema>;
 
 const dailyProgressStore = new LocalStorageWithSchema({
   key: "typeai-daily-progress",
   schema: z.record(z.string(), dailyDaySchema),
   fallback: {},
 });
+
+export type DailyGoalStatus = {
+  id: "tests" | "minutes" | "drill";
+  label: string;
+  current: number;
+  target: number;
+  unit: string;
+  complete: boolean;
+};
 
 export type ProgressSnapshotData = {
   vsLastTest: {
@@ -43,6 +63,10 @@ export type ProgressSnapshotData = {
     tests: number;
     typingLabel: string;
     streak: number | null;
+    goals: DailyGoalStatus[];
+    goalsComplete: number;
+    goalsTotal: number;
+    allGoalsComplete: boolean;
   };
   trend: {
     currentWeekAvg: number;
@@ -56,6 +80,11 @@ export type ProgressSnapshotData = {
 };
 
 type ResultLike = CompletedEvent | SnapshotResult<Mode>;
+
+export type RecordDailyProgressOptions = {
+  coachMode?: "original" | "adaptive" | "drill";
+  recoveries?: number;
+};
 
 function formatDateKey(ts: number): string {
   const d = new Date(ts);
@@ -135,22 +164,111 @@ function weekAvgWpm(daysBackStart: number, daysBackEnd: number): number | null {
   return average(wpms);
 }
 
-export function recordDailyProgress(result: CompletedEvent): void {
+function normalizeDay(
+  day: Partial<DailyDayProgress> | undefined,
+): DailyDayProgress {
+  return {
+    tests: day?.tests ?? 0,
+    totalWpm: day?.totalWpm ?? 0,
+    totalAcc: day?.totalAcc ?? 0,
+    seconds: day?.seconds ?? 0,
+    drills: day?.drills ?? 0,
+    recoveries: day?.recoveries ?? 0,
+    goalsCelebrated: day?.goalsCelebrated ?? false,
+  };
+}
+
+export function buildDailyGoals(day: DailyDayProgress): DailyGoalStatus[] {
+  return [
+    {
+      id: "tests",
+      label: "Complete tests",
+      current: day.tests,
+      target: DAILY_GOALS.tests,
+      unit: "tests",
+      complete: day.tests >= DAILY_GOALS.tests,
+    },
+    {
+      id: "minutes",
+      label: "Time typed",
+      current: Math.floor(day.seconds / 60),
+      target: DAILY_GOALS.seconds / 60,
+      unit: "min",
+      complete: day.seconds >= DAILY_GOALS.seconds,
+    },
+    {
+      id: "drill",
+      label: "Coach drill",
+      current: day.drills,
+      target: DAILY_GOALS.drills,
+      unit: "session",
+      complete: day.drills >= DAILY_GOALS.drills,
+    },
+  ];
+}
+
+/** Consecutive local days with at least one test (includes today if present). */
+export function getLocalStreak(fromTs = Date.now()): number {
+  const store = dailyProgressStore.get();
+  let streak = 0;
+  const cursor = new Date(fromTs);
+  cursor.setHours(12, 0, 0, 0);
+
+  for (let i = 0; i < 400; i++) {
+    const key = formatDateKey(cursor.getTime());
+    const day = store[key];
+    if (day === undefined || day.tests <= 0) {
+      if (i === 0) {
+        cursor.setDate(cursor.getDate() - 1);
+        continue;
+      }
+      break;
+    }
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+export function recordDailyProgress(
+  result: CompletedEvent,
+  options: RecordDailyProgressOptions = {},
+): {
+  day: DailyDayProgress;
+  goals: DailyGoalStatus[];
+  justCompletedAllGoals: boolean;
+} {
   const key = formatDateKey(result.timestamp);
   const data = dailyProgressStore.get();
-  const prev = data[key] ?? { tests: 0, totalWpm: 0, totalAcc: 0, seconds: 0 };
+  const prev = normalizeDay(data[key]);
   const typingSeconds = Math.max(
     0,
     result.testDuration + result.incompleteTestSeconds - result.afkDuration,
   );
+  const isDrill =
+    options.coachMode === "adaptive" || options.coachMode === "drill";
 
-  data[key] = {
+  const next = normalizeDay({
     tests: prev.tests + 1,
     totalWpm: prev.totalWpm + result.wpm,
     totalAcc: prev.totalAcc + result.acc,
     seconds: prev.seconds + typingSeconds,
-  };
+    drills: prev.drills + (isDrill ? 1 : 0),
+    recoveries: prev.recoveries + (options.recoveries ?? 0),
+    goalsCelebrated: prev.goalsCelebrated,
+  });
+
+  const goals = buildDailyGoals(next);
+  const allComplete = goals.every((goal) => goal.complete);
+  const justCompletedAllGoals = allComplete && !prev.goalsCelebrated;
+  if (justCompletedAllGoals) {
+    next.goalsCelebrated = true;
+  }
+
+  data[key] = next;
   dailyProgressStore.set(data);
+
+  return { day: next, goals, justCompletedAllGoals };
 }
 
 export async function buildProgressSnapshot(
@@ -209,18 +327,21 @@ export async function buildProgressSnapshot(
   }
 
   const todayKey = formatDateKey(current.timestamp);
-  const daily = dailyProgressStore.get()[todayKey];
+  const daily = normalizeDay(dailyProgressStore.get()[todayKey]);
   const todayStart = startOfDay(current.timestamp);
   const testsTodayFromDb = allResults.filter(
     (result) => startOfDay(result.timestamp) === todayStart,
   ).length;
-  const testsToday = Math.max(daily?.tests ?? 0, testsTodayFromDb);
+  const testsToday = Math.max(daily.tests, testsTodayFromDb);
+  const goals = buildDailyGoals({ ...daily, tests: testsToday });
 
   const snapshot = getSnapshot();
-  const streak =
+  const accountStreak =
     snapshot?.streak !== undefined && snapshot.streak > 0
       ? snapshot.streak
       : null;
+  const localStreak = getLocalStreak(current.timestamp);
+  const streak = accountStreak ?? (localStreak > 0 ? localStreak : null);
 
   const currentWeek = weekAvgWpm(0, 7);
   const priorWeek = weekAvgWpm(7, 14);
@@ -251,8 +372,12 @@ export async function buildProgressSnapshot(
     vsPb,
     today: {
       tests: testsToday,
-      typingLabel: formatTypingTime(daily?.seconds ?? 0),
-      streak,
+      typingLabel: formatTypingTime(daily.seconds),
+      streak: streak !== null && streak > 0 ? streak : null,
+      goals,
+      goalsComplete: goals.filter((goal) => goal.complete).length,
+      goalsTotal: goals.length,
+      allGoalsComplete: goals.every((goal) => goal.complete),
     },
     trend,
     thisTestMistakes: formatMistakes(sessionMistakes),
