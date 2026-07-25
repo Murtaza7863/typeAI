@@ -1,5 +1,5 @@
 :root {
-  --roundness: 0.65rem;
+  --roundness: 0.85rem;
   --font: "JetBrains Mono", "Vazirharf", monospace;
   // scroll-behavior: smooth;
   scroll-padding-top: 2rem;
@@ -153,14 +153,24 @@ body {
   background-color: var(--bg-color);
   background-image:
     radial-gradient(
-      1200px 700px at 12% -10%,
-      color-mix(in oklab, var(--main-color) 9%, transparent),
-      transparent 60%
+      1400px 800px at 8% -15%,
+      color-mix(in oklab, var(--main-color) 16%, transparent),
+      transparent 58%
     ),
     radial-gradient(
-      900px 500px at 88% 110%,
-      color-mix(in oklab, var(--sub-color) 12%, transparent),
+      1000px 620px at 92% 0%,
+      color-mix(in oklab, var(--caret-color) 10%, transparent),
+      transparent 50%
+    ),
+    radial-gradient(
+      900px 560px at 78% 115%,
+      color-mix(in oklab, var(--sub-color) 18%, transparent),
       transparent 55%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--sub-alt-color) 40%, transparent),
+      transparent 35%
     );
   background-attachment: fixed;
 }

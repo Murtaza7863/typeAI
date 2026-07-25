@@ -44,7 +44,7 @@ export default definePreview({
     },
   },
   initialGlobals: {
-    theme: "serika_dark",
+    theme: "typeai",
   },
   decorators: [ThemeDecorator],
   parameters: {

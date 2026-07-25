@@ -48,9 +48,29 @@ export async function loadFromLocalStorage(): Promise<void> {
     await resetConfig();
   } else {
     await applyConfig(newConfig);
+    migrateBrandLookOnce();
     saveFullConfigToLocalStorage(true);
   }
   loadDone();
+}
+
+const BRAND_VERSION_KEY = "typeaiBrandV";
+const BRAND_VERSION = "3";
+
+/** Move users still on Monkeytype/default teal themes onto the typeAI look. */
+function migrateBrandLookOnce(): void {
+  if (typeof window === "undefined") return;
+  if (window.localStorage.getItem(BRAND_VERSION_KEY) === BRAND_VERSION) {
+    return;
+  }
+
+  const theme = Config.theme;
+  if (theme === "serika_dark" || theme === "serika") {
+    setConfig("theme", "typeai", { nosave: true });
+    setConfig("themeDark", "typeai", { nosave: true });
+  }
+
+  window.localStorage.setItem(BRAND_VERSION_KEY, BRAND_VERSION);
 }
 
 const lastConfigsToApply: Set<keyof ConfigSchemas.Config> = new Set([

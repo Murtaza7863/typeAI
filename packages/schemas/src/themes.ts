@@ -178,6 +178,7 @@ export const ThemeNameSchema = z.enum(
     "tiramisu",
     "trackday",
     "trance",
+    "typeai",
     "tron_orange",
     "vaporwave",
     "vesper",

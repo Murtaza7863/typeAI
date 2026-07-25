@@ -1,0 +1,22 @@
+header {
+  border-bottom: 1px solid
+    color-mix(in oklab, var(--main-color) 16%, transparent);
+  padding-bottom: 0.75rem;
+}
+
+#logo .text .top {
+  letter-spacing: 0.12em;
+}
+
+#result .wrapper .stats .group .top {
+  letter-spacing: 0.04em;
+}
+
+.pageTest #wordsWrapper:not(.tape) {
+  border-radius: calc(var(--roundness) * 1.35);
+  background: color-mix(in oklab, var(--sub-alt-color) 45%, transparent);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in oklab, var(--main-color) 12%, transparent);
+  padding-block: 0.85rem;
+  padding-inline: 1rem;
+}

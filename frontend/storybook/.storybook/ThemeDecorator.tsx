@@ -15,9 +15,9 @@ export function ThemeDecorator(
   Story: () => JSXElement,
   context: StoryContext,
 ): JSXElement {
-  const themeName = (context.globals.theme ?? "serika_dark") as ThemeName;
+  const themeName = (context.globals.theme ?? "typeai") as ThemeName;
   const theme =
-    themeMap.get(themeName) ?? (themeMap.get("serika_dark") as ThemeWithName);
+    themeMap.get(themeName) ?? (themeMap.get("typeai") as ThemeWithName);
 
   const root = document.documentElement;
   root.style.setProperty("--bg-color", theme.bg);

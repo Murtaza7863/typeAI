@@ -10,7 +10,7 @@ export function Logo(): JSXElement {
   return (
     <a
       href={`${location.origin}/`}
-      class="-m-2 flex h-6 w-max rounded-[0.8rem] p-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main"
+      class="-m-2 flex h-6 w-max items-center gap-2 rounded-[0.8rem] p-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main"
       aria-label="typeAI home"
       router-link
       style={{
@@ -23,10 +23,16 @@ export function Logo(): JSXElement {
         if (getActivePage() === "test") restartTestEvent.dispatch();
       }}
     >
+      <span
+        class={cn("hidden h-5 w-1.5 shrink-0 rounded-full bg-main sm:block", {
+          "bg-sub": getFocus(),
+        })}
+        aria-hidden="true"
+      ></span>
       <div class="grid h-6 place-content-center text-[1.5rem] leading-none font-semibold sm:text-[2rem]">
         <span
           class={cn(
-            "hidden text-[0.315em] leading-none tracking-wide text-sub uppercase transition-colors duration-125 lg:block",
+            "hidden text-[0.315em] leading-none tracking-[0.18em] text-sub uppercase transition-colors duration-125 lg:block",
             {
               "text-transparent": getFocus(),
             },

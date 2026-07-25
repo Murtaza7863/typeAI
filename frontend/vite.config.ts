@@ -145,9 +145,9 @@ function getPlugins({
             purpose: "any",
           },
         ],
-        background_color: "#121a1f",
+        background_color: "#08141c",
         display: "standalone",
-        theme_color: "#121a1f",
+        theme_color: "#08141c",
       },
       manifestFilename: "manifest.json",
       workbox: {
