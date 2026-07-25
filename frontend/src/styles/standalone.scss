@@ -6,7 +6,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: block;
-  src: url("/webfonts/RobotoMono-Regular.woff2") format("woff2");
+  src: url("/webfonts/JetBrainsMono-Regular.woff2") format("woff2");
 }
 @font-face {
   font-family: "Lexend Deca";
@@ -18,16 +18,16 @@
 
 :root {
   --font: "JetBrains Mono", monospace;
-  --bg-color: #1a2b2b;
-  --main-color: #2dd4bf;
-  --caret-color: #2dd4bf;
-  --sub-color: #4d7373;
-  --sub-alt-color: #243838;
-  --text-color: #e0f2f1;
-  --error-color: #ca4754;
-  --error-extra-color: #7e2a33;
-  --colorful-error-color: #ca4754;
-  --colorful-error-extra-color: #7e2a33;
+  --bg-color: #121a1f;
+  --main-color: #5eead4;
+  --caret-color: #5eead4;
+  --sub-color: #5f7d82;
+  --sub-alt-color: #1a252c;
+  --text-color: #d7ebe8;
+  --error-color: #e06b75;
+  --error-extra-color: #8f3a44;
+  --colorful-error-color: #e06b75;
+  --colorful-error-extra-color: #8f3a44;
 }
 
 header {

@@ -15,7 +15,8 @@ export function Logo(): JSXElement {
       router-link
       style={{
         "box-sizing": "content-box",
-        "font-family": "Lexend Deca ,sans-serif",
+        "font-family": "Lexend Deca, sans-serif",
+        "letter-spacing": "-0.03em",
       }}
       data-ui-element="logo"
       onClick={() => {
@@ -25,7 +26,7 @@ export function Logo(): JSXElement {
       <div class="grid h-6 place-content-center text-[1.5rem] leading-none font-semibold sm:text-[2rem]">
         <span
           class={cn(
-            "hidden text-[0.315em] leading-none text-sub transition-colors duration-125 lg:block",
+            "hidden text-[0.315em] leading-none tracking-wide text-sub uppercase transition-colors duration-125 lg:block",
             {
               "text-transparent": getFocus(),
             },
@@ -35,12 +36,13 @@ export function Logo(): JSXElement {
           {isDevEnvironment() ? "localhost" : "type smart"}
         </span>
         <span
-          class={cn("text-text transition-colors duration-250", {
+          class={cn("transition-colors duration-250", {
             "text-sub": getFocus(),
           })}
           data-ui-element="logoText"
         >
-          typeAI
+          <span classList={{ "text-text": !getFocus() }}>type</span>
+          <span classList={{ "text-main": !getFocus() }}>AI</span>
         </span>
       </div>
     </a>

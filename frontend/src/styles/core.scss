@@ -1,5 +1,5 @@
 :root {
-  --roundness: 0.5rem;
+  --roundness: 0.65rem;
   --font: "JetBrains Mono", "Vazirharf", monospace;
   // scroll-behavior: smooth;
   scroll-padding-top: 2rem;
@@ -150,7 +150,19 @@ body {
   font-family: var(--font);
   color: var(--text-color);
   overflow-x: hidden;
-  background: var(--bg-color);
+  background-color: var(--bg-color);
+  background-image:
+    radial-gradient(
+      1200px 700px at 12% -10%,
+      color-mix(in oklab, var(--main-color) 9%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 500px at 88% 110%,
+      color-mix(in oklab, var(--sub-color) 12%, transparent),
+      transparent 55%
+    );
+  background-attachment: fixed;
 }
 
 .customBackground {
@@ -166,6 +178,7 @@ body {
   justify-content: center;
   align-items: center;
   display: flex;
+  opacity: 0.35;
 }
 
 kbd {

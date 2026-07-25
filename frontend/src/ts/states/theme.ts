@@ -5,16 +5,16 @@ import { ThemeName } from "@typeai/schemas/configs";
 export type ThemeIdentifier = ThemeName | "custom";
 const defaultTheme: Theme & { name: ThemeIdentifier } = {
   name: "serika_dark",
-  bg: "#1a2b2b",
-  main: "#2dd4bf",
-  caret: "#2dd4bf",
-  sub: "#4d7373",
-  subAlt: "#243838",
-  text: "#e0f2f1",
-  error: "#ca4754",
-  errorExtra: "#7e2a33",
-  colorfulError: "#ca4754",
-  colorfulErrorExtra: "#7e2a33",
+  bg: "#121a1f",
+  main: "#5eead4",
+  caret: "#5eead4",
+  sub: "#5f7d82",
+  subAlt: "#1a252c",
+  text: "#d7ebe8",
+  error: "#e06b75",
+  errorExtra: "#8f3a44",
+  colorfulError: "#e06b75",
+  colorfulErrorExtra: "#8f3a44",
 };
 
 export const [getTheme, setTheme] = createSignal(defaultTheme);
