@@ -20,7 +20,7 @@
     "gen-docs": "tsx scripts/openapi.ts dist/static/api/openapi.json && redocly build-docs -o dist/static/api/internal.html internal@v2 && redocly bundle -o dist/static/api/public.json public-filter && redocly build-docs -o dist/static/api/public.html public@v2"
   },
   "dependencies": {
-    "@date-fns/utc": "1.2.0",
+    "@date-fns/utc": "2.1.1",
     "@ts-rest/core": "3.52.1",
     "@ts-rest/express": "3.52.1",
     "@ts-rest/open-api": "3.52.1",
