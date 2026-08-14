@@ -3,7 +3,7 @@
   "buildCommand": "pnpm build-fe",
   "outputDirectory": "frontend/dist",
   "functions": {
-    "api/typing-feedback.cjs": {
+    "api/typing-feedback.ts": {
       "maxDuration": 60
     }
   },

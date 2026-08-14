@@ -1,58 +1,92 @@
-/* generated from api/_lib/handler.ts — run node scripts/bundle-api.mjs */
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if ((from && typeof from === "object") || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, {
-          get: () => from[key],
-          enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable,
-        });
-  }
-  return to;
-};
-var __toCommonJS = (mod) =>
-  __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+/** Vercel function: self-contained (no relative imports). Source of coach logic: api/_lib/typing-coach.ts */
+/** Serverless typing coach — rule-based analysis + optional LLM (OpenAI-compatible). */
 
-// ../../Users/murtazakuvawala/Downloads/typeAI/api/_lib/handler.ts
-var handler_exports = {};
-__export(handler_exports, {
-  default: () => handler,
-});
-module.exports = __toCommonJS(handler_exports);
+type TypingSessionInput = {
+  wpm: number;
+  acc: number;
+  consistency: number;
+  charStats: [number, number, number, number];
+  mode: string;
+  mode2: string | number;
+  language?: string;
+  chartData?: { err: number[] } | "toolong";
+  restartCount?: number;
+  incompleteTestSeconds?: number;
+  incompleteTests?: { acc: number; seconds: number }[];
+  keySpacingStats?: { sd: number };
+  keyDurationStats?: { sd: number };
+};
 
-// ../../Users/murtazakuvawala/Downloads/typeAI/api/_lib/typing-coach.ts
-var MAX_RESULTS = 50;
-var TYPING_COACH_JSON_SHAPE = `{
+type TypingFeedback = {
+  ready: boolean;
+  testsAnalyzed: number;
+  minTestsRequired: number;
+  generatedAt?: number;
+  summary?: string;
+  frequentMistakes?: { issue: string; evidence: string; fix: string }[];
+  strengths?: string[];
+  practiceTips?: string[];
+  poweredByAi?: boolean;
+  poweredByCursor?: boolean;
+  source?: "local" | "account";
+};
+
+type ChartData = { err: number[] };
+
+type TypingFeedbackSummary = {
+  testsAnalyzed: number;
+  avgWpm: number;
+  avgAcc: number;
+  avgConsistency: number;
+  totalIncorrect: number;
+  totalExtra: number;
+  totalMissed: number;
+  lateTestErrorRate: number;
+  earlyTestErrorRate: number;
+  incompleteTestRate: number;
+  weakestModes: { label: string; avgAcc: number; count: number }[];
+  weakestLanguages: { label: string; avgAcc: number; count: number }[];
+  recentWpmTrend: "improving" | "declining" | "stable";
+};
+
+type ChatJsonResult = {
+  summary?: string;
+  frequentMistakes?: { issue: string; evidence: string; fix: string }[];
+  strengths?: string[];
+  practiceTips?: string[];
+};
+
+const MAX_RESULTS = 50;
+const TYPING_COACH_JSON_SHAPE = `{
   "summary": string (2-3 sentences),
   "frequentMistakes": [{"issue": string, "evidence": string, "fix": string}] (max 5),
   "strengths": string[] (max 4),
   "practiceTips": string[] (max 4)
 }`;
-function minTestsRequired() {
+
+function minTestsRequired(): number {
   const parsed = Number.parseInt(
     process.env["TYPING_FEEDBACK_MIN_TESTS"] ?? "3",
     10,
   );
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 3;
 }
-function round(n, digits = 1) {
+
+function round(n: number, digits = 1): number {
   const factor = 10 ** digits;
   return Math.round(n * factor) / factor;
 }
-function avg(nums) {
+
+function avg(nums: number[]): number {
   if (nums.length === 0) return 0;
   return nums.reduce((a, b) => a + b, 0) / nums.length;
 }
-function chartErrorRates(chartData) {
-  if (chartData === void 0 || chartData === "toolong") {
+
+function chartErrorRates(chartData: ChartData | "toolong" | undefined): {
+  early: number;
+  late: number;
+} {
+  if (chartData === undefined || chartData === "toolong") {
     return { early: 0, late: 0 };
   }
   const err = chartData.err;
@@ -63,10 +97,11 @@ function chartErrorRates(chartData) {
     late: avg(err.slice(mid)),
   };
 }
-function buildSummary(sessions) {
-  const wpms = [];
-  const accs = [];
-  const consistencies = [];
+
+function buildSummary(sessions: TypingSessionInput[]): TypingFeedbackSummary {
+  const wpms: number[] = [];
+  const accs: number[] = [];
+  const consistencies: number[] = [];
   let totalIncorrect = 0;
   let totalExtra = 0;
   let totalMissed = 0;
@@ -74,8 +109,9 @@ function buildSummary(sessions) {
   let lateErrorSum = 0;
   let chartCount = 0;
   let incompleteCount = 0;
-  const modeAcc = /* @__PURE__ */ new Map();
-  const languageAcc = /* @__PURE__ */ new Map();
+  const modeAcc = new Map<string, { sum: number; count: number }>();
+  const languageAcc = new Map<string, { sum: number; count: number }>();
+
   for (const r of sessions) {
     wpms.push(r.wpm);
     accs.push(r.acc);
@@ -83,28 +119,33 @@ function buildSummary(sessions) {
     totalIncorrect += r.charStats[1];
     totalExtra += r.charStats[2];
     totalMissed += r.charStats[3];
+
     const modeKey = `${r.mode}/${r.mode2}`;
     const modeEntry = modeAcc.get(modeKey) ?? { sum: 0, count: 0 };
     modeEntry.sum += r.acc;
     modeEntry.count += 1;
     modeAcc.set(modeKey, modeEntry);
+
     const language = r.language ?? "english";
     const langEntry = languageAcc.get(language) ?? { sum: 0, count: 0 };
     langEntry.sum += r.acc;
     langEntry.count += 1;
     languageAcc.set(language, langEntry);
+
     const rates = chartErrorRates(r.chartData);
     earlyErrorSum += rates.early;
     lateErrorSum += rates.late;
-    if (r.chartData !== void 0 && r.chartData !== "toolong") chartCount += 1;
+    if (r.chartData !== undefined && r.chartData !== "toolong") chartCount += 1;
+
     if (
-      (r.incompleteTests !== void 0 && r.incompleteTests.length > 0) ||
-      (r.incompleteTestSeconds !== void 0 && r.incompleteTestSeconds > 0) ||
-      (r.restartCount !== void 0 && r.restartCount > 0)
+      (r.incompleteTests !== undefined && r.incompleteTests.length > 0) ||
+      (r.incompleteTestSeconds !== undefined && r.incompleteTestSeconds > 0) ||
+      (r.restartCount !== undefined && r.restartCount > 0)
     ) {
       incompleteCount += 1;
     }
   }
+
   const weakestModes = [...modeAcc.entries()]
     .filter(([, v]) => v.count >= 3)
     .map(([label, v]) => ({
@@ -114,6 +155,7 @@ function buildSummary(sessions) {
     }))
     .sort((a, b) => a.avgAcc - b.avgAcc)
     .slice(0, 3);
+
   const weakestLanguages = [...languageAcc.entries()]
     .filter(([, v]) => v.count >= 3)
     .map(([label, v]) => ({
@@ -123,15 +165,17 @@ function buildSummary(sessions) {
     }))
     .sort((a, b) => a.avgAcc - b.avgAcc)
     .slice(0, 3);
+
   const recent = wpms.slice(0, Math.min(10, wpms.length));
   const older = wpms.slice(10, Math.min(20, wpms.length));
-  let recentWpmTrend = "stable";
+  let recentWpmTrend: TypingFeedbackSummary["recentWpmTrend"] = "stable";
   if (recent.length >= 5 && older.length >= 5) {
     const recentAvg = avg(recent);
     const olderAvg = avg(older);
     if (recentAvg > olderAvg + 2) recentWpmTrend = "improving";
     else if (recentAvg < olderAvg - 2) recentWpmTrend = "declining";
   }
+
   return {
     testsAnalyzed: sessions.length,
     avgWpm: round(avg(wpms), 1),
@@ -149,11 +193,15 @@ function buildSummary(sessions) {
     recentWpmTrend,
   };
 }
-function buildRuleBasedFeedback(summary) {
-  const mistakes = [];
-  const strengths = [];
-  const practiceTips = [];
+
+function buildRuleBasedFeedback(
+  summary: TypingFeedbackSummary,
+): TypingFeedback {
+  const mistakes: TypingFeedback["frequentMistakes"] = [];
+  const strengths: string[] = [];
+  const practiceTips: string[] = [];
   const minTests = minTestsRequired();
+
   if (summary.totalExtra > summary.totalIncorrect * 0.4) {
     mistakes.push({
       issue: "Overtyping (extra characters)",
@@ -161,6 +209,7 @@ function buildRuleBasedFeedback(summary) {
       fix: "Pause briefly before pressing the next key when you feel unsure.",
     });
   }
+
   if (summary.totalMissed > summary.totalIncorrect * 0.35) {
     mistakes.push({
       issue: "Skipped or missed characters",
@@ -168,6 +217,7 @@ function buildRuleBasedFeedback(summary) {
       fix: "Keep your eyes one word ahead and trust muscle memory for the current word.",
     });
   }
+
   if (summary.lateTestErrorRate > summary.earlyTestErrorRate + 0.15) {
     mistakes.push({
       issue: "Accuracy drops as tests go on",
@@ -175,15 +225,17 @@ function buildRuleBasedFeedback(summary) {
       fix: "Take a short break between long sessions; try 60s tests focused on the last 20 seconds.",
     });
   }
+
   for (const mode of summary.weakestModes) {
     if (mode.avgAcc < summary.avgAcc - 3) {
       mistakes.push({
         issue: `Weaker performance in ${mode.label}`,
         evidence: `Average ${mode.avgAcc}% accuracy over ${mode.count} tests (overall ${summary.avgAcc}%).`,
-        fix: `Run focused ${mode.label} tests at 10\u201315 WPM below your max.`,
+        fix: `Run focused ${mode.label} tests at 10–15 WPM below your max.`,
       });
     }
   }
+
   if (summary.avgAcc >= 97) {
     strengths.push(
       `Strong accuracy (${summary.avgAcc}%) across ${summary.testsAnalyzed} tests.`,
@@ -191,18 +243,21 @@ function buildRuleBasedFeedback(summary) {
   } else if (summary.avgAcc >= 94) {
     strengths.push(`Solid accuracy at ${summary.avgAcc}%.`);
   }
+
   if (summary.recentWpmTrend === "improving") {
     strengths.push("Your recent WPM trend is improving.");
   }
+
   if (mistakes.length === 0) {
     practiceTips.push(
-      "No major patterns flagged\u2014try pushing WPM by 5% while keeping accuracy above 95%.",
+      "No major patterns flagged—try pushing WPM by 5% while keeping accuracy above 95%.",
     );
   } else {
     practiceTips.push(
       "Drill one mistake pattern per session before moving on.",
     );
   }
+
   return {
     ready: true,
     testsAnalyzed: summary.testsAnalyzed,
@@ -216,18 +271,26 @@ function buildRuleBasedFeedback(summary) {
     source: "local",
   };
 }
-var COACH_SYSTEM_PROMPT = `You are a typing coach analyzing typeAI test statistics.
+
+const COACH_SYSTEM_PROMPT = `You are a typing coach analyzing typeAI test statistics.
 Be specific, actionable, and encouraging. Reference the user's stats.
 Do not invent per-key data that was not provided.`;
-function resolveOpenAiConfig() {
+
+function resolveOpenAiConfig(): {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+} | null {
   const apiKey =
     process.env["OPENAI_API_KEY"]?.trim() || process.env["LLM_API_KEY"]?.trim();
   if (!apiKey) return null;
+
   const baseUrl = (
     process.env["LLM_BASE_URL"] ??
     process.env["OPENAI_BASE_URL"] ??
     "https://api.openai.com/v1"
   ).replace(/\/$/, "");
+
   return {
     apiKey,
     baseUrl,
@@ -235,7 +298,8 @@ function resolveOpenAiConfig() {
       process.env["LLM_MODEL"] ?? process.env["OPENAI_MODEL"] ?? "gpt-4o-mini",
   };
 }
-function resolveCursorConfig() {
+
+function resolveCursorConfig(): { apiKey: string; model: string } | null {
   const apiKey = process.env["CURSOR_API_KEY"]?.trim();
   if (!apiKey?.startsWith("crsr_")) return null;
   return {
@@ -243,7 +307,8 @@ function resolveCursorConfig() {
     model: process.env["CURSOR_MODEL"] ?? "composer-2",
   };
 }
-function basicAuthHeader(apiKey) {
+
+function basicAuthHeader(apiKey: string): string {
   const bytes = new TextEncoder().encode(`${apiKey}:`);
   let binary = "";
   for (const byte of bytes) {
@@ -251,12 +316,17 @@ function basicAuthHeader(apiKey) {
   }
   return `Basic ${btoa(binary)}`;
 }
-async function openAiCompatibleJson(userPrompt) {
+
+async function openAiCompatibleJson(
+  userPrompt: string,
+): Promise<ChatJsonResult | null> {
   const config = resolveOpenAiConfig();
   if (!config) return null;
+
   const systemPrompt = `${COACH_SYSTEM_PROMPT}
 Respond ONLY with valid JSON matching this shape:
 ${TYPING_COACH_JSON_SHAPE}`;
+
   const response = await fetch(`${config.baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
@@ -273,64 +343,84 @@ ${TYPING_COACH_JSON_SHAPE}`;
       ],
     }),
   });
+
   if (!response.ok) return null;
-  const payload = await response.json();
+
+  const payload = (await response.json()) as {
+    choices?: { message?: { content?: string } }[];
+  };
   const content = payload.choices?.[0]?.message?.content;
   if (!content) return null;
+
   try {
-    return JSON.parse(content);
+    return JSON.parse(content) as ChatJsonResult;
   } catch {
     return null;
   }
 }
-function parseSseLine(line, state) {
+
+function parseSseLine(
+  line: string,
+  state: { currentEvent: string; text: string },
+): boolean {
   if (line.startsWith("event: ")) {
     state.currentEvent = line.slice(7).trim();
     return state.currentEvent === "done";
   }
   if (!line.startsWith("data: ")) return false;
+
   const raw = line.slice(6).trim();
   if (raw === "" || raw === "[DONE]") return false;
+
   if (state.currentEvent === "assistant") {
     try {
-      const event = JSON.parse(raw);
+      const event = JSON.parse(raw) as { text?: string };
       if (typeof event.text === "string") state.text += event.text;
-    } catch {}
+    } catch {
+      // ignore malformed chunks
+    }
   }
+
   return state.currentEvent === "result";
 }
-async function readCursorAgentSseStream(streamRes) {
+
+async function readCursorAgentSseStream(streamRes: Response): Promise<string> {
   const body = streamRes.body;
   if (body === null) return "";
+
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
   const state = { currentEvent: "", text: "" };
+
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
+
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split("\n");
     buffer = lines.pop() ?? "";
+
     for (const line of lines) {
       if (parseSseLine(line, state)) return state.text;
     }
   }
+
   return state.text;
 }
-async function cursorAgentJson(userPrompt) {
+
+async function cursorAgentJson(
+  userPrompt: string,
+): Promise<ChatJsonResult | null> {
   const config = resolveCursorConfig();
   if (!config) return null;
+
   const auth = basicAuthHeader(config.apiKey);
-  const fullPrompt = `${COACH_SYSTEM_PROMPT}
+  const fullPrompt = `${COACH_SYSTEM_PROMPT}\n\nUser stats JSON:\n${userPrompt}\n\nRespond with ONLY valid JSON matching:\n${TYPING_COACH_JSON_SHAPE}`;
 
-User stats JSON:
-${userPrompt}
-
-Respond with ONLY valid JSON matching:
-${TYPING_COACH_JSON_SHAPE}`;
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 55e3);
+  const timeout = setTimeout(() => controller.abort(), 55_000);
+
   try {
     const createRes = await fetch("https://api.cursor.com/v1/agents", {
       method: "POST",
@@ -344,11 +434,17 @@ ${TYPING_COACH_JSON_SHAPE}`;
       }),
       signal: controller.signal,
     });
+
     if (!createRes.ok) return null;
-    const created = await createRes.json();
+
+    const created = (await createRes.json()) as {
+      agent?: { id?: string };
+      run?: { id?: string };
+    };
     const agentId = created.agent?.id;
     const runId = created.run?.id;
     if (!agentId || !runId) return null;
+
     const streamRes = await fetch(
       `https://api.cursor.com/v1/agents/${agentId}/runs/${runId}/stream`,
       {
@@ -359,30 +455,42 @@ ${TYPING_COACH_JSON_SHAPE}`;
         signal: controller.signal,
       },
     );
+
     if (!streamRes.ok) return null;
+
     const assistantText = await readCursorAgentSseStream(streamRes);
     const jsonMatch = assistantText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return null;
-    return JSON.parse(jsonMatch[0]);
+
+    return JSON.parse(jsonMatch[0]) as ChatJsonResult;
   } catch {
     return null;
   } finally {
     clearTimeout(timeout);
   }
 }
-async function requestTypingCoachJson(userPrompt) {
+
+async function requestTypingCoachJson(
+  userPrompt: string,
+): Promise<{ parsed: ChatJsonResult | null; poweredByCursor: boolean }> {
   const openAi = await openAiCompatibleJson(userPrompt);
   if (openAi !== null) {
     return { parsed: openAi, poweredByCursor: false };
   }
+
   const cursor = await cursorAgentJson(userPrompt);
   return { parsed: cursor, poweredByCursor: cursor !== null };
 }
-async function enhanceWithLlm(summary, base) {
+
+async function enhanceWithLlm(
+  summary: TypingFeedbackSummary,
+  base: TypingFeedback,
+): Promise<TypingFeedback> {
   const { parsed, poweredByCursor } = await requestTypingCoachJson(
     JSON.stringify(summary, null, 2),
   );
   if (parsed === null) return base;
+
   return {
     ...base,
     summary: parsed.summary ?? base.summary,
@@ -390,12 +498,16 @@ async function enhanceWithLlm(summary, base) {
     strengths: parsed.strengths ?? base.strengths,
     practiceTips: parsed.practiceTips ?? base.practiceTips,
     poweredByAi: true,
-    poweredByCursor: poweredByCursor ? true : void 0,
+    poweredByCursor: poweredByCursor ? true : undefined,
   };
 }
-async function getTypingFeedbackFromSessions(sessions) {
+
+async function getTypingFeedbackFromSessions(
+  sessions: TypingSessionInput[],
+): Promise<TypingFeedback> {
   const minTests = minTestsRequired();
-  const source = "local";
+  const source = "local" as const;
+
   if (sessions.length < minTests) {
     return {
       ready: false,
@@ -404,6 +516,7 @@ async function getTypingFeedbackFromSessions(sessions) {
       source,
     };
   }
+
   const recentSessions = sessions.slice(-MAX_RESULTS);
   const summary = buildSummary(recentSessions);
   let feedback = buildRuleBasedFeedback(summary);
@@ -411,59 +524,60 @@ async function getTypingFeedbackFromSessions(sessions) {
   return { ...feedback, source };
 }
 
-// ../../Users/murtazakuvawala/Downloads/typeAI/api/_lib/handler.ts
-function sendJson(res, status, payload) {
-  res.statusCode = status;
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Accept, X-Client-Version",
-  );
-  res.setHeader("Content-Type", "application/json");
-  res.end(JSON.stringify(payload));
+const CORS_HEADERS = {
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Accept, X-Client-Version",
+};
+
+function jsonResponse(status: number, payload: unknown): Response {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+      ...CORS_HEADERS,
+    },
+  });
 }
-async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Accept, X-Client-Version",
-  );
-  if (req.method === "OPTIONS") {
-    res.statusCode = 204;
-    res.end();
-    return;
-  }
-  if (req.method !== "POST") {
-    sendJson(res, 405, { message: "Method not allowed", data: null });
-    return;
-  }
-  let body = {};
+
+async function handlePost(request: Request): Promise<Response> {
+  let body: { sessions?: TypingSessionInput[] };
   try {
-    if (typeof req.body === "string") {
-      body = JSON.parse(req.body);
-    } else if (req.body !== void 0 && req.body !== null) {
-      body = req.body;
-    }
+    body = (await request.json()) as { sessions?: TypingSessionInput[] };
   } catch {
-    sendJson(res, 400, { message: "Invalid JSON body", data: null });
-    return;
+    return jsonResponse(400, { message: "Invalid JSON body", data: null });
   }
+
   if (!Array.isArray(body.sessions)) {
-    sendJson(res, 400, { message: "sessions array is required", data: null });
-    return;
+    return jsonResponse(400, {
+      message: "sessions array is required",
+      data: null,
+    });
   }
+
   try {
     const feedback = await getTypingFeedbackFromSessions(body.sessions);
-    sendJson(res, 200, {
+    return jsonResponse(200, {
       message: "Typing feedback generated",
       data: feedback,
     });
-  } catch (e) {
+  } catch (e: unknown) {
     const message =
       e instanceof Error ? e.message : "Failed to generate typing feedback";
-    sendJson(res, 500, { message, data: null });
+    return jsonResponse(500, { message, data: null });
   }
 }
-if (typeof module.exports.default === "function") {
-  module.exports = module.exports.default;
-}
+
+export default {
+  async fetch(request: Request): Promise<Response> {
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: CORS_HEADERS });
+    }
+    if (request.method === "GET") {
+      return jsonResponse(200, { ok: true, service: "typing-feedback" });
+    }
+    if (request.method === "POST") {
+      return handlePost(request);
+    }
+    return jsonResponse(405, { message: "Method not allowed", data: null });
+  },
+};
