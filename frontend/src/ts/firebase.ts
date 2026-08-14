@@ -34,6 +34,7 @@ import { tryCatch } from "@typeai/util/trycatch";
 import { googleSignUpEvent } from "./events/google-sign-up";
 import { addBanner } from "./states/banners";
 import { setUserId, setUserVerified } from "./states/core";
+import { ACCOUNTS_ENABLED } from "./constants/features";
 import { envConfig } from "virtual:env-config";
 
 let app: FirebaseApp | undefined;
@@ -61,6 +62,14 @@ function hasFirebaseConfig(config: FirebaseOptions): boolean {
 
 export async function init(callback: ReadyCallback): Promise<void> {
   try {
+    if (!ACCOUNTS_ENABLED) {
+      app = undefined;
+      Auth = undefined;
+      await callback(false, null);
+      setUserState(null);
+      return;
+    }
+
     let firebaseConfig: FirebaseOptions | null = null;
 
     if (envConfig.firebaseConfig !== null) {
@@ -134,7 +143,7 @@ export function getAnalytics(): AnalyticsType {
 }
 
 export function isAuthAvailable(): boolean {
-  return Auth !== undefined;
+  return ACCOUNTS_ENABLED && Auth !== undefined;
 }
 
 export async function signOut(): Promise<void> {

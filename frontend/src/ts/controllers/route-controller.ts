@@ -8,6 +8,7 @@ import * as TestState from "../test/test-state";
 import { showNoticeNotification } from "../states/notifications";
 import { navigationEvent, type NavigateOptions } from "../events/navigation";
 import { authEvent } from "../events/auth";
+import { ACCOUNTS_ENABLED } from "../constants/features";
 import { envConfig } from "virtual:env-config";
 
 //source: https://www.youtube.com/watch?v=OstALBk-jTc
@@ -42,12 +43,20 @@ function isAllowedLitePath(pathname: string): boolean {
   return (
     pathname === "/" ||
     pathname === "/verify" ||
-    pathname === "/login" ||
-    pathname === "/account" ||
-    pathname === "/account-settings" ||
     pathname === "/race" ||
     pathname.startsWith("/race/") ||
     pathname === "/settings"
+  );
+}
+
+function isAccountPath(pathname: string): boolean {
+  return (
+    pathname === "/login" ||
+    pathname === "/account" ||
+    pathname === "/account-settings" ||
+    pathname === "/friends" ||
+    pathname === "/profile" ||
+    pathname.startsWith("/profile/")
   );
 }
 
@@ -227,6 +236,13 @@ export async function navigate(
 
   url = url.replace(/\/$/, "");
   if (url === "") url = "/";
+
+  if (!ACCOUNTS_ENABLED) {
+    const accountTarget = new URL(url, window.location.origin);
+    if (isAccountPath(accountTarget.pathname)) {
+      url = "/";
+    }
+  }
 
   if (envConfig.liteMode) {
     const targetUrl = new URL(url, window.location.origin);

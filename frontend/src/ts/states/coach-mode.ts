@@ -32,5 +32,6 @@ export function setCoachMode(mode: CoachMode): void {
 
 export function getCoachModeLabel(mode = getCoachMode()): string {
   if (mode === "drill") return "drill weak spots";
+  if (mode === "adaptive") return "adaptive — your mistakes";
   return mode;
 }

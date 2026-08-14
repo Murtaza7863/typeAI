@@ -15,6 +15,7 @@ import {
   addNotificationWithLevel,
 } from "../states/notifications";
 import { isAuthenticated } from "../states/core";
+import { ACCOUNTS_ENABLED } from "../constants/features";
 import { getQuoteStats } from "../states/quote-rate";
 import * as GlarsesMode from "../legacy-states/glarses-mode";
 import * as SlowTimer from "../legacy-states/slow-timer";
@@ -970,10 +971,10 @@ export async function update(
   qs("#words")?.removeClass("blurred");
   blurInputElement();
   qs("#result .stats .time .bottom .afk")?.setText("");
-  if (isAuthenticated()) {
-    qs("#result .loginTip")?.hide();
-  } else {
+  if (ACCOUNTS_ENABLED && !isAuthenticated()) {
     qs("#result .loginTip")?.show();
+  } else {
+    qs("#result .loginTip")?.hide();
   }
 
   if (!ConnectionState.get()) {
@@ -1039,7 +1040,7 @@ export async function update(
   } else {
     qsa("main #result .stats")?.show();
     qs("main #result .chart")?.show();
-    if (!isAuthenticated()) {
+    if (ACCOUNTS_ENABLED && !isAuthenticated()) {
       qs("main #result .loginTip")?.show();
       qs("main #result #rateQuoteButton")?.hide();
       qs("main #result #reportQuoteButton")?.hide();

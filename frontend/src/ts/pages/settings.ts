@@ -23,6 +23,7 @@ import {
 import * as ImportExportSettingsModal from "../modals/import-export-settings";
 import { configEvent, type ConfigEventKey } from "../events/config";
 import { getActivePage, isAuthenticated } from "../states/core";
+import { ACCOUNTS_ENABLED } from "../constants/features";
 import { PageWithUrlParams } from "./page";
 import { get as getTypingSpeedUnit } from "../utils/typing-speed-units";
 import SlimSelect from "slim-select";
@@ -490,6 +491,7 @@ async function fillSettingsPage(): Promise<void> {
 
 export function hideAccountSection(): void {
   qsa(`.pageSettings .section.needsAccount`)?.hide();
+  qsa(".pageSettings .accountSettingsNotice")?.hide();
 }
 
 function showAccountSection(): void {
@@ -727,7 +729,7 @@ export async function update(
     Config.customBackground,
   );
 
-  if (isAuthenticated()) {
+  if (ACCOUNTS_ENABLED && isAuthenticated()) {
     showAccountSection();
   } else {
     hideAccountSection();
@@ -1051,7 +1053,7 @@ configEvent.subscribe(({ key, newValue }) => {
 
 authEvent.subscribe((event) => {
   if (event.type === "authStateChanged") {
-    if (event.data.isUserSignedIn) {
+    if (ACCOUNTS_ENABLED && event.data.isUserSignedIn) {
       showAccountSection();
     } else {
       hideAccountSection();

@@ -18,7 +18,7 @@ describe("buildAdaptivePatternWordList", () => {
     });
   });
 
-  it("returns real words with weak patterns and excludes exact missed words", () => {
+  it("includes missed words and other weak-pattern words, not easy filler", () => {
     const languageWords = [
       "the",
       "their",
@@ -41,9 +41,41 @@ describe("buildAdaptivePatternWordList", () => {
     const words = buildAdaptivePatternWordList(languageWords, 20);
 
     expect(words.length).toBeGreaterThan(0);
-    expect(words).not.toContain("the");
-    expect(words).not.toContain("their");
+    expect(words).toContain("the");
+    expect(words).toContain("their");
     expect(words.some((word) => word.includes("th"))).toBe(true);
     expect(words.every((word) => /^[a-z]+$/i.test(word))).toBe(true);
+    expect(words).not.toContain("banana");
+    expect(words).not.toContain("world");
+  });
+
+  it("does not repeat non-missed pattern words", () => {
+    const languageWords = [
+      "other",
+      "mother",
+      "brother",
+      "weather",
+      "theme",
+      "thick",
+      "thin",
+      "path",
+      "math",
+      "bath",
+      "together",
+      "thought",
+      "the",
+      "their",
+    ];
+
+    const words = buildAdaptivePatternWordList(languageWords, 40);
+    const counts = new Map<string, number>();
+    for (const word of words) {
+      counts.set(word, (counts.get(word) ?? 0) + 1);
+    }
+
+    for (const [word, count] of counts) {
+      if (word === "the" || word === "their") continue;
+      expect(count).toBe(1);
+    }
   });
 });

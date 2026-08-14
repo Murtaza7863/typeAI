@@ -1,4 +1,5 @@
 import { navigate } from "../../controllers/route-controller";
+import { ACCOUNTS_ENABLED } from "../../constants/features";
 import { isAuthenticated } from "../../states/core";
 import { toggleFullscreen } from "../../utils/misc";
 import { Command, withValidation } from "../types";
@@ -58,6 +59,7 @@ const commands: Command[] = [
     display: "View Account Page",
     alias: "navigate go to stats",
     icon: "fa-user",
+    available: (): boolean => ACCOUNTS_ENABLED,
     exec: (): void => {
       isAuthenticated() ? void navigate("/account") : void navigate("/login");
     },
@@ -68,6 +70,7 @@ const commands: Command[] = [
     alias: "profile user search find lookup",
     icon: "fa-search",
     input: true,
+    available: (): boolean => ACCOUNTS_ENABLED,
     validation: {
       schema: UserNameWithoutFilterSchema,
       debounceDelay: 1000,

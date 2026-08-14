@@ -73,8 +73,7 @@ export function TypingFeedbackPanel(props: {
           </h3>
           <Show when={!isAuthenticated()}>
             <p class="mt-1 text-xs text-sub">
-              Using tests saved on this device. Sign in to sync history across
-              devices.
+              Using tests saved on this device.
             </p>
           </Show>
         </div>

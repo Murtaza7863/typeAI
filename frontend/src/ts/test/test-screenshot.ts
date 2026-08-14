@@ -6,6 +6,7 @@ import {
   isAuthenticated,
   setIsScreenshotting,
 } from "../states/core";
+import { ACCOUNTS_ENABLED } from "../constants/features";
 import { getActiveFunboxesWithFunction } from "./funbox/list";
 import * as DB from "../db";
 import { format } from "date-fns/format";
@@ -36,7 +37,7 @@ function revert(): void {
   qsa(".highlightContainer")?.show();
   if (revertCookie) qs("#cookiesModal")?.show();
   if (revealReplay) qs("#resultReplay")?.show();
-  if (!isAuthenticated()) {
+  if (ACCOUNTS_ENABLED && !isAuthenticated()) {
     qs(".pageTest .loginTip")?.show();
   }
   qs("html")?.setStyle({ scrollBehavior: "smooth" });
