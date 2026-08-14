@@ -131,6 +131,15 @@ export function getData(): CustomTextSettings {
   return customTextSettings.get();
 }
 
+export function applyData(data: CustomTextSettings): void {
+  customTextSettings.set({
+    text: [...data.text],
+    mode: data.mode,
+    limit: { ...data.limit },
+    pipeDelimiter: data.pipeDelimiter,
+  });
+}
+
 export function getCustomText(name: string, long = false): string[] {
   if (long) {
     const customTextLong = getLocalStorageLong();

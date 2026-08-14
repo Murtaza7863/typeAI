@@ -19,11 +19,11 @@ import {
   connectRaceWs,
   createParty,
   joinParty,
-  leaveParty,
   onRaceMessage,
   startRace,
   updateRaceSettings,
 } from "../../../race/client";
+import { leaveRaceAndRestore } from "../../../race/controller";
 import { getActivePage } from "../../../states/core";
 import { showErrorNotification } from "../../../states/notifications";
 import {
@@ -341,7 +341,7 @@ export function RacePage(): JSXElement {
                           text="Leave"
                           variant="text"
                           onClick={() => {
-                            leaveParty();
+                            leaveRaceAndRestore();
                             void navigate("/");
                           }}
                         />
@@ -485,7 +485,7 @@ export function RacePage(): JSXElement {
                         <Button
                           text="Play again"
                           onClick={() => {
-                            leaveParty();
+                            leaveRaceAndRestore();
                             const name = displayName().trim() || "Host";
                             createParty(name, draftSettings());
                           }}
@@ -495,7 +495,7 @@ export function RacePage(): JSXElement {
                         text="Leave"
                         variant="text"
                         onClick={() => {
-                          leaveParty();
+                          leaveRaceAndRestore();
                           void navigate("/");
                         }}
                       />

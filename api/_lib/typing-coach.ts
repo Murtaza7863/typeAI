@@ -308,7 +308,12 @@ function resolveCursorConfig(): { apiKey: string; model: string } | null {
 }
 
 function basicAuthHeader(apiKey: string): string {
-  return `Basic ${Buffer.from(`${apiKey}:`).toString("base64")}`;
+  const bytes = new TextEncoder().encode(`${apiKey}:`);
+  let binary = "";
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return `Basic ${btoa(binary)}`;
 }
 
 async function openAiCompatibleJson(

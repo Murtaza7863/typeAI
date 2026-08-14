@@ -15,8 +15,8 @@ import * as CustomTextState from "../legacy-states/custom-text-name";
 import * as TestStats from "./test-stats";
 import * as PractiseWords from "./practise-words";
 import * as AdaptiveTest from "../typing-feedback/adaptive-test";
-import { validateCoachMode } from "../typing-feedback/coach-words";
 import { getCoachMode, setCoachMode } from "../states/coach-mode";
+import { profileHasDrillData } from "../typing-feedback/mistake-profile";
 import * as ShiftTracker from "./shift-tracker";
 import * as AltTracker from "./alt-tracker";
 import * as Funbox from "./funbox/funbox";
@@ -208,28 +208,15 @@ export function restart(options = {} as RestartOptions): void {
     setCoachMode("adaptive");
   }
 
-  const coachMode = getCoachMode();
+  let coachMode = getCoachMode();
   if (
     !options.withSameWordset &&
     !options.practiseMissed &&
     coachMode !== "original" &&
-    !validateCoachMode(coachMode)
+    (Config.mode === "zen" || Config.mode === "quote" || !profileHasDrillData())
   ) {
-    options.event?.preventDefault();
-    return;
-  }
-
-  if (
-    coachMode !== "original" &&
-    !options.withSameWordset &&
-    !options.practiseMissed &&
-    (Config.mode === "zen" || Config.mode === "quote")
-  ) {
-    showNoticeNotification(
-      "Coach modes are not available in zen or quote mode.",
-    );
-    options.event?.preventDefault();
-    return;
+    setCoachMode("original");
+    coachMode = "original";
   }
 
   const animationTime = options.noAnim ? 0 : Misc.applyReducedMotion(125);
@@ -329,17 +316,9 @@ export function restart(options = {} as RestartOptions): void {
     }
 
     if (PractiseWords.before.customText) {
-      CustomText.setText(PractiseWords.before.customText.text);
-      CustomText.setLimitMode(PractiseWords.before.customText.limit.mode);
-      CustomText.setLimitValue(PractiseWords.before.customText.limit.value);
-      CustomText.setPipeDelimiter(
-        PractiseWords.before.customText.pipeDelimiter,
-      );
+      CustomText.applyData(PractiseWords.before.customText);
     } else if (AdaptiveTest.before.customText) {
-      CustomText.setText(AdaptiveTest.before.customText.text);
-      CustomText.setLimitMode(AdaptiveTest.before.customText.limit.mode);
-      CustomText.setLimitValue(AdaptiveTest.before.customText.limit.value);
-      CustomText.setPipeDelimiter(AdaptiveTest.before.customText.pipeDelimiter);
+      CustomText.applyData(AdaptiveTest.before.customText);
     }
 
     const priorMode = PractiseWords.before.mode ?? AdaptiveTest.before.mode;

@@ -4,7 +4,7 @@ import {
 } from "@typeai/schemas/typing-feedback";
 import { envConfig } from "virtual:env-config";
 
-const LOCAL_FEEDBACK_TIMEOUT_MS = 240_000;
+const LOCAL_FEEDBACK_TIMEOUT_MS = 12_000;
 
 type LocalTypingFeedbackResponse = {
   message?: string;

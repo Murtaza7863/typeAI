@@ -6,6 +6,7 @@ import { setConfig } from "../config/setters";
 import { Config } from "../config/store";
 import { navigationEvent } from "../events/navigation";
 import { restartTestEvent } from "../events/test";
+import { setCoachMode } from "../states/coach-mode";
 import { showNoticeNotification } from "../states/notifications";
 import * as CustomText from "../test/custom-text";
 import * as PractiseWords from "../test/practise-words";
@@ -145,14 +146,13 @@ function startCustomPractice(wordList: string[], label: string): boolean {
     return false;
   }
 
-  // Preserve prior mode like practise-words so restart can restore later.
-  PractiseWords.resetBefore();
-  PractiseWords.before.mode = Config.mode;
-  PractiseWords.before.punctuation = Config.punctuation;
-  PractiseWords.before.numbers = Config.numbers;
-  if (Config.mode === "custom") {
-    PractiseWords.before.customText = CustomText.getData();
-  }
+  // Snapshot before overwriting custom text. setConfig("mode") resets
+  // PractiseWords.before, so restore the snapshot after that call.
+  const previousMode = Config.mode;
+  const previousPunctuation = Config.punctuation;
+  const previousNumbers = Config.numbers;
+  const previousCustomText =
+    Config.mode === "custom" ? CustomText.getData() : null;
 
   CustomText.setPipeDelimiter(true);
   CustomText.setText(wordList);
@@ -164,8 +164,14 @@ function startCustomPractice(wordList: string[], label: string): boolean {
   setConfig("mode", "custom", { nosave: true });
   setConfig("punctuation", false, { nosave: true });
   setConfig("numbers", false, { nosave: true });
+  setCoachMode("original");
 
-  navigationEvent.dispatch({ url: "/", options: {} });
+  PractiseWords.before.mode = previousMode;
+  PractiseWords.before.punctuation = previousPunctuation;
+  PractiseWords.before.numbers = previousNumbers;
+  PractiseWords.before.customText = previousCustomText;
+
+  navigationEvent.dispatch({ url: "/", options: { force: true } });
   restartTestEvent.dispatch();
   showNoticeNotification(`Practice started: ${label}`, { durationMs: 2500 });
   return true;

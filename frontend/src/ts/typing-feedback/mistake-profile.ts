@@ -1,4 +1,17 @@
+import { createSignal } from "solid-js";
+
+import { setCoachMode } from "../states/coach-mode";
 import type { SessionMistakeSnapshot } from "./session-mistakes";
+
+const [profileVersion, setProfileVersion] = createSignal(0);
+
+function bumpProfileVersion(): void {
+  setProfileVersion((version) => version + 1);
+}
+
+export function getMistakeProfileVersion(): number {
+  return profileVersion();
+}
 
 const STORAGE_KEY = "typeai-mistake-profile";
 const MAX_ENTRIES = 40;
@@ -218,20 +231,14 @@ export function recordSessionToProfile(
   profile.testsRecorded += 1;
   profile.updatedAt = Date.now();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+  bumpProfileVersion();
   return newlyRecovered;
 }
 
 export function clearMistakeProfile(): void {
   localStorage.removeItem(STORAGE_KEY);
-}
-
-export function profileHasDrillData(profile = getMistakeProfile()): boolean {
-  return (
-    Object.keys(profile.wrongLetters).length > 0 ||
-    Object.keys(profile.bigrams).length > 0 ||
-    Object.keys(profile.missedWords).length > 0 ||
-    Object.keys(profile.typedInstead).length > 0
-  );
+  setCoachMode("original");
+  bumpProfileVersion();
 }
 
 export function topEntries(
@@ -262,6 +269,15 @@ export function activeTopEntries(
   return topEntries(map, limit * 2)
     .filter((e) => e.count >= 2 && !recoveredKeys.has(e.key))
     .slice(0, limit);
+}
+
+export function profileHasDrillData(profile = getMistakeProfile()): boolean {
+  return (
+    activeTopEntries(profile.wrongLetters, "letter", 1).length > 0 ||
+    activeTopEntries(profile.bigrams, "bigram", 1).length > 0 ||
+    activeTopEntries(profile.missedWords, "word", 1).length > 0 ||
+    activeTopEntries(profile.typedInstead, "swap", 1).length > 0
+  );
 }
 
 export function getRecentRecoveries(limit = 5): RecoveryEntry[] {

@@ -83,19 +83,14 @@ export function ResultProgressPanel(): JSXElement {
                           label="acc"
                           value={last().accDelta}
                           formatter={(val) =>
-                            formatSigned(
-                              `${Math.abs(val).toFixed(1)}%`,
-                              val,
-                              true,
-                            )
+                            formatSigned(`${Math.abs(val).toFixed(1)}%`, val)
                           }
-                          invertColors
                         />
                         <Delta
                           label="errors"
-                          value={-last().errDelta}
+                          value={last().errDelta}
                           formatter={(val) =>
-                            formatSigned(`${Math.abs(val)}`, val, true)
+                            formatSigned(`${Math.abs(val)}`, val)
                           }
                           invertColors
                         />
@@ -311,17 +306,9 @@ function Delta(props: {
   );
 }
 
-function formatSigned(
-  magnitude: string,
-  value: number,
-  invert = false,
-): string {
+function formatSigned(magnitude: string, value: number): string {
   if (value === 0) return "—";
-  const sign = value > 0 ? "+" : "-";
-  if (invert) {
-    return value > 0 ? `+${magnitude}` : `-${magnitude}`;
-  }
-  return `${sign}${magnitude}`;
+  return `${value > 0 ? "+" : "-"}${magnitude}`;
 }
 
 function deltaClass(positive: boolean, invert: boolean): string {

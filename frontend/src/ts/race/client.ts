@@ -15,10 +15,12 @@ import {
   getRaceParty,
   getRaceSession,
   setCountdownSeconds,
+  setIsRaceActive,
   setLocalFinished,
   setRaceError,
   setRaceParty,
   setRaceSession,
+  setRaceStartedAt,
   setRaceWsConnected,
   setRaceYou,
   setStandings,
@@ -499,6 +501,8 @@ export function leaveParty(): void {
   setStandings([]);
   setLocalFinished(false);
   setCountdownSeconds(null);
+  setIsRaceActive(false);
+  setRaceStartedAt(null);
   if (mode === "peer") {
     destroyPeer();
     ensurePeerModeReady();

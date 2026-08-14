@@ -7,7 +7,10 @@ import {
   CoachMode,
 } from "../../../states/coach-mode";
 import { showNoticeNotification } from "../../../states/notifications";
-import { profileHasDrillData } from "../../../typing-feedback/mistake-profile";
+import {
+  getMistakeProfileVersion,
+  profileHasDrillData,
+} from "../../../typing-feedback/mistake-profile";
 import { cn } from "../../../utils/cn";
 import { Button } from "../../common/Button";
 
@@ -24,7 +27,10 @@ export function CoachModeButtons(props: {
   class?: string;
   disabled?: boolean;
 }): JSXElement {
-  const hasCoachData = (): boolean => profileHasDrillData();
+  const hasCoachData = (): boolean => {
+    getMistakeProfileVersion();
+    return profileHasDrillData();
+  };
 
   const selectMode = (mode: CoachMode): void => {
     if (props.disabled) return;
