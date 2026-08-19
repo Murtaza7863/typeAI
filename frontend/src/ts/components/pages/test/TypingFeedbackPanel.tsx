@@ -5,6 +5,7 @@ import {
   getTypingFeedbackQueryOptions,
   invalidateTypingFeedback,
 } from "../../../queries/typing-feedback";
+import { getCoachMode } from "../../../states/coach-mode";
 import { isAuthenticated } from "../../../states/core";
 import { showNoticeNotification } from "../../../states/notifications";
 import { getResultVisible } from "../../../states/test";
@@ -13,9 +14,15 @@ import {
   getLocalTypingHistoryVersion,
   getLocalTypingSessionCount,
 } from "../../../typing-feedback/local-history";
-import { clearMistakeProfile } from "../../../typing-feedback/mistake-profile";
+import { getCoachProgress } from "../../../typing-feedback/mistake-insights";
+import {
+  clearMistakeProfile,
+  getMistakeProfileVersion,
+  profileHasDrillData,
+} from "../../../typing-feedback/mistake-profile";
 import {
   canPracticeFindings,
+  startAdaptivePractice,
   startPracticeAllWeakSpots,
   startPracticeFromFinding,
 } from "../../../typing-feedback/practice-from-finding";
@@ -43,6 +50,16 @@ export function TypingFeedbackPanel(props: {
 
   const showResetHistory = (): boolean =>
     !isAuthenticated() && localSessionCount() > 0;
+
+  const progress = createMemo(() => {
+    getMistakeProfileVersion();
+    return getCoachProgress();
+  });
+
+  const canUseAdaptive = (): boolean => {
+    getMistakeProfileVersion();
+    return profileHasDrillData();
+  };
 
   const query = useQuery(() => ({
     ...getTypingFeedbackQueryOptions({ enabled: enabled() }),
@@ -119,15 +136,53 @@ export function TypingFeedbackPanel(props: {
               }
             >
               <div class="flex flex-col gap-4">
-                <Show when={data.poweredByAi}>
-                  <p class="text-xs text-sub">
-                    {data.poweredByCursor
-                      ? "Enhanced with Cursor AI"
-                      : "Enhanced with AI"}
-                  </p>
-                </Show>
                 <Show when={data.summary}>
                   <p class="leading-relaxed">{data.summary}</p>
+                </Show>
+
+                <Show
+                  when={
+                    progress().recovered.length > 0 ||
+                    progress().active.length > 0 ||
+                    progress().almost.length > 0
+                  }
+                >
+                  <div>
+                    <h4 class="mb-2 text-sm font-medium text-sub">Progress</h4>
+                    <ul class="flex flex-col gap-1 text-sm text-sub">
+                      <Show when={progress().recovered.length > 0}>
+                        <li>
+                          Cleared this week: {progress().recovered.join(", ")}.
+                        </li>
+                      </Show>
+                      <Show when={progress().active.length > 0}>
+                        <li>Still leaking: {progress().active.join(", ")}.</li>
+                      </Show>
+                      <Show when={progress().almost.length > 0}>
+                        <li>
+                          Almost cleared: {progress().almost.join(", ")} — one
+                          more clean test may drop them.
+                        </li>
+                      </Show>
+                    </ul>
+                  </div>
+                </Show>
+
+                <Show when={canUseAdaptive()}>
+                  <div>
+                    <Button
+                      variant="text"
+                      text={
+                        getCoachMode() === "adaptive"
+                          ? "Adaptive is on for the next test"
+                          : "Next test: adaptive"
+                      }
+                      disabled={getCoachMode() === "adaptive"}
+                      onClick={() => {
+                        startAdaptivePractice();
+                      }}
+                    />
+                  </div>
                 </Show>
 
                 <Show when={(data.frequentMistakes?.length ?? 0) > 0}>

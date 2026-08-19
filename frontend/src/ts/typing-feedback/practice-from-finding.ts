@@ -11,7 +11,11 @@ import { showNoticeNotification } from "../states/notifications";
 import * as CustomText from "../test/custom-text";
 import * as PractiseWords from "../test/practise-words";
 import { buildAdaptiveWordList } from "./adaptive-test";
-import { activeTopEntries, getMistakeProfile } from "./mistake-profile";
+import {
+  activeTopEntries,
+  getMistakeProfile,
+  profileHasDrillData,
+} from "./mistake-profile";
 
 function inferPracticeKind(
   mistake: TypingFeedbackMistake,
@@ -199,4 +203,22 @@ export function startPracticeAllWeakSpots(): boolean {
 
 export function canPracticeFindings(): boolean {
   return buildAdaptiveWordList(20).length > 0;
+}
+
+export function startAdaptivePractice(): boolean {
+  if (!profileHasDrillData()) {
+    showNoticeNotification(
+      "Complete a few tests with mistakes first—we need data to personalize practice.",
+    );
+    return false;
+  }
+
+  setCoachMode("adaptive");
+  navigationEvent.dispatch({ url: "/", options: { force: true } });
+  restartTestEvent.dispatch();
+  showNoticeNotification(
+    "Adaptive will use your current weak letters, pairs, and words.",
+    { durationMs: 2500 },
+  );
+  return true;
 }

@@ -196,6 +196,34 @@ function buildRuleBasedFeedback(
   const strengths: string[] = [];
   const practiceTips: string[] = [];
 
+  const profileMistakes = mistakesFromProfile(getMistakeProfile());
+  const sessionOnlyProfile: MistakeProfile = {
+    wrongLetters: summary.sessionWrongLetters,
+    typedInstead: {},
+    bigrams: summary.sessionBigrams,
+    missedWords: summary.sessionMissedWords,
+    weakLetterScores: {},
+    cleanStreaks: {},
+    recovered: [],
+    testsRecorded: 0,
+    updatedAt: 0,
+  };
+  const hasSessionMistakes =
+    Object.keys(summary.sessionWrongLetters).length > 0 ||
+    Object.keys(summary.sessionBigrams).length > 0 ||
+    Object.keys(summary.sessionMissedWords).length > 0;
+  const sessionMistakes = hasSessionMistakes
+    ? mistakesFromProfile(sessionOnlyProfile)
+    : [];
+
+  const seenIssues = new Set<string>();
+  for (const pm of [...profileMistakes, ...sessionMistakes]) {
+    if (!seenIssues.has(pm.issue)) {
+      mistakes.push(pm);
+      seenIssues.add(pm.issue);
+    }
+  }
+
   if (summary.totalExtra > summary.totalIncorrect * 0.4) {
     mistakes.push({
       issue: "Overtyping (extra characters)",
@@ -226,33 +254,6 @@ function buildRuleBasedFeedback(
       evidence: `${round(summary.incompleteTestRate * 100)}% of recent tests had incomplete attempts.`,
       fix: "Finish tests even when a run feels bad—completed data helps the coach spot real typing patterns. Restart only after the result saves.",
     });
-  }
-
-  const profileMistakes = mistakesFromProfile(getMistakeProfile());
-  const sessionOnlyProfile: MistakeProfile = {
-    wrongLetters: summary.sessionWrongLetters,
-    typedInstead: {},
-    bigrams: summary.sessionBigrams,
-    missedWords: summary.sessionMissedWords,
-    weakLetterScores: {},
-    cleanStreaks: {},
-    recovered: [],
-    testsRecorded: 0,
-    updatedAt: 0,
-  };
-  const hasSessionMistakes =
-    Object.keys(summary.sessionWrongLetters).length > 0 ||
-    Object.keys(summary.sessionBigrams).length > 0;
-  const sessionMistakes = hasSessionMistakes
-    ? mistakesFromProfile(sessionOnlyProfile)
-    : [];
-
-  const seenIssues = new Set(mistakes.map((m) => m.issue));
-  for (const pm of [...profileMistakes, ...sessionMistakes]) {
-    if (!seenIssues.has(pm.issue)) {
-      mistakes.push(pm);
-      seenIssues.add(pm.issue);
-    }
   }
 
   for (const mode of summary.weakestModes) {
@@ -313,7 +314,7 @@ function buildRuleBasedFeedback(
     );
     if (profileHasDrillData()) {
       practiceTips.push(
-        "Use Adaptive on the main page for real words with your weak patterns, or Drill weak spots for focused repetition.",
+        "Hit “Next test: adaptive” so the following run uses these same weak letters, pairs, and words.",
       );
     }
   }
@@ -325,10 +326,8 @@ function buildRuleBasedFeedback(
   }
 
   const profileLine = profileInsightSummary();
-  const summaryParts = [
-    `Based on ${summary.testsAnalyzed} tests: ${summary.avgWpm} WPM average, ${summary.avgAcc}% accuracy, ${summary.avgConsistency}% consistency.`,
-    profileLine,
-  ].filter(Boolean);
+  const statsLine = `${summary.avgWpm} WPM, ${summary.avgAcc}% accuracy, ${summary.avgConsistency}% consistency across ${summary.testsAnalyzed} tests.`;
+  const summaryParts = [profileLine, statsLine].filter(Boolean);
 
   return {
     ready: true,

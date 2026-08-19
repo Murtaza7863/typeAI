@@ -13,6 +13,16 @@ function formatLetterList(entries: { key: string; count: number }[]): string {
   return entries.map((e) => `"${e.key}" (${e.count}×)`).join(", ");
 }
 
+function formatWeaknessKey(
+  kind: "letter" | "bigram" | "word" | "swap",
+  key: string,
+): string {
+  if (kind === "bigram") return `combo "${key}"`;
+  if (kind === "word") return `"${key}"`;
+  if (kind === "swap") return key;
+  return `letter "${key}"`;
+}
+
 export function mistakesFromProfile(
   profile: MistakeProfile,
 ): TypingFeedbackMistake[] {
@@ -20,10 +30,14 @@ export function mistakesFromProfile(
 
   const letters = activeTopEntries(profile.wrongLetters, "letter", 5);
   if (letters.length > 0) {
+    const top = letters[0];
     out.push({
-      issue: "Letters you miss most often",
+      issue:
+        top === undefined
+          ? "Letters you miss most often"
+          : `You keep missing "${top.key}"`,
       evidence: formatLetterList(letters),
-      fix: "Slow down on words containing these letters. Type them in isolation 20 times before your next speed run.",
+      fix: `Slow down on words that contain ${letters.map((e) => `"${e.key}"`).join(", ")}. Adaptive will bias the next test toward those letters.`,
       practiceKind: "letters",
     });
   }
@@ -31,10 +45,11 @@ export function mistakesFromProfile(
   const bigrams = activeTopEntries(profile.bigrams, "bigram", 5);
   if (bigrams.length > 0) {
     const combos = bigrams.map((b) => `"${b.key}"`).join(", ");
+    const top = bigrams[0]?.key ?? "th";
     out.push({
-      issue: "Key combinations that trip you up",
+      issue: `The "${top}" pair is tripping you up`,
       evidence: `Frequent errors on pairs: ${combos}.`,
-      fix: `Drill these pairs as syllables (e.g. ${bigrams[0]?.key ?? "th"} in short words) at 70% of your max WPM until they feel automatic.`,
+      fix: `Drill "${top}" as a syllable in short words at ~70% of your max WPM, then switch to Adaptive so those pairs show up in real words.`,
       practiceKind: "bigrams",
     });
   }
@@ -51,10 +66,11 @@ export function mistakesFromProfile(
 
   const words = activeTopEntries(profile.missedWords, "word", 5);
   if (words.length > 0) {
+    const listed = words.map((w) => `"${w.key}"`).join(", ");
     out.push({
       issue: "Words you stumble on repeatedly",
       evidence: words.map((w) => `"${w.key}" (${w.count}×)`).join(", "),
-      fix: "Use “Practice” on this finding to drill these words until accuracy is above 98%.",
+      fix: `These will repeat in Adaptive. Or hit Practice to drill ${listed} until they feel automatic.`,
       practiceKind: "words",
     });
   }
@@ -84,11 +100,15 @@ export function recoveryStrengthsFromProfile(): string[] {
   if (inProgress.length > 0) {
     const keys = inProgress
       .slice(0, 3)
-      .map(([sk]) => sk.split(":")[1] ?? sk)
+      .map(([sk]) => {
+        const [kind, key] = sk.split(":");
+        if (kind === "B") return formatWeaknessKey("bigram", key ?? sk);
+        if (kind === "W") return formatWeaknessKey("word", key ?? sk);
+        if (kind === "S") return formatWeaknessKey("swap", key ?? sk);
+        return formatWeaknessKey("letter", key ?? sk);
+      })
       .join(", ");
-    strengths.push(
-      `Almost there: clean streak building on ${keys}—one more accurate test may clear them from your weak list.`,
-    );
+    strengths.push(`Almost there: one more clean test may clear ${keys}.`);
   }
 
   if (recent.length > 0 && strengths.length === 0) {
@@ -100,6 +120,43 @@ export function recoveryStrengthsFromProfile(): string[] {
   return strengths;
 }
 
+export function getCoachProgress(): {
+  recovered: string[];
+  active: string[];
+  almost: string[];
+} {
+  const profile = getMistakeProfile();
+  const recovered = profile.recovered
+    .filter((r) => Date.now() - r.at < 7 * 24 * 60 * 60 * 1000)
+    .slice(0, 5)
+    .map((r) => formatWeaknessKey(r.kind, r.key));
+
+  const active = [
+    ...activeTopEntries(profile.wrongLetters, "letter", 3).map((e) =>
+      formatWeaknessKey("letter", e.key),
+    ),
+    ...activeTopEntries(profile.bigrams, "bigram", 3).map((e) =>
+      formatWeaknessKey("bigram", e.key),
+    ),
+    ...activeTopEntries(profile.missedWords, "word", 3).map((e) =>
+      formatWeaknessKey("word", e.key),
+    ),
+  ];
+
+  const almost = Object.entries(profile.cleanStreaks)
+    .filter(([, streak]) => streak === 1)
+    .slice(0, 3)
+    .map(([sk]) => {
+      const [kind, key] = sk.split(":");
+      if (kind === "B") return formatWeaknessKey("bigram", key ?? sk);
+      if (kind === "W") return formatWeaknessKey("word", key ?? sk);
+      if (kind === "S") return formatWeaknessKey("swap", key ?? sk);
+      return formatWeaknessKey("letter", key ?? sk);
+    });
+
+  return { recovered, active, almost };
+}
+
 export function profileInsightSummary(profile = getMistakeProfile()): string {
   if (profile.testsRecorded === 0) return "";
   const parts: string[] = [];
@@ -108,13 +165,13 @@ export function profileInsightSummary(profile = getMistakeProfile()): string {
   const words = activeTopEntries(profile.missedWords, "word", 1)[0];
   if (letters) parts.push(`letter "${letters.key}"`);
   if (bigrams) parts.push(`combo "${bigrams.key}"`);
-  if (words) parts.push(`word "${words.key}"`);
+  if (words) parts.push(`the word "${words.key}"`);
   const recovery = getRecoveryProgressSummary();
   if (parts.length === 0 && recovery !== null && recovery.length > 0) {
     return recovery;
   }
   if (parts.length === 0) return "";
-  const base = `Tracked across ${profile.testsRecorded} tests — focus: ${parts.join(", ")}.`;
+  const base = `Right now you're leaking ${parts.join(", ")}.`;
   return recovery !== null && recovery.length > 0
     ? `${base} ${recovery}`
     : base;

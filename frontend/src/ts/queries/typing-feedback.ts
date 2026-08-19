@@ -3,11 +3,11 @@ import { queryOptions } from "@tanstack/solid-query";
 import Ape from "../ape";
 import { isAuthenticated } from "../states/core";
 import { computeRuleBasedTypingFeedback } from "../typing-feedback/compute-rule-based-feedback";
-import { fetchLocalTypingFeedback } from "../typing-feedback/fetch-local-feedback";
 import {
   getLocalTypingHistoryVersion,
   getLocalTypingSessions,
 } from "../typing-feedback/local-history";
+import { getMistakeProfileVersion } from "../typing-feedback/mistake-profile";
 import { baseKey } from "./utils/keys";
 import { queryClient } from "../queries";
 
@@ -22,11 +22,13 @@ export function getTypingFeedbackQueryOptions(options?: {
   refresh?: boolean;
 }) {
   const localHistoryVersion = getLocalTypingHistoryVersion();
+  const profileVersion = getMistakeProfileVersion();
   return queryOptions({
     queryKey: [
       ...typingFeedbackQueryKey(),
       getLocalTypingSessions().length,
       localHistoryVersion,
+      profileVersion,
     ],
     queryFn: async (): Promise<TypingFeedback> => {
       if (isAuthenticated()) {
@@ -39,12 +41,7 @@ export function getTypingFeedbackQueryOptions(options?: {
         return response.body.data;
       }
 
-      const sessions = getLocalTypingSessions();
-      try {
-        return await fetchLocalTypingFeedback(sessions);
-      } catch {
-        return computeRuleBasedTypingFeedback(sessions);
-      }
+      return computeRuleBasedTypingFeedback(getLocalTypingSessions());
     },
     enabled: options?.enabled ?? true,
     staleTime: 60 * 60 * 1000,
