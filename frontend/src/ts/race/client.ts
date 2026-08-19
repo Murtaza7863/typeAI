@@ -28,7 +28,7 @@ import {
 import { PeerRaceHost } from "./peer-host";
 
 type MessageHandler = (message: RaceServerMessage) => void;
-type TransportMode = "none" | "ws" | "peer";
+type TransportMode = "none" | "ws" | "peer" | "http";
 
 let socket: WebSocket | null = null;
 let handlers: MessageHandler[] = [];
@@ -39,6 +39,7 @@ let peerHost: PeerRaceHost | null = null;
 let guestConnection: DataConnection | null = null;
 let localPlayerId: string | null = null;
 let connectPromise: Promise<void> | null = null;
+let httpPollTimer: ReturnType<typeof setInterval> | null = null;
 
 function wsUrl(): string {
   const base = envConfig.backendUrl.replace(/\/$/, "");
@@ -55,6 +56,73 @@ function wsUrl(): string {
 function publicApiWithoutRaceWs(): boolean {
   const url = envConfig.backendUrl;
   return url.includes("api.typeai.com") || url.includes("api.monkeytype.com");
+}
+
+function raceHttpUrl(): string {
+  return "/api/race-room";
+}
+
+function stopHttpPoll(): void {
+  if (httpPollTimer === null) return;
+  clearInterval(httpPollTimer);
+  httpPollTimer = null;
+}
+
+function startHttpPoll(): void {
+  stopHttpPoll();
+  httpPollTimer = setInterval(() => {
+    void httpRequest({ type: "poll" });
+  }, 400);
+}
+
+async function tryHttpRace(timeoutMs: number): Promise<boolean> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(raceHttpUrl(), {
+      method: "GET",
+      signal: controller.signal,
+    });
+    if (!response.ok) return false;
+    const data = (await response.json()) as {
+      ok?: boolean;
+      service?: string;
+    };
+    return data.ok === true && data.service === "race-room";
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function httpRequest(message: Record<string, unknown>): Promise<void> {
+  const session = getRaceSession();
+  const party = getRaceParty();
+  const code = party?.code ?? session?.code;
+  const playerId = localPlayerId ?? session?.playerId;
+  const body: Record<string, unknown> = { ...message };
+  if (code !== undefined && body["code"] === undefined) body["code"] = code;
+  if (playerId !== undefined && body["playerId"] === undefined) {
+    body["playerId"] = playerId;
+  }
+
+  const response = await fetch(raceHttpUrl(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = (await response.json()) as {
+    playerId?: string;
+    messages?: unknown[];
+  };
+  if (typeof data.playerId === "string" && data.playerId.length > 0) {
+    localPlayerId = data.playerId;
+  }
+  for (const raw of data.messages ?? []) {
+    const parsed = RaceServerMessageSchema.safeParse(raw);
+    if (parsed.success) applyServerMessage(parsed.data);
+  }
 }
 
 function emit(message: RaceServerMessage): void {
@@ -484,13 +552,21 @@ export async function connectRaceWs(): Promise<void> {
   ) {
     return;
   }
-  if (mode === "peer") {
-    ensurePeerModeReady();
+  if (mode === "http" || mode === "peer") {
+    if (mode === "http") setRaceWsConnected(true);
+    else ensurePeerModeReady();
     return;
   }
   if (connectPromise !== null) return connectPromise;
 
   connectPromise = (async () => {
+    const httpOk = await tryHttpRace(2500);
+    if (httpOk) {
+      mode = "http";
+      setRaceWsConnected(true);
+      setRaceError(null);
+      return;
+    }
     const wsOk = await tryWebSocket(2500);
     if (wsOk) return;
     ensurePeerModeReady();
@@ -502,6 +578,7 @@ export async function connectRaceWs(): Promise<void> {
 }
 
 export function disconnectRaceWs(): void {
+  stopHttpPoll();
   if (reconnectTimer !== null) {
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
@@ -517,6 +594,10 @@ export function disconnectRaceWs(): void {
 }
 
 function send(message: RaceClientMessage): void {
+  if (mode === "http") {
+    void httpRequest({ ...message });
+    return;
+  }
   if (mode === "ws") {
     if (socket === null || socket.readyState !== WebSocket.OPEN) return;
     socket.send(JSON.stringify(message));
@@ -537,6 +618,15 @@ export async function createParty(
   displayName: string,
   settings: RaceSettings = DEFAULT_RACE_SETTINGS,
 ): Promise<void> {
+  if (mode === "http") {
+    try {
+      await httpRequest({ type: "createParty", displayName, settings });
+      if (getRaceParty() !== null) startHttpPoll();
+    } catch {
+      setRaceError("Failed to create party");
+    }
+    return;
+  }
   if (mode === "peer") {
     try {
       await hostCreateParty(displayName, settings);
@@ -553,6 +643,20 @@ export async function joinParty(
   displayName: string,
   playerId?: string,
 ): Promise<void> {
+  if (mode === "http") {
+    try {
+      await httpRequest({
+        type: "joinParty",
+        code: code.toUpperCase(),
+        displayName,
+        playerId,
+      });
+      if (getRaceParty() !== null) startHttpPoll();
+    } catch {
+      setRaceError("Failed to join party");
+    }
+    return;
+  }
   if (mode === "peer") {
     try {
       await guestJoinParty(code, displayName, playerId);
@@ -588,6 +692,7 @@ export function sendFinished(timeMs: number): void {
 
 export function leaveParty(): void {
   send({ type: "leave" });
+  stopHttpPoll();
   clearRaceSession();
   setRaceParty(null);
   setRaceYou(null);

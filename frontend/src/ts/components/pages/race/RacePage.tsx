@@ -320,10 +320,7 @@ export function RacePage(): JSXElement {
               </div>
 
               <Show when={!getRaceWsConnected()}>
-                <p class="text-xs text-sub">
-                  Connecting… (uses a direct peer link when the API has no race
-                  server)
-                </p>
+                <p class="text-xs text-sub">Connecting to the race lobby…</p>
               </Show>
             </div>
           }

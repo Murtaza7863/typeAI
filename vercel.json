@@ -5,6 +5,9 @@
   "functions": {
     "api/typing-feedback.ts": {
       "maxDuration": 60
+    },
+    "api/race-room.ts": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
