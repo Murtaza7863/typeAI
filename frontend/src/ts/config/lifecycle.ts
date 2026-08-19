@@ -55,7 +55,7 @@ export async function loadFromLocalStorage(): Promise<void> {
 }
 
 const BRAND_VERSION_KEY = "typeaiBrandV";
-const BRAND_VERSION = "3";
+const BRAND_VERSION = "4";
 
 /** Move users still on Monkeytype/default teal themes onto the typeAI look. */
 function migrateBrandLookOnce(): void {
@@ -65,7 +65,7 @@ function migrateBrandLookOnce(): void {
   }
 
   const theme = Config.theme;
-  if (theme === "serika_dark" || theme === "serika") {
+  if (theme === "serika_dark" || theme === "serika" || theme === "dark") {
     setConfig("theme", "typeai", { nosave: true });
     setConfig("themeDark", "typeai", { nosave: true });
   }

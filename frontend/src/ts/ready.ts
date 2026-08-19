@@ -45,10 +45,33 @@ onDOMReady(async () => {
               "ServiceWorker registration successful with scope: ",
               registration.scope,
             );
+            void registration.update();
+            if (registration.waiting !== null) {
+              registration.waiting.postMessage({ type: "SKIP_WAITING" });
+            }
+            registration.addEventListener("updatefound", () => {
+              const installing = registration.installing;
+              if (installing === null) return;
+              installing.addEventListener("statechange", () => {
+                if (
+                  installing.state === "installed" &&
+                  navigator.serviceWorker.controller !== null
+                ) {
+                  installing.postMessage({ type: "SKIP_WAITING" });
+                }
+              });
+            });
           })
           .catch((error: unknown) => {
             console.error("ServiceWorker registration failed: ", error);
           });
+
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          if (refreshing) return;
+          refreshing = true;
+          window.location.reload();
+        });
       });
     }
   }

@@ -66,13 +66,15 @@ export class PeerRaceHost {
     this.peer = peer;
     this.callbacks = callbacks;
     this.peer.on("connection", (conn) => {
-      conn.on("open", () => {
-        // guest will send joinParty first
-      });
+      // Attach immediately — guests often send joinParty as soon as *their*
+      // data channel opens, which can be before this side's "open" event.
       conn.on("data", (data) => {
         this.handleRaw(conn, data);
       });
       conn.on("close", () => {
+        this.onConnectionClosed(conn);
+      });
+      conn.on("error", () => {
         this.onConnectionClosed(conn);
       });
     });
@@ -201,6 +203,19 @@ export class PeerRaceHost {
         });
       }
       return;
+    }
+
+    if (conn !== null) {
+      const alreadyJoined = this.playerFromConn(conn);
+      if (alreadyJoined !== undefined) {
+        alreadyJoined.connected = true;
+        alreadyJoined.connection = conn;
+        this.emitToPlayer(
+          alreadyJoined.id,
+          this.partyStateFor(alreadyJoined.id),
+        );
+        return;
+      }
     }
     if (this.party.status !== "lobby" && existingPlayerId === undefined) {
       if (conn !== null) {

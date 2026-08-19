@@ -124,6 +124,32 @@ describe("PeerRaceHost", () => {
     expect(state.party?.words).toHaveLength(25);
   });
 
+  it("ignores duplicate joinParty on the same connection", () => {
+    const onMessage = vi.fn();
+    const sendTo = vi.fn();
+    const mocked = mockPeer("hostid1");
+    const host = new PeerRaceHost(mocked.peer, { onMessage, sendTo });
+    host.createParty("Host");
+    const conn = mockConnection();
+    mocked.connectionHandler(conn);
+    conn.emitData({
+      type: "joinParty",
+      code: "HOSTID1",
+      displayName: "Guest",
+    });
+    conn.emitData({
+      type: "joinParty",
+      code: "HOSTID1",
+      displayName: "Guest",
+    });
+
+    const lobby = onMessage.mock.calls
+      .map((c) => c[1] as { type: string; party?: { players: unknown[] } })
+      .filter((msg) => msg.type === "partyState")
+      .at(-1);
+    expect(lobby?.party?.players).toHaveLength(2);
+  });
+
   it("adds guests over the data channel and enforces max players", () => {
     const onMessage = vi.fn();
     const sendTo = vi.fn();

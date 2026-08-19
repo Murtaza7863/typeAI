@@ -151,6 +151,7 @@ function getPlugins({
       },
       manifestFilename: "manifest.json",
       workbox: {
+        skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
         globIgnores: ["**/.*"],

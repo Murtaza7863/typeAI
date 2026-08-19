@@ -269,14 +269,57 @@ function destroyPeer(): void {
   }
 }
 
+const PEER_OPTIONS = {
+  debug: 0,
+  config: {
+    iceCandidatePoolSize: 10,
+    sdpSemantics: "unified-plan",
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+      { urls: "stun:stun.cloudflare.com:3478" },
+      {
+        urls: [
+          "turn:eu-0.turn.peerjs.com:3478",
+          "turn:us-0.turn.peerjs.com:3478",
+        ],
+        username: "peerjs",
+        credential: "peerjsp",
+      },
+    ],
+  },
+} as const;
+
+function peerErrorMessage(err: unknown): string {
+  if (err !== null && typeof err === "object" && "type" in err) {
+    const type = String((err as { type: unknown }).type);
+    if (type === "peer-unavailable") {
+      return "Host not found — ask them to keep the race page open and share a fresh invite.";
+    }
+    if (type === "unavailable-id") {
+      return "That party code is already in use. Create a new party.";
+    }
+    if (type === "network" || type === "socket-error") {
+      return "Could not reach the race broker. Check your network and try again.";
+    }
+    if (type === "webrtc") {
+      return "Could not open a peer link (firewall/NAT). Try a different network, or both join from the same Wi‑Fi.";
+    }
+  }
+  if (err instanceof Error && err.message.length > 0) return err.message;
+  return "Peer error";
+}
+
 async function createPeerWithId(id?: string): Promise<Peer> {
   return await new Promise((resolve, reject) => {
     const instance =
-      id !== undefined && id.length > 0 ? new Peer(id) : new Peer();
+      id !== undefined && id.length > 0
+        ? new Peer(id, PEER_OPTIONS)
+        : new Peer(PEER_OPTIONS);
     const timer = setTimeout(() => {
       instance.destroy();
       reject(new Error("Peer connection timed out"));
-    }, 10000);
+    }, 15000);
 
     instance.on("open", () => {
       clearTimeout(timer);
@@ -284,7 +327,8 @@ async function createPeerWithId(id?: string): Promise<Peer> {
     });
     instance.on("error", (err) => {
       clearTimeout(timer);
-      reject(err instanceof Error ? err : new Error("Peer error"));
+      instance.destroy();
+      reject(new Error(peerErrorMessage(err)));
     });
   });
 }
@@ -340,27 +384,63 @@ async function guestJoinParty(
   destroyPeer();
   peer = await createPeerWithId();
   const hostId = code.toLowerCase();
+  const joinMessage = {
+    type: "joinParty",
+    code: code.toUpperCase(),
+    displayName,
+    playerId,
+  } satisfies RaceClientMessage;
 
   await new Promise<void>((resolve, reject) => {
     if (peer === null) {
       reject(new Error("Peer not ready"));
       return;
     }
-    const conn = peer.connect(hostId, { reliable: true });
+
+    const guestPeer = peer;
+    let settled = false;
+    const retryTimers: ReturnType<typeof setTimeout>[] = [];
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const cleanup = (): void => {
+      if (settled) return;
+      settled = true;
+      if (timer !== undefined) clearTimeout(timer);
+      for (const retry of retryTimers) clearTimeout(retry);
+    };
+
+    const fail = (message: string): void => {
+      cleanup();
+      reject(new Error(message));
+    };
+
+    const onPeerError = (err: unknown): void => {
+      if (settled) return;
+      fail(peerErrorMessage(err));
+    };
+    guestPeer.on("error", onPeerError);
+
+    const conn = guestPeer.connect(hostId, {
+      reliable: true,
+      serialization: "json",
+    });
     guestConnection = conn;
-    const timer = setTimeout(() => {
-      reject(new Error("Could not reach host — is the invite still open?"));
-    }, 12000);
+
+    timer = setTimeout(() => {
+      fail(
+        "Could not reach host — they must keep the race tab open, and you both need https://typeaiapp.vercel.app/",
+      );
+    }, 20000);
+
+    const sendJoin = (): void => {
+      if (settled || !conn.open) return;
+      void conn.send(joinMessage);
+    };
 
     conn.on("open", () => {
-      clearTimeout(timer);
-      void conn.send({
-        type: "joinParty",
-        code: code.toUpperCase(),
-        displayName,
-        playerId,
-      } satisfies RaceClientMessage);
-      resolve();
+      sendJoin();
+      retryTimers.push(setTimeout(sendJoin, 200));
+      retryTimers.push(setTimeout(sendJoin, 800));
     });
     conn.on("data", (data) => {
       let parsed: unknown = data;
@@ -372,14 +452,23 @@ async function guestJoinParty(
         }
       }
       const result = RaceServerMessageSchema.safeParse(parsed);
-      if (result.success) applyServerMessage(result.data);
+      if (!result.success) return;
+      applyServerMessage(result.data);
+      if (result.data.type === "error") {
+        fail(result.data.message);
+        return;
+      }
+      if (result.data.type === "partyState") {
+        cleanup();
+        resolve();
+      }
     });
     conn.on("close", () => {
       setRaceWsConnected(false);
+      if (!settled) fail("Host closed the connection");
     });
     conn.on("error", () => {
-      clearTimeout(timer);
-      reject(new Error("Failed to connect to host"));
+      fail("Failed to connect to host");
     });
   });
 }
@@ -444,28 +533,32 @@ function send(message: RaceClientMessage): void {
   }
 }
 
-export function createParty(
+export async function createParty(
   displayName: string,
   settings: RaceSettings = DEFAULT_RACE_SETTINGS,
-): void {
+): Promise<void> {
   if (mode === "peer") {
-    void hostCreateParty(displayName, settings).catch((e: unknown) => {
+    try {
+      await hostCreateParty(displayName, settings);
+    } catch (e: unknown) {
       setRaceError(e instanceof Error ? e.message : "Failed to create party");
-    });
+    }
     return;
   }
   send({ type: "createParty", displayName, settings });
 }
 
-export function joinParty(
+export async function joinParty(
   code: string,
   displayName: string,
   playerId?: string,
-): void {
+): Promise<void> {
   if (mode === "peer") {
-    void guestJoinParty(code, displayName, playerId).catch((e: unknown) => {
+    try {
+      await guestJoinParty(code, displayName, playerId);
+    } catch (e: unknown) {
       setRaceError(e instanceof Error ? e.message : "Failed to join party");
-    });
+    }
     return;
   }
   send({

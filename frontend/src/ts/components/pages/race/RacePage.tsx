@@ -103,17 +103,19 @@ export function RacePage(): JSXElement {
         const path = window.location.pathname;
         const match = /^\/race\/([A-Za-z0-9]+)$/i.exec(path);
         const session = getRaceSession();
-        const name = (localStorage.getItem(NAME_KEY) ?? "").trim();
+        const name = (localStorage.getItem(NAME_KEY) ?? "").trim() || "Player";
+        setDisplayName((current) =>
+          current.trim().length === 0 ? name : current,
+        );
         const pathCode = match?.[1];
-        if (
-          pathCode !== undefined &&
-          pathCode.length > 0 &&
-          name.length > 0 &&
-          getRaceParty() === null
-        ) {
-          joinParty(pathCode, name, session?.playerId);
-        } else if (pathCode !== undefined && pathCode.length > 0) {
+        if (pathCode !== undefined && pathCode.length > 0) {
           setJoinCode((current) => (current.length === 0 ? pathCode : current));
+          if (getRaceParty() === null) {
+            setBusy(true);
+            void joinParty(pathCode, name, session?.playerId).finally(() => {
+              setBusy(false);
+            });
+          }
         }
       })
       .catch(() => {
@@ -164,8 +166,12 @@ export function RacePage(): JSXElement {
     const name = ensureName();
     if (name === null) return;
     setBusy(true);
-    await connectRaceWs();
-    createParty(name, draftSettings());
+    try {
+      await connectRaceWs();
+      await createParty(name, draftSettings());
+    } finally {
+      setBusy(false);
+    }
   };
 
   const onJoin = async (): Promise<void> => {
@@ -177,8 +183,12 @@ export function RacePage(): JSXElement {
       return;
     }
     setBusy(true);
-    await connectRaceWs();
-    joinParty(code, name, getRaceSession()?.playerId);
+    try {
+      await connectRaceWs();
+      await joinParty(code, name, getRaceSession()?.playerId);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const codeFromPath = (): string => {
@@ -255,7 +265,8 @@ export function RacePage(): JSXElement {
             <h1 class="text-2xl text-text">Competitive</h1>
             <p class="text-sm text-sub">
               Race up to 8 players on a shared test — 25/50/100 words,
-              punctuation, or quotes. First to finish wins.
+              punctuation, or quotes. First to finish wins. Keep this tab open
+              while friends join.
             </p>
           </div>
         </div>
@@ -403,7 +414,8 @@ export function RacePage(): JSXElement {
                       />
                       <Show when={partyData.players.length < 2}>
                         <p class="mt-2 text-xs text-sub">
-                          Need at least 2 players to start.
+                          Need at least 2 players to start. Share the invite
+                          link and keep this page open.
                         </p>
                       </Show>
                     </Show>
@@ -487,7 +499,7 @@ export function RacePage(): JSXElement {
                           onClick={() => {
                             leaveRaceAndRestore();
                             const name = displayName().trim() || "Host";
-                            createParty(name, draftSettings());
+                            void createParty(name, draftSettings());
                           }}
                         />
                       </Show>
