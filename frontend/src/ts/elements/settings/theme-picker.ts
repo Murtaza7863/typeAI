@@ -14,7 +14,13 @@ import { configEvent } from "../../events/config";
 import { getActivePage, isAuthenticated } from "../../states/core";
 import { ThemeName } from "@typeai/schemas/configs";
 import { captureException } from "../../sentry";
-import { ColorName, ThemesList, ThemeWithName } from "../../constants/themes";
+import {
+  ColorName,
+  DEFAULT_THEME_NAME,
+  getThemeDisplayName,
+  ThemesList,
+  ThemeWithName,
+} from "../../constants/themes";
 import { qs, qsa, qsr } from "../../utils/dom";
 import { getTheme, setTheme, updateThemeColor } from "../../states/theme";
 import { saveFullConfigToLocalStorage } from "../../config/persistence";
@@ -92,30 +98,39 @@ export async function fillPresetButtons(): Promise<void> {
     activeThemeName = ThemeController.randomTheme;
   }
 
-  const themes = sortedThemes;
+  const themes = [
+    ...sortedThemes.filter((theme) => theme.name === DEFAULT_THEME_NAME),
+    ...sortedThemes.filter((theme) => theme.name !== DEFAULT_THEME_NAME),
+  ];
+
+  const themeButtonHtml = (theme: ThemeWithName, favorite: boolean): string => {
+    const activeTheme = activeThemeName === theme.name ? "active" : "";
+    const favClass = favorite ? " active" : "";
+    const favIcon = favorite ? "fas" : "far";
+    return `<div class="theme button ${activeTheme}" theme='${
+      theme.name
+    }' style="background: ${theme.bg}; color: ${
+      theme.main
+    };outline: 0 solid ${theme.main};">
+      <div class="favButton${favClass}"><i class="${favIcon} fa-star"></i></div>
+      <div class="text">${getThemeDisplayName(theme.name)}</div>
+      <div class="themeBubbles" style="background: ${
+        theme.bg
+      };outline: 0.25rem solid ${theme.bg};">
+        <div class="themeBubble" style="background: ${theme.main}"></div>
+        <div class="themeBubble" style="background: ${theme.sub}"></div>
+        <div class="themeBubble" style="background: ${theme.text}"></div>
+      </div>
+      </div>
+      `;
+  };
 
   //first show favourites
   if (Config.favThemes.length > 0) {
     favThemesEl.style.marginBottom = "1rem";
     for (const theme of themes) {
       if (Config.favThemes.includes(theme.name)) {
-        const activeTheme = activeThemeName === theme.name ? "active" : "";
-        favThemesElHTML += `<div class="theme button ${activeTheme}" theme='${
-          theme.name
-        }' style="background: ${theme.bg}; color: ${
-          theme.main
-        };outline: 0 solid ${theme.main};">
-          <div class="favButton active"><i class="fas fa-star"></i></div>
-          <div class="text">${theme.name.replace(/_/g, " ")}</div>
-          <div class="themeBubbles" style="background: ${
-            theme.bg
-          };outline: 0.25rem solid ${theme.bg};">
-            <div class="themeBubble" style="background: ${theme.main}"></div>
-            <div class="themeBubble" style="background: ${theme.sub}"></div>
-            <div class="themeBubble" style="background: ${theme.text}"></div>
-          </div>
-          </div>
-          `;
+        favThemesElHTML += themeButtonHtml(theme, true);
       }
     }
     favThemesEl.innerHTML = favThemesElHTML;
@@ -128,23 +143,7 @@ export async function fillPresetButtons(): Promise<void> {
       continue;
     }
 
-    const activeTheme = activeThemeName === theme.name ? "active" : "";
-    themesElHTML += `<div class="theme button ${activeTheme}" theme='${
-      theme.name
-    }' style="background: ${theme.bg}; color: ${
-      theme.main
-    };outline: 0 solid ${theme.main};">
-      <div class="favButton"><i class="far fa-star"></i></div>
-      <div class="text">${theme.name.replace(/_/g, " ")}</div>
-      <div class="themeBubbles" style="background: ${
-        theme.bg
-      };outline: 0.25rem solid ${theme.bg};">
-        <div class="themeBubble" style="background: ${theme.main}"></div>
-        <div class="themeBubble" style="background: ${theme.sub}"></div>
-        <div class="themeBubble" style="background: ${theme.text}"></div>
-      </div>
-      </div>
-      `;
+    themesElHTML += themeButtonHtml(theme, false);
   }
   themesEl.innerHTML = themesElHTML;
 }

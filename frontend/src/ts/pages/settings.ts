@@ -44,7 +44,11 @@ import {
 } from "../collections/presets";
 import { LayoutsList } from "../constants/layouts";
 import { DataArrayPartial, Optgroup, OptionOptional } from "slim-select/store";
-import { ThemesList, ThemeWithName } from "../constants/themes";
+import {
+  ThemesList,
+  ThemeWithName,
+  getThemeDisplayName,
+} from "../constants/themes";
 import { areSortedArraysEqual, areUnsortedArraysEqual } from "../utils/arrays";
 import { LayoutName } from "@typeai/schemas/layouts";
 import { LanguageGroupNames, LanguageGroups } from "../constants/languages";
@@ -938,9 +942,13 @@ function getLayoutfluidDropdownData(): DataArrayPartial {
 function getThemeDropdownData(
   isActive: (theme: ThemeWithName) => boolean,
 ): DataArrayPartial {
-  return ThemesList.map((theme) => ({
+  const ordered = [
+    ...ThemesList.filter((theme) => theme.name === "typeai"),
+    ...ThemesList.filter((theme) => theme.name !== "typeai"),
+  ];
+  return ordered.map((theme) => ({
     value: theme.name,
-    text: theme.name.replace(/_/g, " "),
+    text: getThemeDisplayName(theme.name),
     selected: isActive(theme),
   }));
 }

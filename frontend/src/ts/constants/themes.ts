@@ -2338,6 +2338,13 @@ export const themes: Record<ThemeName, Theme> = {
 };
 
 export type ThemeWithName = Theme & { name: ThemeName };
+export const DEFAULT_THEME_NAME: ThemeName = "typeai";
+
+export function getThemeDisplayName(name: string): string {
+  if (name === DEFAULT_THEME_NAME) return "default";
+  return name.replaceAll("_", " ");
+}
+
 export const ThemesList: ThemeWithName[] = Object.keys(themes)
   .sort()
   .map(

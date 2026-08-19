@@ -9,7 +9,12 @@ import * as DB from "../db";
 import { showNoticeNotification } from "../states/notifications";
 import { debounce } from "throttle-debounce";
 import { CustomThemeColors, ThemeName } from "@typeai/schemas/configs";
-import { Theme, themes, ThemesList } from "../constants/themes";
+import {
+  Theme,
+  themes,
+  ThemesList,
+  getThemeDisplayName,
+} from "../constants/themes";
 import fileStorage from "../utils/file-storage";
 import { qs } from "../utils/dom";
 import { setThemeIndicator } from "../states/core";
@@ -101,7 +106,7 @@ function updateThemeIndicator(nameOverride?: string): void {
   }
 
   if (nameOverride !== undefined && nameOverride !== "") str = nameOverride;
-  str = str.replace(/_/g, " ");
+  str = getThemeDisplayName(str);
 
   //fav icon
   const currentTheme = nameOverride ?? randomTheme ?? Config.theme;
@@ -226,7 +231,7 @@ export async function randomizeTheme(): Promise<void> {
   await apply(randomTheme, colorsOverride);
 
   if (randomThemeIndex >= themesList.length) {
-    let name = randomTheme.replace(/_/g, " ");
+    let name = getThemeDisplayName(randomTheme);
     if (Config.randomTheme === "custom") {
       name = (
         DB.getSnapshot()?.customThemes?.find((ct) => ct._id === randomTheme)

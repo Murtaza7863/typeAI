@@ -3,7 +3,12 @@ import { setConfig } from "../../config/setters";
 import { capitalizeFirstLetterOfEachWord } from "../../utils/strings";
 import * as ThemeController from "../../controllers/theme-controller";
 import { Command, CommandsSubgroup } from "../types";
-import { ThemesList, ThemeWithName } from "../../constants/themes";
+import {
+  ThemesList,
+  ThemeWithName,
+  getThemeDisplayName,
+  DEFAULT_THEME_NAME,
+} from "../../constants/themes";
 import { not } from "@typeai/util/predicates";
 import { configEvent } from "../../events/config";
 import * as getErrorMessage from "../../utils/error";
@@ -19,7 +24,8 @@ const isFavorite = (theme: ThemeWithName): boolean =>
 const createThemeCommand = (theme: ThemeWithName): Command => {
   return {
     id: `changeTheme${capitalizeFirstLetterOfEachWord(theme.name)}`,
-    display: theme.name.replace(/_/g, " "),
+    display: getThemeDisplayName(theme.name),
+    alias: theme.name === DEFAULT_THEME_NAME ? "typeai type ai" : undefined,
     configValue: theme.name,
     // customStyle: `color:${theme.main};background:${theme.bg};`,
     customData: {
@@ -44,10 +50,16 @@ const createThemeCommand = (theme: ThemeWithName): Command => {
  * @param themes the themes to sort
  * @returns sorted array of themes
  */
-const sortThemesByFavorite = (themes: ThemeWithName[]): ThemeWithName[] => [
-  ...themes.filter(isFavorite),
-  ...themes.filter(not(isFavorite)),
-];
+const sortThemesByFavorite = (themes: ThemeWithName[]): ThemeWithName[] => {
+  const isDefault = (theme: ThemeWithName): boolean =>
+    theme.name === DEFAULT_THEME_NAME;
+  const rest = themes.filter(not(isDefault));
+  return [
+    ...themes.filter(isDefault),
+    ...rest.filter(isFavorite),
+    ...rest.filter(not(isFavorite)),
+  ];
+};
 
 const subgroup: CommandsSubgroup = {
   title: "Theme...",
