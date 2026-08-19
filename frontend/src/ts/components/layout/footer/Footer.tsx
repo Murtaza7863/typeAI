@@ -100,7 +100,10 @@ export function Footer(): JSXElement {
             }}
           />
         </div>
-        <div class="flex flex-col items-end text-right lg:flex-row">
+        <div class="flex flex-col items-end text-right lg:flex-row lg:items-center">
+          <p class="hidden px-2 py-1 text-[0.65rem] tracking-[0.14em] text-sub uppercase sm:block">
+            practice with a coach
+          </p>
           <ThemeIndicator />
           <VersionButton />
         </div>

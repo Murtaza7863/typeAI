@@ -13,8 +13,9 @@ import {
 } from "../../../typing-feedback/mistake-profile";
 import { cn } from "../../../utils/cn";
 import { Button } from "../../common/Button";
+import { Fa } from "../../common/Fa";
 
-const modes: {
+export const coachModeOptions: {
   id: CoachMode;
   label: string;
 }[] = [
@@ -34,28 +35,23 @@ export function CoachModeButtons(props: {
 
   const selectMode = (mode: CoachMode): void => {
     if (props.disabled) return;
-
-    if (mode !== "original" && !hasCoachData()) {
-      showNoticeNotification(
-        "Complete a few tests with mistakes first—we need data to personalize practice.",
-      );
-      return;
-    }
-
-    if (getCoachMode() === mode) return;
-
-    setCoachMode(mode);
-    restartTestEvent.dispatch();
+    trySetCoachMode(mode);
   };
 
   return (
     <div
-      class={cn("flex flex-wrap items-center gap-0.5", props.class)}
+      class={cn(
+        "ml-1.5 flex flex-wrap items-center gap-0.5 rounded-full bg-bg px-1.5 py-0.5 ring-1 ring-main/25",
+        props.class,
+      )}
       data-ui-element="coachModeSelector"
       aria-label="Typing coach mode"
     >
-      <span class="mx-0.5 hidden text-sub sm:inline">|</span>
-      <For each={modes}>
+      <Fa
+        icon="fa-robot"
+        class="hidden px-1 text-[0.7em] text-main sm:inline"
+      />
+      <For each={coachModeOptions}>
         {(mode) => (
           <Button
             variant="text"
@@ -79,4 +75,19 @@ export function CoachModeButtons(props: {
       </Show>
     </div>
   );
+}
+
+export function trySetCoachMode(mode: CoachMode): boolean {
+  if (mode !== "original" && !profileHasDrillData()) {
+    showNoticeNotification(
+      "Complete a few tests with mistakes first—we need data to personalize practice.",
+    );
+    return false;
+  }
+
+  if (getCoachMode() === mode) return false;
+
+  setCoachMode(mode);
+  restartTestEvent.dispatch();
+  return true;
 }

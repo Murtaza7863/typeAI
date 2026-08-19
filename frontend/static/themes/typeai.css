@@ -1,22 +1,72 @@
+:root {
+  --roundness: 1.05rem;
+}
+
+body {
+  background:
+    radial-gradient(
+      1100px 520px at 50% -12%,
+      color-mix(in oklab, var(--main-color) 18%, transparent),
+      transparent 58%
+    ),
+    var(--bg-color);
+}
+
 header {
   border-bottom: 1px solid
-    color-mix(in oklab, var(--main-color) 16%, transparent);
-  padding-bottom: 0.75rem;
+    color-mix(in oklab, var(--main-color) 18%, transparent);
+  padding-bottom: 0.9rem;
 }
 
 #logo .text .top {
   letter-spacing: 0.12em;
 }
 
-#result .wrapper .stats .group .top {
-  letter-spacing: 0.04em;
+#caret.default {
+  box-shadow: 0 0 12px color-mix(in oklab, var(--caret-color) 65%, transparent);
+}
+
+#barTimerProgress.timerMain .bar {
+  box-shadow: 0 0 14px color-mix(in oklab, var(--main-color) 55%, transparent);
 }
 
 .pageTest #wordsWrapper:not(.tape) {
   border-radius: calc(var(--roundness) * 1.35);
-  background: color-mix(in oklab, var(--sub-alt-color) 45%, transparent);
+  background: color-mix(in oklab, var(--sub-alt-color) 72%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--main-color) 16%, transparent),
+    0 22px 48px color-mix(in oklab, black 32%, transparent);
+  padding-block: 1rem;
+  padding-inline: 1.15rem;
+}
+
+.pageTest #wordsWrapper:not(.tape)::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 1.4rem;
+  right: 1.4rem;
+  height: 2px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--main-color) 58%, transparent);
+  pointer-events: none;
+}
+
+#restartTestButton {
+  border-radius: 999px;
   box-shadow: inset 0 0 0 1px
-    color-mix(in oklab, var(--main-color) 12%, transparent);
-  padding-block: 0.85rem;
-  padding-inline: 1rem;
+    color-mix(in oklab, var(--main-color) 20%, transparent);
+}
+
+#result .wrapper .stats .group .top {
+  letter-spacing: 0.04em;
+}
+
+#keymap {
+  filter: drop-shadow(0 8px 18px color-mix(in oklab, black 22%, transparent));
+}
+
+.pageTest [data-ui-element="testConfig"] .card {
+  box-shadow: inset 0 0 0 1px
+    color-mix(in oklab, var(--main-color) 10%, transparent);
 }

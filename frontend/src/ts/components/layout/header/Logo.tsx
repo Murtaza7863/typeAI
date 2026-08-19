@@ -42,13 +42,20 @@ export function Logo(): JSXElement {
           {isDevEnvironment() ? "localhost" : "type smart"}
         </span>
         <span
-          class={cn("transition-colors duration-250", {
+          class={cn("flex items-center transition-colors duration-250", {
             "text-sub": getFocus(),
           })}
           data-ui-element="logoText"
         >
           <span classList={{ "text-text": !getFocus() }}>type</span>
-          <span classList={{ "text-main": !getFocus() }}>AI</span>
+          <span
+            class={cn(
+              "ml-[0.18em] inline-block rounded-[0.22em] px-[0.28em] py-[0.06em] text-[0.72em] leading-none tracking-normal",
+              getFocus() ? "bg-sub/25 text-sub" : "bg-main text-bg",
+            )}
+          >
+            AI
+          </span>
         </span>
       </div>
     </a>

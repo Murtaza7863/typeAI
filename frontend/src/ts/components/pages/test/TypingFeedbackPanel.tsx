@@ -78,14 +78,16 @@ export function TypingFeedbackPanel(props: {
   return (
     <div
       class={cn(
-        "bg-bg-2 rounded-lg border border-sub/30 text-text",
+        "rounded-xl border border-main/20 bg-sub-alt/50 text-text",
         variant() === "result" ? "mx-auto mt-6 max-w-240 p-6" : "p-6",
       )}
     >
       <div class="mb-4 flex items-center justify-between gap-4">
         <div>
-          <h3 class="flex items-center gap-2 text-lg text-sub">
-            <Fa icon="fa-robot" />
+          <h3 class="flex items-center gap-2 text-lg text-text">
+            <span class="inline-flex size-8 items-center justify-center rounded-lg bg-main/15 text-main">
+              <Fa icon="fa-robot" />
+            </span>
             <span>Typing coach</span>
           </h3>
           <Show when={!isAuthenticated()}>

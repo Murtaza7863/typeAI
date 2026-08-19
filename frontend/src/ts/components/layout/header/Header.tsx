@@ -9,7 +9,7 @@ import { Nav } from "./Nav";
 export function Header(): JSXElement {
   return (
     <header
-      class={cn("flex place-items-center gap-2", {
+      class={cn("flex place-items-center gap-3", {
         "opacity-0": getIsScreenshotting(),
       })}
       data-ui-element="header"

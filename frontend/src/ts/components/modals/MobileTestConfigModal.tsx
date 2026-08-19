@@ -6,12 +6,21 @@ import { For, JSXElement, Show } from "solid-js";
 import { setConfig, setQuoteLengthAll } from "../../config/setters";
 import { getConfig } from "../../config/store";
 import { restartTestEvent } from "../../events/test";
+import { getCoachMode } from "../../states/coach-mode";
 import { isAuthenticated } from "../../states/core";
 import { showModal } from "../../states/modals";
+import {
+  getMistakeProfileVersion,
+  profileHasDrillData,
+} from "../../typing-feedback/mistake-profile";
 import { areUnsortedArraysEqual } from "../../utils/arrays";
 import { AnimatedModal } from "../common/AnimatedModal";
 import { Button } from "../common/Button";
 import { Separator } from "../common/Separator";
+import {
+  coachModeOptions,
+  trySetCoachMode,
+} from "../pages/test/CoachModeButtons";
 
 const modes: Mode[] = ["time", "words", "quote", "zen", "custom"];
 const times = [15, 30, 60, 120];
@@ -52,6 +61,11 @@ const isPunctuationDisabled = () =>
   getConfig.mode === "quote" || getConfig.mode === "zen";
 
 export function MobileTestConfigModal(): JSXElement {
+  const hasCoachData = (): boolean => {
+    getMistakeProfileVersion();
+    return profileHasDrillData();
+  };
+
   const handleModeClick = (mode: Mode) => {
     if (mode === getConfig.mode) return;
     setConfig("mode", mode);
@@ -150,6 +164,25 @@ export function MobileTestConfigModal(): JSXElement {
       </div>
 
       <Separator />
+
+      <Show when={getConfig.mode !== "zen" && getConfig.mode !== "quote"}>
+        <div class="grid gap-2">
+          <p class="text-xs tracking-wide text-sub uppercase">coach</p>
+          <For each={coachModeOptions}>
+            {(mode) => (
+              <MCButton
+                text={mode.label}
+                active={getCoachMode() === mode.id}
+                disabled={mode.id !== "original" && !hasCoachData()}
+                onClick={() => {
+                  trySetCoachMode(mode.id);
+                }}
+              />
+            )}
+          </For>
+        </div>
+        <Separator />
+      </Show>
 
       <Show when={getConfig.mode !== "zen"}>
         <div class="grid gap-2">
