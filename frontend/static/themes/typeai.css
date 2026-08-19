@@ -1,43 +1,148 @@
 :root {
-  --roundness: 1.05rem;
-}
-
-body {
-  background:
-    radial-gradient(
-      1100px 520px at 50% -12%,
-      color-mix(in oklab, var(--main-color) 18%, transparent),
-      transparent 58%
-    ),
-    var(--bg-color);
-}
-
-header {
-  border-bottom: 1px solid
-    color-mix(in oklab, var(--main-color) 18%, transparent);
-  padding-bottom: 0.9rem;
+  --roundness: 1.15rem;
 }
 
 #logo .text .top {
   letter-spacing: 0.12em;
 }
 
+/* ---------------------------------------------------------------------------
+   Global identity: sans-serif chrome, mono typing.
+   Monkeytype is mono everywhere; typeAI uses Lexend Deca for all UI chrome
+   and keeps the monospace font strictly for the typing surface.
+--------------------------------------------------------------------------- */
+
+header,
+footer,
+nav,
+#commandLine,
+.modalWrapper .modal,
+.popupWrapper .modal,
+.page:not(.pageTest),
+.pageTest [data-ui-element="testConfig"],
+.pageTest [data-ui-element="coachModeSubtext"],
+#testModesNotice,
+#result .wrapper .stats .group .top,
+#result .wrapper .buttons {
+  font-family: "Lexend Deca", sans-serif;
+  letter-spacing: 0.01em;
+}
+
+/* ---------------------------------------------------------------------------
+   Backdrop: mint aurora + faint blueprint grid on every page
+--------------------------------------------------------------------------- */
+
+body {
+  background:
+    radial-gradient(
+      1200px 560px at 50% -14%,
+      color-mix(in oklab, var(--main-color) 22%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 500px at 88% 110%,
+      color-mix(in oklab, var(--main-color) 8%, transparent),
+      transparent 55%
+    ),
+    linear-gradient(
+      to right,
+      color-mix(in oklab, var(--main-color) 4%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--main-color) 4%, transparent) 1px,
+      transparent 1px
+    ),
+    var(--bg-color);
+  background-size:
+    100% 100%,
+    100% 100%,
+    3.5rem 3.5rem,
+    3.5rem 3.5rem,
+    100% 100%;
+}
+
+html {
+  scrollbar-color: color-mix(in oklab, var(--main-color) 45%, var(--bg-color))
+    transparent;
+}
+
+/* ---------------------------------------------------------------------------
+   Header and footer
+--------------------------------------------------------------------------- */
+
+header {
+  border-bottom: 1px solid
+    color-mix(in oklab, var(--main-color) 22%, transparent);
+  padding-bottom: 1rem;
+  position: relative;
+}
+
+header::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 7rem;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--main-color);
+  box-shadow: 0 0 12px color-mix(in oklab, var(--main-color) 70%, transparent);
+}
+
+footer {
+  border-top: 1px solid color-mix(in oklab, var(--main-color) 12%, transparent);
+  padding-top: 1rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Buttons: pills everywhere, mint hover ring
+--------------------------------------------------------------------------- */
+
+button,
+.button,
+input[type="button"],
+input[type="reset"],
+input[type="submit"] {
+  border-radius: 999px;
+}
+
+button:hover,
+.button:hover {
+  box-shadow: 0 0 16px color-mix(in oklab, var(--main-color) 25%, transparent);
+}
+
+:focus-visible {
+  outline-color: var(--main-color);
+}
+
+/* ---------------------------------------------------------------------------
+   Test page: framed glowing stage
+--------------------------------------------------------------------------- */
+
 #caret.default {
-  box-shadow: 0 0 12px color-mix(in oklab, var(--caret-color) 65%, transparent);
+  box-shadow: 0 0 14px color-mix(in oklab, var(--caret-color) 75%, transparent);
 }
 
 #barTimerProgress.timerMain .bar {
-  box-shadow: 0 0 14px color-mix(in oklab, var(--main-color) 55%, transparent);
+  box-shadow: 0 0 16px color-mix(in oklab, var(--main-color) 60%, transparent);
+}
+
+#liveStatsTextBottom,
+#liveStatsTextTop {
+  text-shadow: 0 0 18px color-mix(in oklab, var(--main-color) 45%, transparent);
 }
 
 .pageTest #wordsWrapper:not(.tape) {
-  border-radius: calc(var(--roundness) * 1.35);
-  background: color-mix(in oklab, var(--sub-alt-color) 72%, transparent);
+  border-radius: calc(var(--roundness) * 1.4);
+  background: color-mix(in oklab, var(--sub-alt-color) 78%, transparent);
   box-shadow:
-    inset 0 0 0 1px color-mix(in oklab, var(--main-color) 16%, transparent),
-    0 22px 48px color-mix(in oklab, black 32%, transparent);
-  padding-block: 1rem;
-  padding-inline: 1.15rem;
+    inset 0 0 0 1px color-mix(in oklab, var(--main-color) 22%, transparent),
+    0 0 42px color-mix(in oklab, var(--main-color) 10%, transparent),
+    0 26px 56px color-mix(in oklab, black 38%, transparent);
+  padding-block: 1.15rem;
+  padding-inline: 1.3rem;
 }
 
 .pageTest #wordsWrapper:not(.tape)::before {
@@ -48,25 +153,104 @@ header {
   right: 1.4rem;
   height: 2px;
   border-radius: 999px;
-  background: color-mix(in oklab, var(--main-color) 58%, transparent);
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in oklab, var(--main-color) 75%, transparent),
+    transparent
+  );
   pointer-events: none;
+}
+
+.pageTest [data-ui-element="testConfig"] .card {
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px
+    color-mix(in oklab, var(--main-color) 14%, transparent);
 }
 
 #restartTestButton {
   border-radius: 999px;
   box-shadow: inset 0 0 0 1px
-    color-mix(in oklab, var(--main-color) 20%, transparent);
+    color-mix(in oklab, var(--main-color) 26%, transparent);
 }
 
-#result .wrapper .stats .group .top {
-  letter-spacing: 0.04em;
+#restartTestButton:hover {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--main-color) 45%, transparent),
+    0 0 20px color-mix(in oklab, var(--main-color) 30%, transparent);
 }
 
 #keymap {
   filter: drop-shadow(0 8px 18px color-mix(in oklab, black 22%, transparent));
 }
 
-.pageTest [data-ui-element="testConfig"] .card {
+/* ---------------------------------------------------------------------------
+   Result screen: glowing headline stats
+--------------------------------------------------------------------------- */
+
+#result .wrapper .stats .group .top {
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+#result .wrapper .stats .group .bottom {
+  text-shadow: 0 0 26px color-mix(in oklab, var(--main-color) 55%, transparent);
+}
+
+#result .wrapper .stats.morestats {
+  border-radius: calc(var(--roundness) * 1.25);
+  background: color-mix(in oklab, var(--sub-alt-color) 55%, transparent);
   box-shadow: inset 0 0 0 1px
-    color-mix(in oklab, var(--main-color) 10%, transparent);
+    color-mix(in oklab, var(--main-color) 12%, transparent);
+  padding: 1.25rem 1.5rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Modals and commandline: dim blurred overlay, mint-edged panels
+--------------------------------------------------------------------------- */
+
+.popupWrapper,
+.modalWrapper {
+  background: color-mix(in oklab, black 62%, transparent);
+  backdrop-filter: blur(5px);
+}
+
+.popupWrapper .modal,
+.modalWrapper .modal {
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--main-color) 25%, transparent),
+    0 30px 70px color-mix(in oklab, black 55%, transparent);
+}
+
+#commandLine .modal input {
+  font-family: "Lexend Deca", sans-serif;
+}
+
+/* ---------------------------------------------------------------------------
+   Settings, about, leaderboards, account pages
+--------------------------------------------------------------------------- */
+
+.pageSettings .sectionGroupTitle {
+  border-left: 4px solid var(--main-color);
+  border-radius: 4px;
+  padding-left: 0.75rem;
+  color: var(--text-color);
+}
+
+.pageSettings .settingsGroup.quickNav .links {
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px
+    color-mix(in oklab, var(--main-color) 14%, transparent);
+}
+
+.pageSettings .section .groupTitle,
+.pageAbout h2,
+.pageLeaderboards .title {
+  color: var(--text-color);
+}
+
+.pageAbout .section,
+.pageLeaderboards .leaderboardsWrapper {
+  border-radius: calc(var(--roundness) * 1.25);
 }

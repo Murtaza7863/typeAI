@@ -47,10 +47,10 @@ export function CoachModeButtons(props: {
       data-ui-element="coachModeSelector"
       aria-label="Typing coach mode"
     >
-      <Fa
-        icon="fa-robot"
-        class="hidden px-1 text-[0.7em] text-main sm:inline"
-      />
+      <span class="hidden items-center gap-1 pr-1 pl-1.5 text-[0.85em] text-main sm:inline-flex">
+        <Fa icon="fa-robot" class="text-[0.8em]" />
+        <span class="text-[0.8em] tracking-wide">coach</span>
+      </span>
       <For each={coachModeOptions}>
         {(mode) => (
           <Button

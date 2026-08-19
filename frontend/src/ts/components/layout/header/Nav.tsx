@@ -14,11 +14,17 @@ import { cn } from "../../../utils/cn";
 import { Button } from "../../common/Button";
 import { NotificationBubble } from "../../common/NotificationBubble";
 
+function NavLabel(props: { text: string }): JSXElement {
+  return (
+    <span class="hidden text-xs tracking-wide xl:inline">{props.text}</span>
+  );
+}
+
 export function Nav(): JSXElement {
   const isLiteMode = () => envConfig.liteMode;
 
   const buttonClass = () =>
-    cn("aspect-square", {
+    cn("aspect-square xl:aspect-auto xl:px-3", {
       "opacity-(--nav-focus-opacity)": getFocus(),
     });
 
@@ -45,7 +51,9 @@ export function Nav(): JSXElement {
         onClick={() => {
           if (getActivePage() === "test") restartTestEvent.dispatch();
         }}
-      />
+      >
+        <NavLabel text="test" />
+      </Button>
       <Show when={!isLiteMode()}>
         <>
           <Button
@@ -63,7 +71,9 @@ export function Nav(): JSXElement {
             onMouseEnter={() => {
               prefetchLeaderboardPage();
             }}
-          />
+          >
+            <NavLabel text="leaderboards" />
+          </Button>
           <Button
             variant="text"
             fa={{
@@ -79,7 +89,9 @@ export function Nav(): JSXElement {
             onMouseEnter={() => {
               prefetchAboutPage();
             }}
-          />
+          >
+            <NavLabel text="about" />
+          </Button>
           <Button
             variant="text"
             fa={{
@@ -94,6 +106,7 @@ export function Nav(): JSXElement {
             }}
             class={cn(buttonClass(), "relative")}
           >
+            <NavLabel text="alerts" />
             <NotificationBubble
               variant="fromCorner"
               show={showAlertsNotificationBubble()}
@@ -113,7 +126,9 @@ export function Nav(): JSXElement {
         }}
         class={buttonClass()}
         href="/race"
-      />
+      >
+        <NavLabel text="race" />
+      </Button>
       <Button
         variant="text"
         fa={{
@@ -126,7 +141,9 @@ export function Nav(): JSXElement {
           "data-nav-item": "settings",
         }}
         router-link
-      />
+      >
+        <NavLabel text="settings" />
+      </Button>
       <div class="grow"></div>
     </nav>
   );
