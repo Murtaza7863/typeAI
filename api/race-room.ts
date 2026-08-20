@@ -846,8 +846,15 @@ async function handleAction(
       return error("Need at least 2 players to start");
     }
     if (body.settings !== undefined) {
-      party.settings = parseSettings(body.settings);
-      party.words = generateWords(party.settings);
+      const next = parseSettings(body.settings);
+      if (
+        next.mode !== party.settings.mode ||
+        next.wordCount !== party.settings.wordCount ||
+        next.punctuation !== party.settings.punctuation
+      ) {
+        party.settings = next;
+        party.words = generateWords(next);
+      }
     }
     party.status = "countdown";
     party.countdownEndsAt = Date.now() + COUNTDOWN_MS;

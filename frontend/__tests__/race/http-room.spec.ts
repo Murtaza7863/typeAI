@@ -145,6 +145,23 @@ function errorMessage(
   return err?.message ?? "";
 }
 
+function ofType(
+  messages: { type: string; [k: string]: unknown }[],
+  type: string,
+): { type: string; [k: string]: unknown }[] {
+  return messages.filter((m) => m.type === type);
+}
+
+function raceStartWords(
+  messages: { type: string; [k: string]: unknown }[],
+): string[] {
+  const start = ofType(messages, "raceStart")[0] as
+    | { words?: string[] }
+    | undefined;
+  if (start?.words === undefined) throw new Error("missing raceStart words");
+  return start.words;
+}
+
 async function createHost(
   displayName = "Host",
   settings: Record<string, unknown> = {
@@ -669,5 +686,309 @@ describe("HTTP race room — separate instances", () => {
     setRaceDurableStoreForTests(createRemoteStore());
     const health = await getHealth();
     expect(health.store).toBe("test-remote");
+  });
+});
+
+describe("HTTP race room — after start", () => {
+  beforeEach(() => {
+    resetRaceRoomsForTests();
+    setRaceDurableStoreForTests(createRemoteStore());
+  });
+
+  async function lobby(): Promise<{
+    code: string;
+    hostId: string;
+    friendId: string;
+    words: string[];
+  }> {
+    const { code, hostId, words } = await createHost();
+    resetRaceRoomsForTests();
+    const joined = await post({
+      type: "joinParty",
+      code,
+      displayName: "Friend",
+    });
+    expect(joined.ok).toBe(true);
+    return { code, hostId, friendId: joined.playerId as string, words };
+  }
+
+  async function goRacing(opts: {
+    code: string;
+    hostId: string;
+    friendId: string;
+  }): Promise<{
+    host: Awaited<ReturnType<typeof post>>;
+    friend: Awaited<ReturnType<typeof post>>;
+  }> {
+    resetRaceRoomsForTests();
+    await post({
+      type: "startRace",
+      code: opts.code,
+      playerId: opts.hostId,
+      settings: { mode: "words", wordCount: 25, punctuation: false },
+    });
+    const originalNow = Date.now;
+    Date.now = () => originalNow() + 4000;
+    try {
+      resetRaceRoomsForTests();
+      const host = await post({
+        type: "poll",
+        code: opts.code,
+        playerId: opts.hostId,
+      });
+      resetRaceRoomsForTests();
+      const friend = await post({
+        type: "poll",
+        code: opts.code,
+        playerId: opts.friendId,
+      });
+      return { host, friend };
+    } finally {
+      Date.now = originalNow;
+    }
+  }
+
+  it("gives both players the same wordset after start", async () => {
+    const { code, hostId, friendId, words } = await lobby();
+    resetRaceRoomsForTests();
+    const started = await post({
+      type: "startRace",
+      code,
+      playerId: hostId,
+      settings: { mode: "words", wordCount: 25, punctuation: false },
+    });
+    expect(partyFrom(started.messages).words).toEqual(words);
+
+    resetRaceRoomsForTests();
+    const guest = await post({ type: "poll", code, playerId: friendId });
+    expect(partyFrom(guest.messages).words).toEqual(words);
+    expect(partyFrom(started.messages).words).toEqual(
+      partyFrom(guest.messages).words,
+    );
+  });
+
+  it("starts the race for both players with the same words", async () => {
+    const session = await lobby();
+    const { host, friend } = await goRacing(session);
+    expect(partyFrom(host.messages).status).toBe("racing");
+    expect(partyFrom(friend.messages).status).toBe("racing");
+    expect(ofType(host.messages, "raceStart")).toHaveLength(1);
+    expect(ofType(friend.messages, "raceStart")).toHaveLength(1);
+    expect(raceStartWords(host.messages)).toEqual(
+      raceStartWords(friend.messages),
+    );
+    expect(raceStartWords(host.messages)).toEqual(session.words);
+    expect(partyFrom(host.messages).words).toEqual(session.words);
+    expect(partyFrom(friend.messages).words).toEqual(session.words);
+  });
+
+  it("lets the host see the friend's live progress", async () => {
+    const session = await lobby();
+    await goRacing(session);
+    resetRaceRoomsForTests();
+    await post({
+      type: "progress",
+      code: session.code,
+      playerId: session.friendId,
+      progress: 35,
+    });
+    resetRaceRoomsForTests();
+    const hostView = await post({
+      type: "poll",
+      code: session.code,
+      playerId: session.hostId,
+    });
+    const friend = partyFrom(hostView.messages).players.find(
+      (p) => p.displayName === "Friend",
+    );
+    expect(friend?.progress).toBe(35);
+    expect(partyFrom(hostView.messages).status).toBe("racing");
+  });
+
+  it("lets the friend see the host's live progress", async () => {
+    const session = await lobby();
+    await goRacing(session);
+    resetRaceRoomsForTests();
+    await post({
+      type: "progress",
+      code: session.code,
+      playerId: session.hostId,
+      progress: 80,
+    });
+    resetRaceRoomsForTests();
+    const friendView = await post({
+      type: "poll",
+      code: session.code,
+      playerId: session.friendId,
+    });
+    const host = partyFrom(friendView.messages).players.find(
+      (p) => p.displayName === "Host",
+    );
+    expect(host?.progress).toBe(80);
+  });
+
+  it("keeps tracking both ways after several progress ticks", async () => {
+    const session = await lobby();
+    await goRacing(session);
+    const originalNow = Date.now;
+    let now = originalNow();
+    Date.now = () => now;
+    try {
+      for (const tick of [10, 25, 60]) {
+        now += 250;
+        resetRaceRoomsForTests();
+        await post({
+          type: "progress",
+          code: session.code,
+          playerId: session.friendId,
+          progress: tick,
+        });
+        resetRaceRoomsForTests();
+        const hostView = await post({
+          type: "poll",
+          code: session.code,
+          playerId: session.hostId,
+        });
+        expect(
+          partyFrom(hostView.messages).players.find(
+            (p) => p.displayName === "Friend",
+          )?.progress,
+        ).toBe(tick);
+      }
+    } finally {
+      Date.now = originalNow;
+    }
+  });
+
+  it("marks the first finisher as winner and ends when both finish", async () => {
+    const session = await lobby();
+    await goRacing(session);
+
+    resetRaceRoomsForTests();
+    const friendDone = await post({
+      type: "finished",
+      code: session.code,
+      playerId: session.friendId,
+      timeMs: 4200,
+    });
+    expect(partyFrom(friendDone.messages).status).toBe("racing");
+    expect(partyFrom(friendDone.messages).winnerId).toBe(session.friendId);
+
+    resetRaceRoomsForTests();
+    const hostSeesLead = await post({
+      type: "poll",
+      code: session.code,
+      playerId: session.hostId,
+    });
+    const friend = partyFrom(hostSeesLead.messages).players.find(
+      (p) => p.displayName === "Friend",
+    );
+    expect(friend?.progress).toBe(100);
+    expect(friend?.timeMs).toBe(4200);
+    expect(partyFrom(hostSeesLead.messages).winnerId).toBe(session.friendId);
+    expect(partyFrom(hostSeesLead.messages).status).toBe("racing");
+
+    resetRaceRoomsForTests();
+    const hostDone = await post({
+      type: "finished",
+      code: session.code,
+      playerId: session.hostId,
+      timeMs: 6100,
+    });
+    expect(partyFrom(hostDone.messages).status).toBe("finished");
+    expect(partyFrom(hostDone.messages).winnerId).toBe(session.friendId);
+    expect(ofType(hostDone.messages, "raceComplete")).toHaveLength(1);
+    const complete = ofType(hostDone.messages, "raceComplete")[0] as {
+      winnerId?: string;
+      standings?: { displayName: string; timeMs?: number | null }[];
+    };
+    expect(complete.winnerId).toBe(session.friendId);
+    expect(complete.standings?.map((p) => p.displayName)).toEqual([
+      "Friend",
+      "Host",
+    ]);
+    expect(complete.standings?.[0]?.timeMs).toBe(4200);
+    expect(complete.standings?.[1]?.timeMs).toBe(6100);
+
+    resetRaceRoomsForTests();
+    const friendEnd = await post({
+      type: "poll",
+      code: session.code,
+      playerId: session.friendId,
+    });
+    expect(partyFrom(friendEnd.messages).status).toBe("finished");
+    expect(partyFrom(friendEnd.messages).winnerId).toBe(session.friendId);
+    expect(ofType(friendEnd.messages, "raceComplete")).toHaveLength(1);
+  });
+
+  it("ends the race on the finish deadline and DNFs the slower player", async () => {
+    const session = await lobby();
+    const originalNow = Date.now;
+    const startedAt = originalNow();
+    Date.now = () => startedAt;
+    try {
+      resetRaceRoomsForTests();
+      await post({
+        type: "startRace",
+        code: session.code,
+        playerId: session.hostId,
+      });
+      Date.now = () => startedAt + 4000;
+      resetRaceRoomsForTests();
+      await post({
+        type: "poll",
+        code: session.code,
+        playerId: session.hostId,
+      });
+      Date.now = () => startedAt + 5000;
+      resetRaceRoomsForTests();
+      await post({
+        type: "finished",
+        code: session.code,
+        playerId: session.friendId,
+        timeMs: 1000,
+      });
+      Date.now = () => startedAt + 70_000;
+      resetRaceRoomsForTests();
+      const timedOut = await post({
+        type: "poll",
+        code: session.code,
+        playerId: session.hostId,
+      });
+      expect(partyFrom(timedOut.messages).status).toBe("finished");
+      expect(partyFrom(timedOut.messages).winnerId).toBe(session.friendId);
+      expect(ofType(timedOut.messages, "raceComplete")).toHaveLength(1);
+      const hostPlayer = partyFrom(timedOut.messages).players.find(
+        (p) => p.displayName === "Host",
+      );
+      const friendPlayer = partyFrom(timedOut.messages).players.find(
+        (p) => p.displayName === "Friend",
+      );
+      expect(friendPlayer?.timeMs).toBe(1000);
+      expect(hostPlayer?.timeMs ?? null).toBeNull();
+    } finally {
+      Date.now = originalNow;
+    }
+  });
+
+  it("does not change the winner if a slower player finishes later", async () => {
+    const session = await lobby();
+    await goRacing(session);
+    resetRaceRoomsForTests();
+    await post({
+      type: "finished",
+      code: session.code,
+      playerId: session.hostId,
+      timeMs: 3000,
+    });
+    resetRaceRoomsForTests();
+    const done = await post({
+      type: "finished",
+      code: session.code,
+      playerId: session.friendId,
+      timeMs: 9000,
+    });
+    expect(partyFrom(done.messages).winnerId).toBe(session.hostId);
+    expect(partyFrom(done.messages).status).toBe("finished");
   });
 });
