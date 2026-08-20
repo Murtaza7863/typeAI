@@ -2,7 +2,27 @@ import { describe, expect, it, beforeEach } from "vitest";
 import {
   handleRaceRoomRequest,
   resetRaceRoomsForTests,
+  setRaceDurableStoreForTests,
+  type DurableStore,
 } from "../../../api/race-room";
+
+function memoryRemoteStore(): DurableStore {
+  const data = new Map<string, string>();
+  return {
+    name: "test-remote",
+    async get(code) {
+      const raw = data.get(code);
+      if (raw === undefined) return undefined;
+      return JSON.parse(raw) as Awaited<ReturnType<DurableStore["get"]>>;
+    },
+    async set(party) {
+      data.set(party.code, JSON.stringify(party));
+    },
+    async delete(code) {
+      data.delete(code);
+    },
+  };
+}
 
 async function post(body: Record<string, unknown>): Promise<{
   ok?: boolean;
@@ -49,6 +69,7 @@ function partyFrom(messages: { type: string; [k: string]: unknown }[]): {
 describe("HTTP race room — two players", () => {
   beforeEach(() => {
     resetRaceRoomsForTests();
+    setRaceDurableStoreForTests(null);
   });
 
   it("lets a friend join the host party and both finish a race", async () => {
@@ -150,5 +171,32 @@ describe("HTTP race room — two players", () => {
     });
     expect(missing.ok).toBe(false);
     expect(missing.messages[0]?.type).toBe("error");
+  });
+
+  it("lets a friend join after the host's instance loses memory", async () => {
+    const remote = memoryRemoteStore();
+    setRaceDurableStoreForTests(remote);
+
+    const created = await post({
+      type: "createParty",
+      displayName: "Host",
+      settings: { mode: "words", wordCount: 25, punctuation: false },
+    });
+    expect(created.ok).toBe(true);
+    const hostParty = partyFrom(created.messages);
+
+    resetRaceRoomsForTests();
+
+    const joined = await post({
+      type: "joinParty",
+      code: hostParty.code,
+      displayName: "Friend",
+    });
+    expect(joined.ok).toBe(true);
+    expect(
+      partyFrom(joined.messages)
+        .players.map((p) => p.displayName)
+        .sort(),
+    ).toEqual(["Friend", "Host"]);
   });
 });

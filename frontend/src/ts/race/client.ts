@@ -72,7 +72,7 @@ function startHttpPoll(): void {
   stopHttpPoll();
   httpPollTimer = setInterval(() => {
     void httpRequest({ type: "poll" });
-  }, 400);
+  }, 900);
 }
 
 async function tryHttpRace(timeoutMs: number): Promise<boolean> {
@@ -96,7 +96,46 @@ async function tryHttpRace(timeoutMs: number): Promise<boolean> {
   }
 }
 
-async function httpRequest(message: Record<string, unknown>): Promise<void> {
+type HttpRoomResponse = {
+  ok?: boolean;
+  playerId?: string;
+  messages?: unknown[];
+};
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function applyHttpRoomResponse(data: HttpRoomResponse): void {
+  if (typeof data.playerId === "string" && data.playerId.length > 0) {
+    localPlayerId = data.playerId;
+  }
+  for (const raw of data.messages ?? []) {
+    const parsed = RaceServerMessageSchema.safeParse(raw);
+    if (parsed.success) applyServerMessage(parsed.data);
+  }
+}
+
+function httpErrorMessage(data: HttpRoomResponse): string | undefined {
+  for (const raw of data.messages ?? []) {
+    if (
+      typeof raw === "object" &&
+      raw !== null &&
+      "type" in raw &&
+      (raw as { type: unknown }).type === "error" &&
+      "message" in raw &&
+      typeof (raw as { message: unknown }).message === "string"
+    ) {
+      return (raw as { message: string }).message;
+    }
+  }
+  return undefined;
+}
+
+async function httpRequest(
+  message: Record<string, unknown>,
+  apply = true,
+): Promise<HttpRoomResponse> {
   const session = getRaceSession();
   const party = getRaceParty();
   const code = party?.code ?? session?.code;
@@ -112,17 +151,9 @@ async function httpRequest(message: Record<string, unknown>): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  const data = (await response.json()) as {
-    playerId?: string;
-    messages?: unknown[];
-  };
-  if (typeof data.playerId === "string" && data.playerId.length > 0) {
-    localPlayerId = data.playerId;
-  }
-  for (const raw of data.messages ?? []) {
-    const parsed = RaceServerMessageSchema.safeParse(raw);
-    if (parsed.success) applyServerMessage(parsed.data);
-  }
+  const data = (await response.json()) as HttpRoomResponse;
+  if (apply) applyHttpRoomResponse(data);
+  return data;
 }
 
 function emit(message: RaceServerMessage): void {
@@ -645,13 +676,40 @@ export async function joinParty(
 ): Promise<void> {
   if (mode === "http") {
     try {
-      await httpRequest({
-        type: "joinParty",
-        code: code.toUpperCase(),
-        displayName,
-        playerId,
-      });
-      if (getRaceParty() !== null) startHttpPoll();
+      let lastError = "Failed to join party";
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const data = await httpRequest(
+          {
+            type: "joinParty",
+            code: code.toUpperCase(),
+            displayName,
+            playerId,
+          },
+          false,
+        );
+        const err = httpErrorMessage(data);
+        const joined = (data.messages ?? []).some(
+          (raw) =>
+            typeof raw === "object" &&
+            raw !== null &&
+            "type" in raw &&
+            (raw as { type: unknown }).type === "partyState",
+        );
+        if (joined) {
+          applyHttpRoomResponse(data);
+          startHttpPoll();
+          return;
+        }
+        if (err !== undefined) {
+          lastError = err;
+          if (!/party not found/i.test(err)) {
+            applyHttpRoomResponse(data);
+            return;
+          }
+        }
+        await sleep(400);
+      }
+      setRaceError(lastError);
     } catch {
       setRaceError("Failed to join party");
     }

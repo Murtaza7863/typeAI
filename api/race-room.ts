@@ -47,6 +47,13 @@ type ClientMessage = {
 
 type ServerMessage = Record<string, unknown>;
 
+export type DurableStore = {
+  name: string;
+  get: (code: string) => Promise<RaceParty | undefined>;
+  set: (party: RaceParty) => Promise<void>;
+  delete: (code: string) => Promise<void>;
+};
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Accept, X-Client-Version",
@@ -57,6 +64,9 @@ const MAX_PLAYERS = 8;
 const COUNTDOWN_MS = 3000;
 const FINISH_GRACE_MS = 60_000;
 const ROOM_TTL_MS = 2 * 60 * 60 * 1000;
+const ROOM_TTL_SECONDS = Math.floor(ROOM_TTL_MS / 1000);
+const STORE_PREFIX = "typeai-race-";
+const SETGET_BASE = "https://setget.net";
 
 const WORDS = [
   "the",
@@ -135,8 +145,22 @@ const rooms: Map<string, RaceParty> = (() => {
   return g.__typeaiRaceRooms;
 })();
 
+/** `null` = memory only; a store = use it; `undefined` = production default. */
+let testDurableStore: DurableStore | null | undefined = undefined;
+
+class RaceStoreError extends Error {
+  constructor(message = "Could not reach the race lobby. Retry in a moment.") {
+    super(message);
+    this.name = "RaceStoreError";
+  }
+}
+
 export function resetRaceRoomsForTests(): void {
   rooms.clear();
+}
+
+export function setRaceDurableStoreForTests(store: DurableStore | null): void {
+  testDurableStore = store;
 }
 
 function jsonResponse(status: number, payload: unknown): Response {
@@ -150,12 +174,7 @@ function jsonResponse(status: number, payload: unknown): Response {
   });
 }
 
-function defaultSettings(): RaceSettings {
-  return { mode: "words", wordCount: 50, punctuation: false };
-}
-
 function parseSettings(raw: Partial<RaceSettings> | undefined): RaceSettings {
-  const base = defaultSettings();
   const mode = raw?.mode === "quote" ? "quote" : "words";
   const wordCount =
     raw?.wordCount === 25 || raw?.wordCount === 100 ? raw.wordCount : 50;
@@ -342,7 +361,261 @@ function eventsFor(party: RaceParty, playerId: string): ServerMessage[] {
   return [];
 }
 
-function reply(party: RaceParty, playerId: string, request: Request): Response {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isRaceStatus(value: unknown): value is RaceStatus {
+  return (
+    value === "lobby" ||
+    value === "countdown" ||
+    value === "racing" ||
+    value === "finished"
+  );
+}
+
+function parsePlayer(value: unknown): RacePlayer | undefined {
+  if (!isRecord(value)) return undefined;
+  if (typeof value["id"] !== "string" || value["id"].length === 0) {
+    return undefined;
+  }
+  if (typeof value["displayName"] !== "string") return undefined;
+  return {
+    id: value["id"],
+    displayName: value["displayName"].slice(0, 24) || "Player",
+    progress:
+      typeof value["progress"] === "number"
+        ? Math.max(0, Math.min(100, value["progress"]))
+        : 0,
+    finishedAt:
+      typeof value["finishedAt"] === "number" ? value["finishedAt"] : null,
+    timeMs: typeof value["timeMs"] === "number" ? value["timeMs"] : null,
+    connected: value["connected"] !== false,
+    isHost: value["isHost"] === true,
+    lastProgressAt:
+      typeof value["lastProgressAt"] === "number" ? value["lastProgressAt"] : 0,
+  };
+}
+
+function parseParty(raw: unknown): RaceParty | undefined {
+  if (!isRecord(raw) || raw["gone"] === true) return undefined;
+  if (typeof raw["code"] !== "string" || raw["code"].length < 4) {
+    return undefined;
+  }
+  if (typeof raw["hostId"] !== "string") return undefined;
+  if (!isRaceStatus(raw["status"])) return undefined;
+  if (!Array.isArray(raw["words"])) return undefined;
+  if (!isRecord(raw["players"])) return undefined;
+  if (typeof raw["createdAt"] !== "number") return undefined;
+  const players: Record<string, RacePlayer> = {};
+  for (const [id, playerRaw] of Object.entries(raw["players"])) {
+    const player = parsePlayer(playerRaw);
+    if (player === undefined) continue;
+    players[id] = player;
+  }
+  if (Object.keys(players).length === 0) return undefined;
+  const announcedRaw = isRecord(raw["announced"]) ? raw["announced"] : {};
+  const announced: Record<string, RaceStatus> = {};
+  for (const [id, status] of Object.entries(announcedRaw)) {
+    if (isRaceStatus(status)) announced[id] = status;
+  }
+  const settingsRaw = isRecord(raw["settings"])
+    ? (raw["settings"] as Partial<RaceSettings>)
+    : undefined;
+  return {
+    code: raw["code"].toUpperCase(),
+    hostId: raw["hostId"],
+    status: raw["status"],
+    words: raw["words"].filter(
+      (word): word is string => typeof word === "string",
+    ),
+    settings: parseSettings(settingsRaw),
+    players,
+    createdAt: raw["createdAt"],
+    startedAt: typeof raw["startedAt"] === "number" ? raw["startedAt"] : null,
+    countdownEndsAt:
+      typeof raw["countdownEndsAt"] === "number"
+        ? raw["countdownEndsAt"]
+        : null,
+    winnerId: typeof raw["winnerId"] === "string" ? raw["winnerId"] : null,
+    finishDeadline:
+      typeof raw["finishDeadline"] === "number" ? raw["finishDeadline"] : null,
+    announced,
+  };
+}
+
+function storeKey(code: string): string {
+  return `${STORE_PREFIX}${code}`;
+}
+
+async function fetchNoStore(
+  url: string,
+  init?: RequestInit,
+): Promise<Response> {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const response = await fetch(url, {
+        ...init,
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache",
+          ...(init?.headers ?? {}),
+        },
+        signal: AbortSignal.timeout(5000),
+      });
+      if (response.status !== 429) return response;
+      const wait = Number(response.headers.get("Retry-After") ?? "1");
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.max(250, wait * 1000) * (attempt + 1)),
+      );
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, 200 * (attempt + 1)));
+    }
+  }
+  throw new RaceStoreError();
+}
+
+function setgetStore(): DurableStore {
+  return {
+    name: "setget",
+    async get(code) {
+      const response = await fetchNoStore(
+        `${SETGET_BASE}/get/${storeKey(code)}?format=json`,
+      );
+      if (response.status === 404) return undefined;
+      if (!response.ok) throw new RaceStoreError();
+      const payload = (await response.json()) as { value?: unknown };
+      return parseParty(payload.value);
+    },
+    async set(party) {
+      const response = await fetchNoStore(
+        `${SETGET_BASE}/set/${storeKey(party.code)}?ttl=${ROOM_TTL_SECONDS}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(party),
+        },
+      );
+      if (!response.ok) throw new RaceStoreError();
+    },
+    async delete(code) {
+      const response = await fetchNoStore(
+        `${SETGET_BASE}/set/${storeKey(code)}?ttl=1`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gone: true, code }),
+        },
+      );
+      if (!response.ok && response.status !== 404) throw new RaceStoreError();
+    },
+  };
+}
+
+function upstashStore(url: string, token: string): DurableStore {
+  const base = url.replace(/\/$/, "");
+  async function command(args: unknown[]): Promise<unknown> {
+    const response = await fetchNoStore(base, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(args),
+    });
+    if (!response.ok) throw new RaceStoreError();
+    const payload = (await response.json()) as { result?: unknown };
+    return payload.result;
+  }
+  return {
+    name: "upstash",
+    async get(code) {
+      const result = await command(["GET", storeKey(code)]);
+      if (typeof result !== "string" || result.length === 0) return undefined;
+      try {
+        return parseParty(JSON.parse(result));
+      } catch {
+        return undefined;
+      }
+    },
+    async set(party) {
+      await command([
+        "SET",
+        storeKey(party.code),
+        JSON.stringify(party),
+        "EX",
+        ROOM_TTL_SECONDS,
+      ]);
+    },
+    async delete(code) {
+      await command(["DEL", storeKey(code)]);
+    },
+  };
+}
+
+function liveDurableStore(): DurableStore {
+  const url =
+    process.env["KV_REST_API_URL"] ?? process.env["UPSTASH_REDIS_REST_URL"];
+  const token =
+    process.env["KV_REST_API_TOKEN"] ?? process.env["UPSTASH_REDIS_REST_TOKEN"];
+  if (
+    url !== undefined &&
+    url.length > 0 &&
+    token !== undefined &&
+    token.length > 0
+  ) {
+    return upstashStore(url, token);
+  }
+  return setgetStore();
+}
+
+function durableStore(): DurableStore | null {
+  if (testDurableStore !== undefined) return testDurableStore;
+  if (process.env["VITEST"] === "true") return null;
+  return liveDurableStore();
+}
+
+async function loadParty(code: string): Promise<RaceParty | undefined> {
+  const store = durableStore();
+  if (store !== null) {
+    const remote = await store.get(code);
+    if (remote === undefined) {
+      rooms.delete(code);
+      return undefined;
+    }
+    if (Date.now() - remote.createdAt > ROOM_TTL_MS) {
+      await store.delete(code);
+      rooms.delete(code);
+      return undefined;
+    }
+    rooms.set(code, remote);
+    return remote;
+  }
+  const local = rooms.get(code);
+  if (local !== undefined && Date.now() - local.createdAt > ROOM_TTL_MS) {
+    rooms.delete(code);
+    return undefined;
+  }
+  return local;
+}
+
+async function saveParty(party: RaceParty): Promise<void> {
+  rooms.set(party.code, party);
+  const store = durableStore();
+  if (store !== null) await store.set(party);
+}
+
+async function removeParty(code: string): Promise<void> {
+  rooms.delete(code);
+  const store = durableStore();
+  if (store !== null) await store.delete(code);
+}
+
+async function reply(
+  party: RaceParty,
+  playerId: string,
+  request: Request,
+): Promise<Response> {
   const you = party.players[playerId];
   if (you === undefined) {
     return jsonResponse(200, {
@@ -355,6 +628,7 @@ function reply(party: RaceParty, playerId: string, request: Request): Response {
     partyState(party, you, request),
     ...eventsFor(party, playerId),
   ];
+  await saveParty(party);
   return jsonResponse(200, { ok: true, playerId, messages });
 }
 
@@ -365,10 +639,17 @@ function error(message: string): Response {
   });
 }
 
-function handleCreate(body: ClientMessage, request: Request): Response {
+async function handleCreate(
+  body: ClientMessage,
+  request: Request,
+): Promise<Response> {
   const settings = parseSettings(body.settings);
   let code = makeCode();
-  for (let i = 0; i < 12 && rooms.has(code); i++) code = makeCode();
+  for (let i = 0; i < 12; i++) {
+    const existing = await loadParty(code);
+    if (existing === undefined) break;
+    code = makeCode();
+  }
   const playerId = crypto.randomUUID();
   const host: RacePlayer = {
     id: playerId,
@@ -394,13 +675,16 @@ function handleCreate(body: ClientMessage, request: Request): Response {
     finishDeadline: null,
     announced: { [playerId]: "lobby" },
   };
-  rooms.set(code, party);
+  await saveParty(party);
   return reply(party, playerId, request);
 }
 
-function handleJoin(body: ClientMessage, request: Request): Response {
+async function handleJoin(
+  body: ClientMessage,
+  request: Request,
+): Promise<Response> {
   const code = (body.code ?? "").toUpperCase();
-  const party = rooms.get(code);
+  const party = await loadParty(code);
   if (party === undefined) {
     return error("Party not found — ask the host to keep the race page open.");
   }
@@ -432,11 +716,11 @@ function handleJoin(body: ClientMessage, request: Request): Response {
   return reply(party, playerId, request);
 }
 
-function requirePartyPlayer(
+async function requirePartyPlayer(
   body: ClientMessage,
-): { party: RaceParty; player: RacePlayer } | Response {
+): Promise<{ party: RaceParty; player: RacePlayer } | Response> {
   const code = (body.code ?? "").toUpperCase();
-  const party = rooms.get(code);
+  const party = await loadParty(code);
   if (party === undefined) return error("Party not found");
   advance(party, Date.now());
   const playerId = body.playerId ?? "";
@@ -445,12 +729,15 @@ function requirePartyPlayer(
   return { party, player };
 }
 
-function handleAction(body: ClientMessage, request: Request): Response {
+async function handleAction(
+  body: ClientMessage,
+  request: Request,
+): Promise<Response> {
   const type = body.type;
   if (type === "createParty") return handleCreate(body, request);
   if (type === "joinParty") return handleJoin(body, request);
 
-  const loaded = requirePartyPlayer(body);
+  const loaded = await requirePartyPlayer(body);
   if (loaded instanceof Response) return loaded;
   const { party, player } = loaded;
 
@@ -485,7 +772,7 @@ function handleAction(body: ClientMessage, request: Request): Response {
       return reply(party, player.id, request);
     }
     const now = Date.now();
-    if (now - player.lastProgressAt < 80) {
+    if (now - player.lastProgressAt < 200) {
       return reply(party, player.id, request);
     }
     player.lastProgressAt = now;
@@ -511,12 +798,14 @@ function handleAction(body: ClientMessage, request: Request): Response {
     if (party.status === "lobby") {
       delete party.players[player.id];
       if (player.id === party.hostId) {
-        rooms.delete(party.code);
+        await removeParty(party.code);
         return jsonResponse(200, { ok: true, messages: [] });
       }
+      await saveParty(party);
     } else {
       player.connected = false;
       advance(party, Date.now());
+      await saveParty(party);
     }
     return jsonResponse(200, { ok: true, messages: [] });
   }
@@ -532,9 +821,11 @@ export async function handleRaceRoomRequest(
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
   if (request.method === "GET") {
+    const store = durableStore();
     return jsonResponse(200, {
       ok: true,
       service: "race-room",
+      store: store?.name ?? "memory",
       rooms: rooms.size,
     });
   }
@@ -548,8 +839,9 @@ export async function handleRaceRoomRequest(
     return jsonResponse(400, { message: "Invalid JSON body" });
   }
   try {
-    return handleAction(body, request);
+    return await handleAction(body, request);
   } catch (e: unknown) {
+    if (e instanceof RaceStoreError) return error(e.message);
     const message = e instanceof Error ? e.message : "Race room failed";
     return jsonResponse(500, { message });
   }
