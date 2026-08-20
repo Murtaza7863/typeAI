@@ -68,6 +68,196 @@ function settingsSummary(settings: RaceSettings): string {
   return `${settings.wordCount} words${punct}`;
 }
 
+function RacePartyPanel(props: {
+  displayName: () => string;
+  draftSettings: () => RaceSettings;
+  inviteUrl: () => string;
+  settingsControls: (editable: boolean) => JSXElement;
+  copyInvite: () => Promise<void>;
+}): JSXElement {
+  const partyData = () => getRaceParty();
+  const you = () => getRaceYou();
+  const playerCount = (): number => partyData()?.players.length ?? 0;
+  const liveSettings = (): RaceSettings =>
+    settingsFromParty(partyData()?.settings);
+
+  return (
+    <div class="flex flex-col gap-6">
+      <Show when={partyData()?.status === "lobby"}>
+        <div class="bg-bg-2 rounded-lg border border-sub/30 p-6">
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="text-sm text-sub">Party code</div>
+              <div class="text-3xl tracking-widest text-main">
+                {partyData()?.code}
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <Button
+                text="Copy invite link"
+                variant="text"
+                onClick={() => void props.copyInvite()}
+              />
+              <Button
+                text="Leave"
+                variant="text"
+                onClick={() => {
+                  leaveRaceAndRestore();
+                  void navigate("/");
+                }}
+              />
+            </div>
+          </div>
+
+          <p class="mb-2 text-xs break-all text-sub">{props.inviteUrl()}</p>
+
+          <div class="mb-6 rounded bg-bg px-3 py-3">
+            <div class="mb-3 text-sm text-sub">
+              Race settings · {settingsSummary(liveSettings())}
+            </div>
+            <Show
+              when={you()?.isHost}
+              fallback={
+                <p class="text-sm text-text">
+                  {settingsSummary(liveSettings())}
+                </p>
+              }
+            >
+              {props.settingsControls(true)}
+            </Show>
+          </div>
+
+          <h2 class="mb-3 text-sm text-sub">Players ({playerCount()}/8)</h2>
+          <ul class="mb-6 flex flex-col gap-2">
+            <For each={partyData()?.players ?? []}>
+              {(player) => (
+                <li class="flex items-center justify-between rounded bg-bg px-3 py-2">
+                  <span>
+                    {player.displayName}
+                    <Show when={player.isHost}>
+                      <span class="ml-2 text-xs text-sub">host</span>
+                    </Show>
+                    <Show when={player.id === you()?.id}>
+                      <span class="ml-2 text-xs text-main">you</span>
+                    </Show>
+                  </span>
+                  <span class="text-xs text-sub">
+                    {player.connected ? "online" : "offline"}
+                  </span>
+                </li>
+              )}
+            </For>
+          </ul>
+
+          <Show
+            when={you()?.isHost}
+            fallback={<p class="text-sub">Waiting for host to start…</p>}
+          >
+            <Button
+              text="Start race"
+              disabled={playerCount() < 2}
+              onClick={() => startRace(props.draftSettings())}
+            />
+            <Show when={playerCount() < 2}>
+              <p class="mt-2 text-xs text-sub">
+                Need at least 2 players to start. Share the invite link and keep
+                this page open.
+              </p>
+            </Show>
+          </Show>
+        </div>
+      </Show>
+
+      <Show
+        when={
+          partyData()?.status === "countdown" || getCountdownSeconds() !== null
+        }
+      >
+        <div class="bg-bg-2 rounded-lg border border-sub/30 p-10 text-center">
+          <div class="text-sm text-sub">Race starting in</div>
+          <div class="text-6xl text-main">{getCountdownSeconds() ?? 3}</div>
+        </div>
+      </Show>
+
+      <Show when={partyData()?.status === "racing"}>
+        <div class="bg-bg-2 rounded-lg border border-sub/30 p-6">
+          <Show
+            when={getLocalFinished()}
+            fallback={
+              <p class="mb-4 text-sub">
+                Race in progress — switch to the typing test if it didn&apos;t
+                open automatically.
+              </p>
+            }
+          >
+            <p class="mb-4 text-main">
+              You finished! Waiting for other players…
+            </p>
+          </Show>
+          <RaceProgressBars />
+          <Button
+            class="mt-4"
+            text="Open typing test"
+            variant="text"
+            onClick={() => void navigate("/")}
+          />
+        </div>
+      </Show>
+
+      <Show when={partyData()?.status === "finished"}>
+        <div class="bg-bg-2 rounded-lg border border-sub/30 p-6">
+          <h2 class="mb-4 text-xl text-main">Race complete</h2>
+          <ol class="mb-6 flex flex-col gap-2">
+            <For
+              each={
+                getStandings().length > 0
+                  ? getStandings()
+                  : (partyData()?.players ?? [])
+              }
+            >
+              {(player, index) => (
+                <li class="flex items-center justify-between rounded bg-bg px-3 py-2">
+                  <span>
+                    #{index() + 1} {player.displayName}
+                    <Show when={player.id === partyData()?.winnerId}>
+                      <span class="ml-2 text-xs text-main">winner</span>
+                    </Show>
+                  </span>
+                  <span class="text-sub">
+                    {player.timeMs !== null && player.timeMs !== undefined
+                      ? `${(player.timeMs / 1000).toFixed(2)}s`
+                      : "DNF"}
+                  </span>
+                </li>
+              )}
+            </For>
+          </ol>
+          <div class="flex flex-wrap gap-2">
+            <Show when={you()?.isHost}>
+              <Button
+                text="Play again"
+                onClick={() => {
+                  leaveRaceAndRestore();
+                  const name = props.displayName().trim() || "Host";
+                  void createParty(name, props.draftSettings());
+                }}
+              />
+            </Show>
+            <Button
+              text="Leave"
+              variant="text"
+              onClick={() => {
+                leaveRaceAndRestore();
+                void navigate("/");
+              }}
+            />
+          </div>
+        </div>
+      </Show>
+    </div>
+  );
+}
+
 export function RacePage(): JSXElement {
   const isOpen = (): boolean => getActivePage() === "race";
   const [displayName, setDisplayName] = createSignal(loadSavedName());
@@ -325,195 +515,13 @@ export function RacePage(): JSXElement {
             </div>
           }
         >
-          {(p) => {
-            const partyData = p();
-            const liveSettings = settingsFromParty(partyData.settings);
-            return (
-              <div class="flex flex-col gap-6">
-                <Show when={partyData.status === "lobby"}>
-                  <div class="bg-bg-2 rounded-lg border border-sub/30 p-6">
-                    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <div class="text-sm text-sub">Party code</div>
-                        <div class="text-3xl tracking-widest text-main">
-                          {partyData.code}
-                        </div>
-                      </div>
-                      <div class="flex flex-wrap gap-2">
-                        <Button
-                          text="Copy invite link"
-                          variant="text"
-                          onClick={() => void copyInvite()}
-                        />
-                        <Button
-                          text="Leave"
-                          variant="text"
-                          onClick={() => {
-                            leaveRaceAndRestore();
-                            void navigate("/");
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    <p class="mb-2 text-xs break-all text-sub">{inviteUrl()}</p>
-
-                    <div class="mb-6 rounded bg-bg px-3 py-3">
-                      <div class="mb-3 text-sm text-sub">
-                        Race settings · {settingsSummary(liveSettings)}
-                      </div>
-                      <Show
-                        when={you()?.isHost}
-                        fallback={
-                          <p class="text-sm text-text">
-                            {settingsSummary(liveSettings)}
-                          </p>
-                        }
-                      >
-                        {settingsControls(true)}
-                      </Show>
-                    </div>
-
-                    <h2 class="mb-3 text-sm text-sub">
-                      Players ({partyData.players.length}/8)
-                    </h2>
-                    <ul class="mb-6 flex flex-col gap-2">
-                      <For each={partyData.players}>
-                        {(player) => (
-                          <li class="flex items-center justify-between rounded bg-bg px-3 py-2">
-                            <span>
-                              {player.displayName}
-                              <Show when={player.isHost}>
-                                <span class="ml-2 text-xs text-sub">host</span>
-                              </Show>
-                              <Show when={player.id === you()?.id}>
-                                <span class="ml-2 text-xs text-main">you</span>
-                              </Show>
-                            </span>
-                            <span class="text-xs text-sub">
-                              {player.connected ? "online" : "offline"}
-                            </span>
-                          </li>
-                        )}
-                      </For>
-                    </ul>
-
-                    <Show
-                      when={you()?.isHost}
-                      fallback={
-                        <p class="text-sub">Waiting for host to start…</p>
-                      }
-                    >
-                      <Button
-                        text="Start race"
-                        disabled={partyData.players.length < 2}
-                        onClick={() => startRace(draftSettings())}
-                      />
-                      <Show when={partyData.players.length < 2}>
-                        <p class="mt-2 text-xs text-sub">
-                          Need at least 2 players to start. Share the invite
-                          link and keep this page open.
-                        </p>
-                      </Show>
-                    </Show>
-                  </div>
-                </Show>
-
-                <Show
-                  when={
-                    partyData.status === "countdown" ||
-                    getCountdownSeconds() !== null
-                  }
-                >
-                  <div class="bg-bg-2 rounded-lg border border-sub/30 p-10 text-center">
-                    <div class="text-sm text-sub">Race starting in</div>
-                    <div class="text-6xl text-main">
-                      {getCountdownSeconds() ?? 3}
-                    </div>
-                  </div>
-                </Show>
-
-                <Show when={partyData.status === "racing"}>
-                  <div class="bg-bg-2 rounded-lg border border-sub/30 p-6">
-                    <Show
-                      when={getLocalFinished()}
-                      fallback={
-                        <p class="mb-4 text-sub">
-                          Race in progress — switch to the typing test if it
-                          didn&apos;t open automatically.
-                        </p>
-                      }
-                    >
-                      <p class="mb-4 text-main">
-                        You finished! Waiting for other players…
-                      </p>
-                    </Show>
-                    <RaceProgressBars />
-                    <Button
-                      class="mt-4"
-                      text="Open typing test"
-                      variant="text"
-                      onClick={() => void navigate("/")}
-                    />
-                  </div>
-                </Show>
-
-                <Show when={partyData.status === "finished"}>
-                  <div class="bg-bg-2 rounded-lg border border-sub/30 p-6">
-                    <h2 class="mb-4 text-xl text-main">Race complete</h2>
-                    <ol class="mb-6 flex flex-col gap-2">
-                      <For
-                        each={
-                          getStandings().length > 0
-                            ? getStandings()
-                            : partyData.players
-                        }
-                      >
-                        {(player, index) => (
-                          <li class="flex items-center justify-between rounded bg-bg px-3 py-2">
-                            <span>
-                              #{index() + 1} {player.displayName}
-                              <Show when={player.id === partyData.winnerId}>
-                                <span class="ml-2 text-xs text-main">
-                                  winner
-                                </span>
-                              </Show>
-                            </span>
-                            <span class="text-sub">
-                              {player.timeMs !== null &&
-                              player.timeMs !== undefined
-                                ? `${(player.timeMs / 1000).toFixed(2)}s`
-                                : "DNF"}
-                            </span>
-                          </li>
-                        )}
-                      </For>
-                    </ol>
-                    <div class="flex flex-wrap gap-2">
-                      <Show when={you()?.isHost}>
-                        <Button
-                          text="Play again"
-                          onClick={() => {
-                            leaveRaceAndRestore();
-                            const name = displayName().trim() || "Host";
-                            void createParty(name, draftSettings());
-                          }}
-                        />
-                      </Show>
-                      <Button
-                        text="Leave"
-                        variant="text"
-                        onClick={() => {
-                          leaveRaceAndRestore();
-                          void navigate("/");
-                        }}
-                      />
-                    </div>
-                  </div>
-                </Show>
-              </div>
-            );
-          }}
+          <RacePartyPanel
+            displayName={displayName}
+            draftSettings={draftSettings}
+            inviteUrl={inviteUrl}
+            settingsControls={settingsControls}
+            copyInvite={copyInvite}
+          />
         </Show>
       </div>
     </Show>
