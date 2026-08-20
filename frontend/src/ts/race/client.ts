@@ -217,6 +217,7 @@ function applyServerMessage(message: RaceServerMessage): void {
             status: "racing",
             startedAt: message.startedAt,
             words: message.words,
+            settings: message.settings ?? party.settings,
           });
         }
       }

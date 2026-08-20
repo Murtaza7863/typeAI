@@ -393,8 +393,9 @@ export default defineConfig(({ mode }): UserConfig => {
     optimizeDeps: {
       exclude: [
         "@fortawesome/fontawesome-free",
-        // Workspace package; prebundling can cache an old contract without new routes.
+        // Workspace packages; prebundling can cache old exports.
         "@typeai/contracts",
+        "@typeai/schemas",
       ],
     },
   };

@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
+import { RaceServerMessageSchema } from "@typeai/schemas/race";
 import {
   handleRaceRoomRequest,
   resetRaceRoomsForTests,
@@ -156,6 +157,15 @@ function ofType(
   type: string,
 ): { type: string; [k: string]: unknown }[] {
   return messages.filter((m) => m.type === type);
+}
+
+function expectClientAccepts(
+  messages: { type: string; [k: string]: unknown }[],
+): void {
+  for (const raw of messages) {
+    const parsed = RaceServerMessageSchema.safeParse(raw);
+    expect(parsed.success, JSON.stringify(parsed.error ?? raw)).toBe(true);
+  }
 }
 
 function raceStartWords(
@@ -1131,5 +1141,218 @@ describe("HTTP race room — after start", () => {
     } finally {
       Date.now = originalNow;
     }
+  });
+});
+
+describe("HTTP race room — client schema and full flows", () => {
+  beforeEach(() => {
+    resetRaceRoomsForTests();
+    setRaceDurableStoreForTests(createRemoteStore());
+  });
+
+  it("lets both players finish a 25-word race and start a new party after", async () => {
+    const created = await post({
+      type: "createParty",
+      displayName: "Host",
+      settings: { mode: "words", wordCount: 25, punctuation: false },
+    });
+    expectClientAccepts(created.messages);
+    const code = partyFrom(created.messages).code;
+    const hostId = created.playerId as string;
+    expect(partyFrom(created.messages).words).toHaveLength(25);
+    expect(partyFrom(created.messages).settings?.mode).toBe("words");
+
+    const joined = await post({
+      type: "joinParty",
+      code,
+      displayName: "Friend",
+    });
+    expectClientAccepts(joined.messages);
+    const friendId = joined.playerId as string;
+    expect(partyFrom(joined.messages).players).toHaveLength(2);
+
+    const started = await post({
+      type: "startRace",
+      code,
+      playerId: hostId,
+      settings: { mode: "words", wordCount: 25, time: 30, punctuation: false },
+    });
+    expectClientAccepts(started.messages);
+    expect(partyFrom(started.messages).status).toBe("countdown");
+
+    const originalNow = Date.now;
+    Date.now = () => originalNow() + 4000;
+    try {
+      const racing = await post({ type: "poll", code, playerId: friendId });
+      expectClientAccepts(racing.messages);
+      expect(partyFrom(racing.messages).status).toBe("racing");
+      expect(partyFrom(racing.messages).words).toHaveLength(25);
+      expect(ofType(racing.messages, "raceStart")).toHaveLength(1);
+      const start = ofType(racing.messages, "raceStart")[0] as {
+        words?: string[];
+        settings?: { mode?: string; wordCount?: number };
+      };
+      expect(start.words).toHaveLength(25);
+      expect(start.settings?.mode).toBe("words");
+
+      await post({
+        type: "progress",
+        code,
+        playerId: friendId,
+        progress: 40,
+      });
+      const hostMid = await post({ type: "poll", code, playerId: hostId });
+      expectClientAccepts(hostMid.messages);
+      expect(
+        partyFrom(hostMid.messages).players.find(
+          (p) => p.displayName === "Friend",
+        )?.progress,
+      ).toBe(40);
+
+      const friendDone = await post({
+        type: "finished",
+        code,
+        playerId: friendId,
+        timeMs: 8000,
+      });
+      expectClientAccepts(friendDone.messages);
+      expect(partyFrom(friendDone.messages).status).toBe("racing");
+      expect(partyFrom(friendDone.messages).winnerId).toBe(friendId);
+
+      const hostDone = await post({
+        type: "finished",
+        code,
+        playerId: hostId,
+        timeMs: 9000,
+      });
+      expectClientAccepts(hostDone.messages);
+      expect(partyFrom(hostDone.messages).status).toBe("finished");
+      expect(partyFrom(hostDone.messages).winnerId).toBe(friendId);
+      expect(ofType(hostDone.messages, "raceComplete")).toHaveLength(1);
+    } finally {
+      Date.now = originalNow;
+    }
+
+    const again = await post({
+      type: "createParty",
+      displayName: "Host",
+      settings: { mode: "words", wordCount: 50, punctuation: false },
+    });
+    expectClientAccepts(again.messages);
+    expect(partyFrom(again.messages).status).toBe("lobby");
+    expect(partyFrom(again.messages).code).not.toBe(code);
+    expect(partyFrom(again.messages).words).toHaveLength(50);
+  });
+
+  it("lets both players finish a timed race with client-parseable messages", async () => {
+    const created = await post({
+      type: "createParty",
+      displayName: "Host",
+      settings: { mode: "time", time: 15, punctuation: false },
+    });
+    expectClientAccepts(created.messages);
+    expect(partyFrom(created.messages).settings?.mode).toBe("time");
+    expect(partyFrom(created.messages).settings?.time).toBe(15);
+    expect(partyFrom(created.messages).words.length).toBeGreaterThanOrEqual(
+      200,
+    );
+
+    const code = partyFrom(created.messages).code;
+    const hostId = created.playerId as string;
+    const joined = await post({
+      type: "joinParty",
+      code,
+      displayName: "Friend",
+    });
+    expectClientAccepts(joined.messages);
+    const friendId = joined.playerId as string;
+
+    const originalNow = Date.now;
+    const startedAt = originalNow();
+    Date.now = () => startedAt;
+    try {
+      const started = await post({ type: "startRace", code, playerId: hostId });
+      expectClientAccepts(started.messages);
+      Date.now = () => startedAt + 4000;
+      const racing = await post({ type: "poll", code, playerId: hostId });
+      expectClientAccepts(racing.messages);
+      expect(partyFrom(racing.messages).status).toBe("racing");
+      const start = ofType(racing.messages, "raceStart")[0] as {
+        settings?: { mode?: string; time?: number };
+        words?: string[];
+      };
+      expect(start.settings?.mode).toBe("time");
+      expect(start.settings?.time).toBe(15);
+      expect(start.words?.length).toBeGreaterThanOrEqual(200);
+
+      Date.now = () => startedAt + 4500;
+      await post({
+        type: "progress",
+        code,
+        playerId: hostId,
+        progress: 55,
+      });
+      await post({
+        type: "finished",
+        code,
+        playerId: hostId,
+        timeMs: 15000,
+      });
+      Date.now = () => startedAt + 5000;
+      await post({
+        type: "progress",
+        code,
+        playerId: friendId,
+        progress: 30,
+      });
+      const friendDone = await post({
+        type: "finished",
+        code,
+        playerId: friendId,
+        timeMs: 15100,
+      });
+      expectClientAccepts(friendDone.messages);
+      expect(partyFrom(friendDone.messages).status).toBe("finished");
+      expect(partyFrom(friendDone.messages).winnerId).toBe(hostId);
+      expect(
+        partyFrom(friendDone.messages).players.find(
+          (p) => p.displayName === "Host",
+        )?.progress,
+      ).toBe(55);
+    } finally {
+      Date.now = originalNow;
+    }
+  });
+
+  it("ends a countdown if the host leaves so a new race can start", async () => {
+    const created = await post({
+      type: "createParty",
+      displayName: "Host",
+      settings: { mode: "quote", wordCount: 25, punctuation: false },
+    });
+    expectClientAccepts(created.messages);
+    const code = partyFrom(created.messages).code;
+    const hostId = created.playerId as string;
+    const joined = await post({
+      type: "joinParty",
+      code,
+      displayName: "Friend",
+    });
+    const friendId = joined.playerId as string;
+    await post({ type: "startRace", code, playerId: hostId });
+    await post({ type: "leave", code, playerId: hostId });
+    const friendView = await post({ type: "poll", code, playerId: friendId });
+    expectClientAccepts(friendView.messages);
+    expect(partyFrom(friendView.messages).status).toBe("finished");
+    expect(ofType(friendView.messages, "raceComplete")).toHaveLength(1);
+
+    const next = await post({
+      type: "createParty",
+      displayName: "Host",
+      settings: { mode: "time", time: 30, punctuation: false },
+    });
+    expectClientAccepts(next.messages);
+    expect(partyFrom(next.messages).status).toBe("lobby");
+    expect(partyFrom(next.messages).settings?.mode).toBe("time");
   });
 });

@@ -37,6 +37,7 @@ describe("race party store", () => {
     expect(party.settings).toEqual({
       mode: "words",
       wordCount: 50,
+      time: 30,
       punctuation: false,
     });
     expect(party.players.size).toBe(1);
@@ -48,6 +49,7 @@ describe("race party store", () => {
     const party = Store.createParty("h", "Host", {
       mode: "words",
       wordCount: 25,
+      time: 30,
       punctuation: true,
     });
     expect(party.words).toHaveLength(25);
@@ -56,6 +58,7 @@ describe("race party store", () => {
     Store.applySettings(party, {
       mode: "quote",
       wordCount: 50,
+      time: 30,
       punctuation: false,
     });
     expect(party.settings.mode).toBe("quote");
