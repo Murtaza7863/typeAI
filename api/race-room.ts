@@ -645,11 +645,7 @@ async function handleCreate(
 ): Promise<Response> {
   const settings = parseSettings(body.settings);
   let code = makeCode();
-  for (let i = 0; i < 12; i++) {
-    const existing = await loadParty(code);
-    if (existing === undefined) break;
-    code = makeCode();
-  }
+  for (let i = 0; i < 12 && rooms.has(code); i++) code = makeCode();
   const playerId = crypto.randomUUID();
   const host: RacePlayer = {
     id: playerId,

@@ -314,7 +314,7 @@ export function RacePage(): JSXElement {
                 <Button
                   text="Join party"
                   variant="text"
-                  disabled={busy()}
+                  disabled={busy() || !getRaceWsConnected()}
                   onClick={() => void onJoin()}
                 />
               </div>

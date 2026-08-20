@@ -160,18 +160,18 @@ function getPlugins({
         runtimeCaching: [
           {
             urlPattern: (options) => {
-              const isApi = options.url.hostname === "api.typeai.com";
-              return options.sameOrigin && !isApi;
+              const path = options.url.pathname;
+              return path.startsWith("/api/") || path === "/version.json";
             },
-            handler: "NetworkFirst",
+            handler: "NetworkOnly",
             options: {},
           },
           {
             urlPattern: (options) => {
-              //disable caching for version.json
-              return options.url.pathname === "/version.json";
+              const isApi = options.url.hostname === "api.typeai.com";
+              return options.sameOrigin && !isApi;
             },
-            handler: "NetworkOnly",
+            handler: "NetworkFirst",
             options: {},
           },
         ],

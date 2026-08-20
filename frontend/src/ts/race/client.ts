@@ -7,11 +7,10 @@ import {
   RaceServerMessageSchema,
   RaceSettings,
 } from "@typeai/schemas/race";
-import { Peer, type DataConnection } from "peerjs";
-import { envConfig } from "virtual:env-config";
 
 import {
   clearRaceSession,
+  getRaceError,
   getRaceParty,
   getRaceSession,
   setCountdownSeconds,
@@ -25,38 +24,15 @@ import {
   setRaceYou,
   setStandings,
 } from "../states/race";
-import { PeerRaceHost } from "./peer-host";
 
 type MessageHandler = (message: RaceServerMessage) => void;
-type TransportMode = "none" | "ws" | "peer" | "http";
+type TransportMode = "none" | "http";
 
-let socket: WebSocket | null = null;
 let handlers: MessageHandler[] = [];
-let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let mode: TransportMode = "none";
-let peer: Peer | null = null;
-let peerHost: PeerRaceHost | null = null;
-let guestConnection: DataConnection | null = null;
 let localPlayerId: string | null = null;
 let connectPromise: Promise<void> | null = null;
 let httpPollTimer: ReturnType<typeof setInterval> | null = null;
-
-function wsUrl(): string {
-  const base = envConfig.backendUrl.replace(/\/$/, "");
-  const path = "/race-ws";
-  if (base.startsWith("https://")) {
-    return `wss://${base.slice("https://".length)}${path}`;
-  }
-  if (base.startsWith("http://")) {
-    return `ws://${base.slice("http://".length)}${path}`;
-  }
-  return `ws://${base}${path}`;
-}
-
-function publicApiWithoutRaceWs(): boolean {
-  const url = envConfig.backendUrl;
-  return url.includes("api.typeai.com") || url.includes("api.monkeytype.com");
-}
 
 function raceHttpUrl(): string {
   return "/api/race-room";
@@ -81,6 +57,7 @@ async function tryHttpRace(timeoutMs: number): Promise<boolean> {
   try {
     const response = await fetch(raceHttpUrl(), {
       method: "GET",
+      cache: "no-store",
       signal: controller.signal,
     });
     if (!response.ok) return false;
@@ -132,22 +109,29 @@ function httpErrorMessage(data: HttpRoomResponse): string | undefined {
   return undefined;
 }
 
-async function httpRequest(
-  message: Record<string, unknown>,
-  apply = true,
-): Promise<HttpRoomResponse> {
+function attachSession(body: Record<string, unknown>): void {
+  const type = body["type"];
+  if (type === "createParty" || type === "joinParty") return;
   const session = getRaceSession();
   const party = getRaceParty();
   const code = party?.code ?? session?.code;
   const playerId = localPlayerId ?? session?.playerId;
-  const body: Record<string, unknown> = { ...message };
   if (code !== undefined && body["code"] === undefined) body["code"] = code;
   if (playerId !== undefined && body["playerId"] === undefined) {
     body["playerId"] = playerId;
   }
+}
+
+async function httpRequest(
+  message: Record<string, unknown>,
+  apply = true,
+): Promise<HttpRoomResponse> {
+  const body: Record<string, unknown> = { ...message };
+  attachSession(body);
 
   const response = await fetch(raceHttpUrl(), {
     method: "POST",
+    cache: "no-store",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
@@ -252,355 +236,29 @@ function applyServerMessage(message: RaceServerMessage): void {
   emit(message);
 }
 
-function handleServerMessage(raw: string): void {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return;
-  }
-  const result = RaceServerMessageSchema.safeParse(parsed);
-  if (!result.success) return;
-  applyServerMessage(result.data);
-}
-
-function sendJson(
-  connection: DataConnection,
-  message: RaceServerMessage,
-): void {
-  void connection.send(message);
-}
-
-async function tryWebSocket(timeoutMs: number): Promise<boolean> {
-  if (publicApiWithoutRaceWs()) return false;
-
-  return await new Promise<boolean>((resolve) => {
-    let settled = false;
-    let ws: WebSocket;
-    try {
-      ws = new WebSocket(wsUrl());
-    } catch {
-      resolve(false);
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      ws.onopen = null;
-      ws.onerror = null;
-      ws.onclose = null;
-      ws.close();
-      resolve(false);
-    }, timeoutMs);
-
-    ws.onopen = () => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      socket = ws;
-      mode = "ws";
-      setRaceWsConnected(true);
-      setRaceError(null);
-
-      ws.onmessage = (event) => {
-        handleServerMessage(String(event.data));
-      };
-      ws.onclose = () => {
-        setRaceWsConnected(false);
-        socket = null;
-        if (mode === "ws") {
-          mode = "none";
-          if (reconnectTimer !== null) clearTimeout(reconnectTimer);
-          reconnectTimer = setTimeout(() => {
-            void connectRaceWs().catch(() => {
-              // ignore
-            });
-          }, 2000);
-        }
-      };
-
-      const session = getRaceSession();
-      if (session !== null) {
-        ws.send(
-          JSON.stringify({
-            type: "reconnect",
-            code: session.code,
-            playerId: session.playerId,
-          } satisfies RaceClientMessage),
-        );
-      }
-      resolve(true);
-    };
-
-    ws.onerror = () => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      ws.onopen = null;
-      ws.onclose = null;
-      try {
-        ws.close();
-      } catch {
-        // ignore
-      }
-      resolve(false);
-    };
-  });
-}
-
-function ensurePeerModeReady(): void {
-  mode = "peer";
-  setRaceWsConnected(true);
-  setRaceError(null);
-}
-
-function destroyPeer(): void {
-  peerHost?.destroy();
-  peerHost = null;
-  if (guestConnection !== null) {
-    guestConnection.close();
-    guestConnection = null;
-  }
-  if (peer !== null) {
-    peer.destroy();
-    peer = null;
-  }
-}
-
-const PEER_OPTIONS = {
-  debug: 0,
-  config: {
-    iceCandidatePoolSize: 10,
-    sdpSemantics: "unified-plan",
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:stun1.l.google.com:19302" },
-      { urls: "stun:stun.cloudflare.com:3478" },
-      {
-        urls: [
-          "turn:eu-0.turn.peerjs.com:3478",
-          "turn:us-0.turn.peerjs.com:3478",
-        ],
-        username: "peerjs",
-        credential: "peerjsp",
-      },
-    ],
-  },
-} as const;
-
-function peerErrorMessage(err: unknown): string {
-  if (err !== null && typeof err === "object" && "type" in err) {
-    const type = String((err as { type: unknown }).type);
-    if (type === "peer-unavailable") {
-      return "Host not found — ask them to keep the race page open and share a fresh invite.";
-    }
-    if (type === "unavailable-id") {
-      return "That party code is already in use. Create a new party.";
-    }
-    if (type === "network" || type === "socket-error") {
-      return "Could not reach the race broker. Check your network and try again.";
-    }
-    if (type === "webrtc") {
-      return "Could not open a peer link (firewall/NAT). Try a different network, or both join from the same Wi‑Fi.";
-    }
-  }
-  if (err instanceof Error && err.message.length > 0) return err.message;
-  return "Peer error";
-}
-
-async function createPeerWithId(id?: string): Promise<Peer> {
-  return await new Promise((resolve, reject) => {
-    const instance =
-      id !== undefined && id.length > 0
-        ? new Peer(id, PEER_OPTIONS)
-        : new Peer(PEER_OPTIONS);
-    const timer = setTimeout(() => {
-      instance.destroy();
-      reject(new Error("Peer connection timed out"));
-    }, 15000);
-
-    instance.on("open", () => {
-      clearTimeout(timer);
-      resolve(instance);
-    });
-    instance.on("error", (err) => {
-      clearTimeout(timer);
-      instance.destroy();
-      reject(new Error(peerErrorMessage(err)));
-    });
-  });
-}
-
-async function hostCreateParty(
-  displayName: string,
-  settings: RaceSettings = DEFAULT_RACE_SETTINGS,
-): Promise<void> {
-  destroyPeer();
-  let code = "";
-  let lastError: unknown;
-  for (let attempt = 0; attempt < 8; attempt++) {
-    code = "";
-    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    for (let i = 0; i < 6; i++) {
-      code += alphabet[Math.floor(Math.random() * alphabet.length)] ?? "A";
-    }
-    try {
-      peer = await createPeerWithId(code.toLowerCase());
-      lastError = null;
-      break;
-    } catch (e) {
-      lastError = e;
-      peer = null;
-    }
-  }
-  if (peer === null) {
-    setRaceError(
-      lastError instanceof Error
-        ? lastError.message
-        : "Could not create race room",
-    );
-    return;
-  }
-
-  localPlayerId = peer.id;
-  peerHost = new PeerRaceHost(peer, {
-    onMessage: (playerId, message) => {
-      if (playerId === localPlayerId) {
-        applyServerMessage(message);
-      }
-    },
-    sendTo: sendJson,
-  });
-  peerHost.createParty(displayName, settings);
-}
-
-async function guestJoinParty(
-  code: string,
-  displayName: string,
-  playerId?: string,
-): Promise<void> {
-  destroyPeer();
-  peer = await createPeerWithId();
-  const hostId = code.toLowerCase();
-  const joinMessage = {
-    type: "joinParty",
-    code: code.toUpperCase(),
-    displayName,
-    playerId,
-  } satisfies RaceClientMessage;
-
-  await new Promise<void>((resolve, reject) => {
-    if (peer === null) {
-      reject(new Error("Peer not ready"));
-      return;
-    }
-
-    const guestPeer = peer;
-    let settled = false;
-    const retryTimers: ReturnType<typeof setTimeout>[] = [];
-    let timer: ReturnType<typeof setTimeout> | undefined;
-
-    const cleanup = (): void => {
-      if (settled) return;
-      settled = true;
-      if (timer !== undefined) clearTimeout(timer);
-      for (const retry of retryTimers) clearTimeout(retry);
-    };
-
-    const fail = (message: string): void => {
-      cleanup();
-      reject(new Error(message));
-    };
-
-    const onPeerError = (err: unknown): void => {
-      if (settled) return;
-      fail(peerErrorMessage(err));
-    };
-    guestPeer.on("error", onPeerError);
-
-    const conn = guestPeer.connect(hostId, {
-      reliable: true,
-      serialization: "json",
-    });
-    guestConnection = conn;
-
-    timer = setTimeout(() => {
-      fail(
-        "Could not reach host — they must keep the race tab open, and you both need https://typeaiapp.vercel.app/",
-      );
-    }, 20000);
-
-    const sendJoin = (): void => {
-      if (settled || !conn.open) return;
-      void conn.send(joinMessage);
-    };
-
-    conn.on("open", () => {
-      sendJoin();
-      retryTimers.push(setTimeout(sendJoin, 200));
-      retryTimers.push(setTimeout(sendJoin, 800));
-    });
-    conn.on("data", (data) => {
-      let parsed: unknown = data;
-      if (typeof data === "string") {
-        try {
-          parsed = JSON.parse(data);
-        } catch {
-          return;
-        }
-      }
-      const result = RaceServerMessageSchema.safeParse(parsed);
-      if (!result.success) return;
-      applyServerMessage(result.data);
-      if (result.data.type === "error") {
-        fail(result.data.message);
-        return;
-      }
-      if (result.data.type === "partyState") {
-        cleanup();
-        resolve();
-      }
-    });
-    conn.on("close", () => {
-      setRaceWsConnected(false);
-      if (!settled) fail("Host closed the connection");
-    });
-    conn.on("error", () => {
-      fail("Failed to connect to host");
-    });
-  });
-}
-
 /**
- * Ready the race transport (WebSocket if available, otherwise browser P2P).
+ * Connect both browsers to the shared HTTP race lobby.
  */
 export async function connectRaceWs(): Promise<void> {
-  if (
-    mode === "ws" &&
-    socket !== null &&
-    socket.readyState === WebSocket.OPEN
-  ) {
-    return;
-  }
-  if (mode === "http" || mode === "peer") {
-    if (mode === "http") setRaceWsConnected(true);
-    else ensurePeerModeReady();
+  if (mode === "http") {
+    setRaceWsConnected(true);
     return;
   }
   if (connectPromise !== null) return connectPromise;
 
   connectPromise = (async () => {
-    const httpOk = await tryHttpRace(2500);
-    if (httpOk) {
-      mode = "http";
-      setRaceWsConnected(true);
-      setRaceError(null);
-      return;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const httpOk = await tryHttpRace(8000);
+      if (httpOk) {
+        mode = "http";
+        setRaceWsConnected(true);
+        setRaceError(null);
+        return;
+      }
+      await sleep(400 * (attempt + 1));
     }
-    const wsOk = await tryWebSocket(2500);
-    if (wsOk) return;
-    ensurePeerModeReady();
+    setRaceWsConnected(false);
+    setRaceError("Could not reach the race lobby. Refresh and try again.");
   })().finally(() => {
     connectPromise = null;
   });
@@ -610,63 +268,31 @@ export async function connectRaceWs(): Promise<void> {
 
 export function disconnectRaceWs(): void {
   stopHttpPoll();
-  if (reconnectTimer !== null) {
-    clearTimeout(reconnectTimer);
-    reconnectTimer = null;
-  }
-  if (socket !== null) {
-    socket.onclose = null;
-    socket.close();
-    socket = null;
-  }
-  destroyPeer();
   mode = "none";
   setRaceWsConnected(false);
 }
 
 function send(message: RaceClientMessage): void {
-  if (mode === "http") {
-    void httpRequest({ ...message });
-    return;
-  }
-  if (mode === "ws") {
-    if (socket === null || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(JSON.stringify(message));
-    return;
-  }
-  if (mode === "peer") {
-    if (peerHost !== null) {
-      peerHost.handleLocalMessage(message);
-      return;
-    }
-    if (guestConnection !== null && guestConnection.open) {
-      void guestConnection.send(message);
-    }
-  }
+  if (mode !== "http") return;
+  void httpRequest({ ...message });
 }
 
 export async function createParty(
   displayName: string,
   settings: RaceSettings = DEFAULT_RACE_SETTINGS,
 ): Promise<void> {
-  if (mode === "http") {
-    try {
-      await httpRequest({ type: "createParty", displayName, settings });
-      if (getRaceParty() !== null) startHttpPoll();
-    } catch {
-      setRaceError("Failed to create party");
-    }
+  await connectRaceWs();
+  if (mode !== "http") {
+    setRaceError("Could not reach the race lobby. Refresh and try again.");
     return;
   }
-  if (mode === "peer") {
-    try {
-      await hostCreateParty(displayName, settings);
-    } catch (e: unknown) {
-      setRaceError(e instanceof Error ? e.message : "Failed to create party");
-    }
-    return;
+  try {
+    await httpRequest({ type: "createParty", displayName, settings });
+    if (getRaceParty() !== null) startHttpPoll();
+    else if (getRaceError() === null) setRaceError("Failed to create party");
+  } catch {
+    setRaceError("Failed to create party");
   }
-  send({ type: "createParty", displayName, settings });
 }
 
 export async function joinParty(
@@ -674,61 +300,51 @@ export async function joinParty(
   displayName: string,
   playerId?: string,
 ): Promise<void> {
-  if (mode === "http") {
-    try {
-      let lastError = "Failed to join party";
-      for (let attempt = 0; attempt < 6; attempt++) {
-        const data = await httpRequest(
-          {
-            type: "joinParty",
-            code: code.toUpperCase(),
-            displayName,
-            playerId,
-          },
-          false,
-        );
-        const err = httpErrorMessage(data);
-        const joined = (data.messages ?? []).some(
-          (raw) =>
-            typeof raw === "object" &&
-            raw !== null &&
-            "type" in raw &&
-            (raw as { type: unknown }).type === "partyState",
-        );
-        if (joined) {
-          applyHttpRoomResponse(data);
-          startHttpPoll();
+  await connectRaceWs();
+  if (mode !== "http") {
+    setRaceError("Could not reach the race lobby. Refresh and try again.");
+    return;
+  }
+  try {
+    let lastError = "Failed to join party";
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const body: Record<string, unknown> = {
+        type: "joinParty",
+        code: code.toUpperCase(),
+        displayName,
+      };
+      if (playerId !== undefined) body["playerId"] = playerId;
+      const data = await httpRequest(body, false);
+      const err = httpErrorMessage(data);
+      const joined = (data.messages ?? []).some(
+        (raw) =>
+          typeof raw === "object" &&
+          raw !== null &&
+          "type" in raw &&
+          (raw as { type: unknown }).type === "partyState",
+      );
+      if (joined) {
+        applyHttpRoomResponse(data);
+        if (getRaceParty() === null) {
+          setRaceError("Joined, but the lobby response was invalid. Refresh.");
           return;
         }
-        if (err !== undefined) {
-          lastError = err;
-          if (!/party not found/i.test(err)) {
-            applyHttpRoomResponse(data);
-            return;
-          }
-        }
-        await sleep(400);
+        startHttpPoll();
+        return;
       }
-      setRaceError(lastError);
-    } catch {
-      setRaceError("Failed to join party");
+      if (err !== undefined) {
+        lastError = err;
+        if (!/party not found/i.test(err)) {
+          applyHttpRoomResponse(data);
+          return;
+        }
+      }
+      await sleep(400);
     }
-    return;
+    setRaceError(lastError);
+  } catch {
+    setRaceError("Failed to join party");
   }
-  if (mode === "peer") {
-    try {
-      await guestJoinParty(code, displayName, playerId);
-    } catch (e: unknown) {
-      setRaceError(e instanceof Error ? e.message : "Failed to join party");
-    }
-    return;
-  }
-  send({
-    type: "joinParty",
-    code: code.toUpperCase(),
-    displayName,
-    playerId,
-  });
 }
 
 export function updateRaceSettings(settings: RaceSettings): void {
@@ -759,10 +375,6 @@ export function leaveParty(): void {
   setCountdownSeconds(null);
   setIsRaceActive(false);
   setRaceStartedAt(null);
-  if (mode === "peer") {
-    destroyPeer();
-    ensurePeerModeReady();
-  }
   localPlayerId = null;
 }
 
