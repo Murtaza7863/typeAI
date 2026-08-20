@@ -33,6 +33,7 @@ type RaceParty = {
   winnerId: string | null;
   finishDeadline: number | null;
   announced: Record<string, RaceStatus>;
+  rev: number;
 };
 
 type ClientMessage = {
@@ -441,6 +442,7 @@ function parseParty(raw: unknown): RaceParty | undefined {
     finishDeadline:
       typeof raw["finishDeadline"] === "number" ? raw["finishDeadline"] : null,
     announced,
+    rev: typeof raw["rev"] === "number" ? raw["rev"] : 0,
   };
 }
 
@@ -480,7 +482,7 @@ function setgetStore(): DurableStore {
     name: "setget",
     async get(code) {
       const response = await fetchNoStore(
-        `${SETGET_BASE}/get/${storeKey(code)}?format=json`,
+        `${SETGET_BASE}/get/${storeKey(code)}?format=json&t=${Date.now()}`,
       );
       if (response.status === 404) return undefined;
       if (!response.ok) throw new RaceStoreError();
@@ -599,10 +601,86 @@ async function loadParty(code: string): Promise<RaceParty | undefined> {
   return local;
 }
 
+function statusRank(status: RaceStatus): number {
+  if (status === "finished") return 3;
+  if (status === "racing") return 2;
+  if (status === "countdown") return 1;
+  return 0;
+}
+
+function mergePlayers(local: RaceParty, remote: RaceParty): void {
+  for (const [id, player] of Object.entries(remote.players)) {
+    const existing = local.players[id];
+    if (existing === undefined) {
+      local.players[id] = player;
+      continue;
+    }
+    existing.progress = Math.max(existing.progress, player.progress);
+    existing.connected = existing.connected || player.connected;
+    if (typeof player.timeMs === "number") {
+      if (
+        typeof existing.timeMs !== "number" ||
+        player.timeMs < existing.timeMs
+      ) {
+        existing.timeMs = player.timeMs;
+        existing.finishedAt = player.finishedAt;
+      }
+    }
+  }
+  for (const [id, status] of Object.entries(remote.announced)) {
+    local.announced[id] ??= status;
+  }
+  if (statusRank(remote.status) > statusRank(local.status)) {
+    local.status = remote.status;
+    local.startedAt = remote.startedAt ?? local.startedAt;
+    local.countdownEndsAt = remote.countdownEndsAt ?? local.countdownEndsAt;
+    local.winnerId = remote.winnerId ?? local.winnerId;
+    local.finishDeadline = remote.finishDeadline ?? local.finishDeadline;
+    local.words = remote.words;
+    local.settings = remote.settings;
+  }
+}
+
+function fingerprint(party: RaceParty): string {
+  return JSON.stringify({
+    status: party.status,
+    settings: party.settings,
+    words: party.words,
+    startedAt: party.startedAt,
+    countdownEndsAt: party.countdownEndsAt,
+    winnerId: party.winnerId,
+    finishDeadline: party.finishDeadline,
+    announced: party.announced,
+    players: Object.keys(party.players)
+      .sort()
+      .map((id) => {
+        const player = party.players[id];
+        return [
+          id,
+          player?.displayName,
+          player?.progress,
+          player?.timeMs,
+          player?.connected,
+          player?.isHost,
+        ];
+      }),
+  });
+}
+
 async function saveParty(party: RaceParty): Promise<void> {
-  rooms.set(party.code, party);
   const store = durableStore();
-  if (store !== null) await store.set(party);
+  if (store !== null) {
+    const remote = await store.get(party.code);
+    if (remote !== undefined) {
+      mergePlayers(party, remote);
+      party.rev = Math.max(party.rev ?? 0, remote.rev ?? 0);
+    }
+    party.rev = (party.rev ?? 0) + 1;
+    rooms.set(party.code, party);
+    await store.set(party);
+    return;
+  }
+  rooms.set(party.code, party);
 }
 
 async function removeParty(code: string): Promise<void> {
@@ -615,6 +693,7 @@ async function reply(
   party: RaceParty,
   playerId: string,
   request: Request,
+  opts?: { persist?: boolean; before?: string },
 ): Promise<Response> {
   const you = party.players[playerId];
   if (you === undefined) {
@@ -623,12 +702,18 @@ async function reply(
       messages: [{ type: "error", message: "Player not found" }],
     });
   }
+  const persist = opts?.persist ?? true;
+  const before = opts?.before ?? fingerprint(party);
   advance(party, Date.now());
   const messages = [
     partyState(party, you, request),
     ...eventsFor(party, playerId),
   ];
-  await saveParty(party);
+  if (persist || fingerprint(party) !== before) {
+    await saveParty(party);
+  } else {
+    rooms.set(party.code, party);
+  }
   return jsonResponse(200, { ok: true, playerId, messages });
 }
 
@@ -670,6 +755,7 @@ async function handleCreate(
     winnerId: null,
     finishDeadline: null,
     announced: { [playerId]: "lobby" },
+    rev: 0,
   };
   await saveParty(party);
   return reply(party, playerId, request);
@@ -714,15 +800,18 @@ async function handleJoin(
 
 async function requirePartyPlayer(
   body: ClientMessage,
-): Promise<{ party: RaceParty; player: RacePlayer } | Response> {
+): Promise<
+  { party: RaceParty; player: RacePlayer; before: string } | Response
+> {
   const code = (body.code ?? "").toUpperCase();
   const party = await loadParty(code);
   if (party === undefined) return error("Party not found");
+  const before = fingerprint(party);
   advance(party, Date.now());
   const playerId = body.playerId ?? "";
   const player = party.players[playerId];
   if (player === undefined) return error("Player not found");
-  return { party, player };
+  return { party, player, before };
 }
 
 async function handleAction(
@@ -735,9 +824,11 @@ async function handleAction(
 
   const loaded = await requirePartyPlayer(body);
   if (loaded instanceof Response) return loaded;
-  const { party, player } = loaded;
+  const { party, player, before } = loaded;
 
-  if (type === "poll") return reply(party, player.id, request);
+  if (type === "poll") {
+    return reply(party, player.id, request, { persist: false, before });
+  }
 
   if (type === "updateSettings") {
     if (!player.isHost) return error("Only the host can change settings");

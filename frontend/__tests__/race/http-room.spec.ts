@@ -198,5 +198,18 @@ describe("HTTP race room — two players", () => {
         .players.map((p) => p.displayName)
         .sort(),
     ).toEqual(["Friend", "Host"]);
+
+    resetRaceRoomsForTests();
+    const hostPoll = await post({
+      type: "poll",
+      code: hostParty.code,
+      playerId: created.playerId,
+    });
+    expect(hostPoll.ok).toBe(true);
+    expect(
+      partyFrom(hostPoll.messages)
+        .players.map((p) => p.displayName)
+        .sort(),
+    ).toEqual(["Friend", "Host"]);
   });
 });

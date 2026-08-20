@@ -48,7 +48,7 @@ function startHttpPoll(): void {
   stopHttpPoll();
   httpPollTimer = setInterval(() => {
     void httpRequest({ type: "poll" });
-  }, 900);
+  }, 500);
 }
 
 async function tryHttpRace(timeoutMs: number): Promise<boolean> {
