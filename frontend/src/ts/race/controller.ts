@@ -1,4 +1,13 @@
-import { FunboxName } from "@typeai/schemas/configs";
+import {
+  ConfidenceMode,
+  Difficulty,
+  FunboxName,
+  MinimumAccuracy,
+  MinimumBurst,
+  MinimumWordsPerMinute,
+  StopOnError,
+} from "@typeai/schemas/configs";
+import { RaceSettings } from "@typeai/schemas/race";
 import { CustomTextSettings } from "@typeai/schemas/results";
 import { Mode } from "@typeai/schemas/shared";
 
@@ -6,6 +15,8 @@ import { setConfig } from "../config/setters";
 import { Config } from "../config/store";
 import { navigationEvent } from "../events/navigation";
 import { restartTestEvent } from "../events/test";
+import { setCustomTextName } from "../legacy-states/custom-text-name";
+import { getActivePage } from "../states/core";
 import {
   getLocalFinished,
   getRaceParty,
@@ -15,10 +26,10 @@ import {
   setIsRaceActive,
   setRaceStartedAt,
 } from "../states/race";
-import * as TestState from "../test/test-state";
-import * as TestInput from "../test/test-input";
-import * as TestWords from "../test/test-words";
 import * as CustomText from "../test/custom-text";
+import * as TestInput from "../test/test-input";
+import * as TestState from "../test/test-state";
+import * as TestWords from "../test/test-words";
 import {
   leaveParty,
   onRaceMessage,
@@ -32,6 +43,12 @@ type RaceSettingsSnapshot = {
   numbers: boolean;
   funbox: FunboxName[];
   customText: CustomTextSettings;
+  difficulty: Difficulty;
+  minWpm: MinimumWordsPerMinute;
+  minAcc: MinimumAccuracy;
+  minBurst: MinimumBurst;
+  stopOnError: StopOnError;
+  confidenceMode: ConfidenceMode;
 };
 
 let lastSentProgress = -1;
@@ -53,6 +70,12 @@ function snapshotSettingsIfNeeded(): void {
     numbers: Config.numbers,
     funbox: [...Config.funbox],
     customText: structuredClone(CustomText.getData()),
+    difficulty: Config.difficulty,
+    minWpm: Config.minWpm,
+    minAcc: Config.minAcc,
+    minBurst: Config.minBurst,
+    stopOnError: Config.stopOnError,
+    confidenceMode: Config.confidenceMode,
   };
 }
 
@@ -70,6 +93,12 @@ export function restoreAfterRace(): void {
   setConfig("punctuation", snapshot.punctuation, { nosave: true });
   setConfig("numbers", snapshot.numbers, { nosave: true });
   setConfig("funbox", snapshot.funbox, { nosave: true });
+  setConfig("difficulty", snapshot.difficulty, { nosave: true });
+  setConfig("minWpm", snapshot.minWpm, { nosave: true });
+  setConfig("minAcc", snapshot.minAcc, { nosave: true });
+  setConfig("minBurst", snapshot.minBurst, { nosave: true });
+  setConfig("stopOnError", snapshot.stopOnError, { nosave: true });
+  setConfig("confidenceMode", snapshot.confidenceMode, { nosave: true });
   setConfig("mode", snapshot.mode, { nosave: true });
 }
 
@@ -81,9 +110,6 @@ export function leaveRaceAndRestore(): void {
 export function initRaceController(): void {
   if (initialized) return;
   initialized = true;
-
-  // Connect lazily when the race page opens — avoid background WS errors
-  // against APIs that do not host /race-ws.
 
   onRaceMessage((message) => {
     if (message.type === "countdown") {
@@ -104,7 +130,7 @@ export function initRaceController(): void {
     if (message.type === "raceStart") {
       clearCountdownTick();
       setCountdownSeconds(null);
-      beginSharedRace(message.words, message.startedAt);
+      beginSharedRace(message.words, message.startedAt, message.settings);
     }
 
     if (message.type === "raceComplete") {
@@ -114,26 +140,55 @@ export function initRaceController(): void {
         code !== undefined && code.length > 0 ? `/race/${code}` : "/race";
       navigationEvent.dispatch({ url, options: { force: true } });
     }
+
+    if (
+      message.type === "error" &&
+      /party not found|player not found|party ended/i.test(message.message)
+    ) {
+      restoreAfterRace();
+    }
   });
 }
 
-function beginSharedRace(words: string[], startedAt: number): void {
+function beginSharedRace(
+  words: string[],
+  startedAt: number,
+  settings?: RaceSettings,
+): void {
   snapshotSettingsIfNeeded();
   setIsRaceActive(true);
   setRaceStartedAt(startedAt);
   lastSentProgress = -1;
 
-  CustomText.setText(words);
-  CustomText.setMode("repeat");
-  CustomText.setLimitMode("word");
-  CustomText.setLimitValue(words.length);
+  const text = words.length > 0 ? words : ["go"];
+  const timed = settings?.mode === "time";
+  CustomText.applyData({
+    text,
+    mode: "repeat",
+    limit: timed
+      ? { value: settings.time, mode: "time" }
+      : { value: text.length, mode: "word" },
+    pipeDelimiter: false,
+  });
+  setCustomTextName("", false);
   setConfig("mode", "custom", { nosave: true });
   setConfig("punctuation", false, { nosave: true });
   setConfig("numbers", false, { nosave: true });
   setConfig("funbox", [], { nosave: true });
+  setConfig("difficulty", "normal", { nosave: true });
+  setConfig("minWpm", "off", { nosave: true });
+  setConfig("minAcc", "off", { nosave: true });
+  setConfig("minBurst", "off", { nosave: true });
+  setConfig("stopOnError", "off", { nosave: true });
+  setConfig("confidenceMode", "off", { nosave: true });
 
-  navigationEvent.dispatch({ url: "/", options: { force: true } });
-  restartTestEvent.dispatch();
+  // Navigating to the test page already restarts it in beforeShow.
+  // Restarting first (while still on /race) can leave the test stuck.
+  if (getActivePage() === "test") {
+    restartTestEvent.dispatch({ noAnim: true });
+  } else {
+    navigationEvent.dispatch({ url: "/", options: { force: true } });
+  }
 }
 
 export function reportRaceProgressFromTest(): void {
@@ -143,9 +198,6 @@ export function reportRaceProgressFromTest(): void {
   const words = TestWords.words.list;
   if (words.length === 0) return;
 
-  const totalChars = words.join(" ").length;
-  if (totalChars === 0) return;
-
   const history = TestInput.input.getHistory();
   const completedJoined = history.length === 0 ? 0 : history.join(" ").length;
   const spaceAfter =
@@ -153,12 +205,26 @@ export function reportRaceProgressFromTest(): void {
   const charsTyped =
     completedJoined + spaceAfter + TestInput.input.current.length;
 
-  const wordPct = Math.floor((TestState.activeWordIndex / words.length) * 100);
-  const charPct = Math.min(
-    100,
-    Math.floor((Math.min(charsTyped, totalChars) / totalChars) * 100),
-  );
-  const progress = Math.max(0, Math.min(100, Math.max(wordPct, charPct)));
+  const settings = getRaceParty()?.settings;
+  let progress: number;
+  if (settings?.mode === "time") {
+    const targetChars = Math.max(1, (settings.time ?? 30) * 10);
+    progress = Math.min(
+      100,
+      Math.floor((Math.max(0, charsTyped) / targetChars) * 100),
+    );
+  } else {
+    const totalChars = words.join(" ").length;
+    if (totalChars === 0) return;
+    const wordPct = Math.floor(
+      (TestState.activeWordIndex / words.length) * 100,
+    );
+    const charPct = Math.min(
+      100,
+      Math.floor((Math.min(charsTyped, totalChars) / totalChars) * 100),
+    );
+    progress = Math.max(0, Math.min(100, Math.max(wordPct, charPct)));
+  }
 
   if (progress === lastSentProgress) return;
   lastSentProgress = progress;
@@ -169,6 +235,8 @@ export function reportRaceFinished(): void {
   if (!isRaceActive() || getLocalFinished()) return;
   const startedAt = getRaceStartedAt();
   const timeMs = startedAt !== null ? Math.max(1, Date.now() - startedAt) : 1;
-  sendProgress(100);
+  if (getRaceParty()?.settings?.mode !== "time") {
+    sendProgress(100);
+  }
   sendFinished(timeMs);
 }

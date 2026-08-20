@@ -1,4 +1,4 @@
-import { RACE_WORD_COUNT } from "@typeai/schemas/race";
+import { RACE_WORD_COUNT, RaceSettings } from "@typeai/schemas/race";
 
 /** Top ~200 English words for shared race text. */
 const ENGLISH_WORDS = [
@@ -270,14 +270,14 @@ export function generateRaceWordList(count = RACE_WORD_COUNT): string[] {
   return words;
 }
 
-export function generateRaceText(settings: {
-  mode: "words" | "quote";
-  wordCount: 25 | 50 | 100;
-  punctuation: boolean;
-}): string[] {
+export function generateRaceText(settings: RaceSettings): string[] {
   if (settings.mode === "quote") {
     return generateQuoteWords();
   }
-  const words = generateRaceWordList(settings.wordCount);
+  const count =
+    settings.mode === "time"
+      ? Math.max(200, settings.time * 8)
+      : settings.wordCount;
+  const words = generateRaceWordList(count);
   return settings.punctuation ? applyPunctuation(words) : words;
 }

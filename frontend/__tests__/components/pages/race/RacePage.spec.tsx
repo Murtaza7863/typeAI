@@ -81,6 +81,7 @@ function lobby(players: (typeof host)[]) {
     settings: {
       mode: "words" as const,
       wordCount: 25 as const,
+      time: 30 as const,
       punctuation: false,
     },
     players,
@@ -121,5 +122,22 @@ describe("RacePage lobby", () => {
     expect(text()).toContain("Sam");
     expect(text()).toContain("Players (2/8)");
     expect(text()).not.toContain("Need at least 2 players to start");
+  });
+
+  it("offers timed mode next to words and quotes", () => {
+    const { container } = render(() => <RacePage />);
+    const text = container.textContent ?? "";
+    expect(text).toContain("Time");
+    expect(text).toContain("Words");
+    expect(text).toContain("Quote");
+  });
+
+  it("lets either player leave a race in progress", () => {
+    setRaceParty({
+      ...lobby([host, friend]),
+      status: "racing",
+    });
+    const { container } = render(() => <RacePage />);
+    expect(container.textContent).toContain("Leave race");
   });
 });

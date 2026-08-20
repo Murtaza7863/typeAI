@@ -60,23 +60,43 @@ describe("frontend race word list", () => {
 
   it("supports 25/100 words, punctuation, and quotes", () => {
     expect(
-      generateRaceText({ mode: "words", wordCount: 25, punctuation: false }),
+      generateRaceText({
+        mode: "words",
+        wordCount: 25,
+        time: 30,
+        punctuation: false,
+      }),
     ).toHaveLength(25);
     expect(
-      generateRaceText({ mode: "words", wordCount: 100, punctuation: false }),
+      generateRaceText({
+        mode: "words",
+        wordCount: 100,
+        time: 30,
+        punctuation: false,
+      }),
     ).toHaveLength(100);
     const punctuated = generateRaceText({
       mode: "words",
       wordCount: 50,
+      time: 30,
       punctuation: true,
     });
     expect(punctuated.some((w) => /[.,!?;:]/.test(w))).toBe(true);
     const quote = generateRaceText({
       mode: "quote",
       wordCount: 50,
+      time: 30,
       punctuation: false,
     });
     expect(quote.length).toBeGreaterThan(0);
+    expect(
+      generateRaceText({
+        mode: "time",
+        wordCount: 50,
+        time: 15,
+        punctuation: false,
+      }).length,
+    ).toBeGreaterThanOrEqual(200);
   });
 });
 
@@ -113,7 +133,7 @@ describe("PeerRaceHost", () => {
     onMessage.mockClear();
     host.handleLocalMessage({
       type: "updateSettings",
-      settings: { mode: "words", wordCount: 25, punctuation: true },
+      settings: { mode: "words", wordCount: 25, time: 30, punctuation: true },
     });
     const state = onMessage.mock.calls[0]?.[1] as {
       type: string;

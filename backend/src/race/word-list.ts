@@ -271,13 +271,18 @@ export function generateRaceWordList(count = RACE_WORD_COUNT): string[] {
 }
 
 export function generateRaceText(settings: {
-  mode: "words" | "quote";
+  mode: "words" | "quote" | "time";
   wordCount: 25 | 50 | 100;
+  time?: 15 | 30 | 60;
   punctuation: boolean;
 }): string[] {
   if (settings.mode === "quote") {
     return generateQuoteWords();
   }
-  const words = generateRaceWordList(settings.wordCount);
+  const count =
+    settings.mode === "time"
+      ? Math.max(200, (settings.time ?? 30) * 8)
+      : settings.wordCount;
+  const words = generateRaceWordList(count);
   return settings.punctuation ? applyPunctuation(words) : words;
 }

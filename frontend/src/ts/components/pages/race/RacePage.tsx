@@ -2,6 +2,7 @@ import {
   DEFAULT_RACE_SETTINGS,
   RaceMode,
   RaceSettings,
+  RaceTime,
   RaceWordCount,
 } from "@typeai/schemas/race";
 import {
@@ -43,6 +44,12 @@ import { RaceProgressBars } from "./RaceProgressBars";
 
 const NAME_KEY = "typeai-race-display-name";
 const WORD_COUNTS: RaceWordCount[] = [25, 50, 100];
+const TIME_COUNTS: RaceTime[] = [15, 30, 60];
+const RACE_MODES: { id: RaceMode; label: string }[] = [
+  { id: "words", label: "Words" },
+  { id: "time", label: "Time" },
+  { id: "quote", label: "Quote" },
+];
 
 function loadSavedName(): string {
   return localStorage.getItem(NAME_KEY) ?? "";
@@ -56,6 +63,7 @@ function settingsFromParty(settings: RaceSettings | undefined): RaceSettings {
   return {
     mode: settings?.mode ?? DEFAULT_RACE_SETTINGS.mode,
     wordCount: settings?.wordCount ?? DEFAULT_RACE_SETTINGS.wordCount,
+    time: settings?.time ?? DEFAULT_RACE_SETTINGS.time,
     punctuation: settings?.punctuation ?? DEFAULT_RACE_SETTINGS.punctuation,
   };
 }
@@ -65,6 +73,9 @@ function settingsSummary(settings: RaceSettings): string {
     return "Quote race";
   }
   const punct = settings.punctuation ? " · punctuation" : "";
+  if (settings.mode === "time") {
+    return `${settings.time}s${punct}`;
+  }
   return `${settings.wordCount} words${punct}`;
 }
 
@@ -176,6 +187,15 @@ function RacePartyPanel(props: {
         <div class="bg-bg-2 rounded-lg border border-sub/30 p-10 text-center">
           <div class="text-sm text-sub">Race starting in</div>
           <div class="text-6xl text-main">{getCountdownSeconds() ?? 3}</div>
+          <Button
+            class="mt-6"
+            text="Leave"
+            variant="text"
+            onClick={() => {
+              leaveRaceAndRestore();
+              void navigate("/race");
+            }}
+          />
         </div>
       </Show>
 
@@ -195,12 +215,21 @@ function RacePartyPanel(props: {
             </p>
           </Show>
           <RaceProgressBars />
-          <Button
-            class="mt-4"
-            text="Open typing test"
-            variant="text"
-            onClick={() => void navigate("/")}
-          />
+          <div class="mt-4 flex flex-wrap gap-2">
+            <Button
+              text="Open typing test"
+              variant="text"
+              onClick={() => void navigate("/")}
+            />
+            <Button
+              text="Leave race"
+              variant="text"
+              onClick={() => {
+                leaveRaceAndRestore();
+                void navigate("/race");
+              }}
+            />
+          </div>
         </div>
       </Show>
 
@@ -391,19 +420,38 @@ export function RacePage(): JSXElement {
       <div>
         <div class="mb-2 text-sm text-sub">Mode</div>
         <div class="flex flex-wrap gap-2">
-          <For each={["words", "quote"] as RaceMode[]}>
+          <For each={RACE_MODES}>
             {(mode) => (
               <Button
-                text={mode === "words" ? "Words" : "Quote"}
+                text={mode.label}
                 variant="text"
-                active={draftSettings().mode === mode}
+                active={draftSettings().mode === mode.id}
                 disabled={!editable}
-                onClick={() => patchSettings({ mode })}
+                onClick={() => patchSettings({ mode: mode.id })}
               />
             )}
           </For>
         </div>
       </div>
+
+      <Show when={draftSettings().mode === "time"}>
+        <div>
+          <div class="mb-2 text-sm text-sub">Duration</div>
+          <div class="flex flex-wrap gap-2">
+            <For each={TIME_COUNTS}>
+              {(seconds) => (
+                <Button
+                  text={`${seconds}s`}
+                  variant="text"
+                  active={draftSettings().time === seconds}
+                  disabled={!editable}
+                  onClick={() => patchSettings({ time: seconds })}
+                />
+              )}
+            </For>
+          </div>
+        </div>
+      </Show>
 
       <Show when={draftSettings().mode === "words"}>
         <div>
@@ -422,7 +470,13 @@ export function RacePage(): JSXElement {
             </For>
           </div>
         </div>
+      </Show>
 
+      <Show
+        when={
+          draftSettings().mode === "words" || draftSettings().mode === "time"
+        }
+      >
         <div>
           <div class="mb-2 text-sm text-sub">Punctuation</div>
           <div class="flex flex-wrap gap-2">
@@ -454,9 +508,9 @@ export function RacePage(): JSXElement {
           <div>
             <h1 class="text-2xl text-text">Competitive</h1>
             <p class="text-sm text-sub">
-              Race up to 8 players on a shared test — 25/50/100 words,
-              punctuation, or quotes. First to finish wins. Keep this tab open
-              while friends join.
+              Race a friend on the same test — words, timed, or a quote. First
+              to finish wins timed races by progress. Keep this tab open while
+              friends join.
             </p>
           </div>
         </div>

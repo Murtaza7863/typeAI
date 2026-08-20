@@ -1,5 +1,7 @@
 import { For, JSXElement, Show } from "solid-js";
 
+import { navigate } from "../../../controllers/route-controller";
+import { leaveRaceAndRestore } from "../../../race/controller";
 import { getActivePage } from "../../../states/core";
 import {
   getLocalFinished,
@@ -7,6 +9,7 @@ import {
   getRaceYou,
   isRaceActive,
 } from "../../../states/race";
+import { Button } from "../../common/Button";
 
 export function RaceProgressBars(props: {
   /** When true, only render during an active race on the test page */
@@ -70,6 +73,17 @@ export function RaceProgressBars(props: {
               );
             }}
           </For>
+          <Show when={props.testOverlay === true}>
+            <Button
+              class="mt-1 self-start"
+              text="Leave race"
+              variant="text"
+              onClick={() => {
+                leaveRaceAndRestore();
+                void navigate("/race");
+              }}
+            />
+          </Show>
         </div>
       )}
     </Show>

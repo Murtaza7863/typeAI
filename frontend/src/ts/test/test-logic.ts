@@ -140,7 +140,7 @@ export function setNotSignedInUidAndHash(uid: string): void {
 }
 
 export function startTest(now: number): boolean {
-  if (PageTransition.get()) {
+  if (PageTransition.get() && !isRaceActive()) {
     return false;
   }
 

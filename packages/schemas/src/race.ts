@@ -8,7 +8,7 @@ export const RacePartyStatusSchema = z.enum([
 ]);
 export type RacePartyStatus = z.infer<typeof RacePartyStatusSchema>;
 
-export const RaceModeSchema = z.enum(["words", "quote"]);
+export const RaceModeSchema = z.enum(["words", "quote", "time"]);
 export type RaceMode = z.infer<typeof RaceModeSchema>;
 
 export const RaceWordCountSchema = z.union([
@@ -18,9 +18,17 @@ export const RaceWordCountSchema = z.union([
 ]);
 export type RaceWordCount = z.infer<typeof RaceWordCountSchema>;
 
+export const RaceTimeSchema = z.union([
+  z.literal(15),
+  z.literal(30),
+  z.literal(60),
+]);
+export type RaceTime = z.infer<typeof RaceTimeSchema>;
+
 export const RaceSettingsSchema = z.object({
   mode: RaceModeSchema.default("words"),
   wordCount: RaceWordCountSchema.default(50),
+  time: RaceTimeSchema.default(30),
   punctuation: z.boolean().default(false),
 });
 export type RaceSettings = z.infer<typeof RaceSettingsSchema>;
@@ -28,6 +36,7 @@ export type RaceSettings = z.infer<typeof RaceSettingsSchema>;
 export const DEFAULT_RACE_SETTINGS: RaceSettings = {
   mode: "words",
   wordCount: 50,
+  time: 30,
   punctuation: false,
 };
 
@@ -140,3 +149,4 @@ export const RACE_WORD_COUNT = 50;
 export const RACE_MAX_PLAYERS = 8;
 export const RACE_COUNTDOWN_SECONDS = 3;
 export const RACE_FINISH_TIMEOUT_MS = 60_000;
+export const RACE_HARD_TIMEOUT_MS = 10 * 60 * 1000;

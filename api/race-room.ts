@@ -1,10 +1,12 @@
 /** Vercel function: HTTP race lobby so friends can join without PeerJS/NAT. */
 
-type RaceMode = "words" | "quote";
+type RaceMode = "words" | "quote" | "time";
 type RaceWordCount = 25 | 50 | 100;
+type RaceTime = 15 | 30 | 60;
 type RaceSettings = {
   mode: RaceMode;
   wordCount: RaceWordCount;
+  time: RaceTime;
   punctuation: boolean;
 };
 type RaceStatus = "lobby" | "countdown" | "racing" | "finished";
@@ -64,6 +66,8 @@ const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const MAX_PLAYERS = 8;
 const COUNTDOWN_MS = 3000;
 const FINISH_GRACE_MS = 60_000;
+const RACE_HARD_TIMEOUT_MS = 10 * 60 * 1000;
+const TIME_RACE_GRACE_MS = 15_000;
 const ROOM_TTL_MS = 2 * 60 * 60 * 1000;
 const ROOM_TTL_SECONDS = Math.floor(ROOM_TTL_MS / 1000);
 const STORE_PREFIX = "typeai-race-";
@@ -176,14 +180,28 @@ function jsonResponse(status: number, payload: unknown): Response {
 }
 
 function parseSettings(raw: Partial<RaceSettings> | undefined): RaceSettings {
-  const mode = raw?.mode === "quote" ? "quote" : "words";
+  const mode =
+    raw?.mode === "quote" ? "quote" : raw?.mode === "time" ? "time" : "words";
   const wordCount =
     raw?.wordCount === 25 || raw?.wordCount === 100 ? raw.wordCount : 50;
+  const time = raw?.time === 15 || raw?.time === 60 ? raw.time : 30;
   return {
     mode,
     wordCount,
+    time,
     punctuation: raw?.punctuation === true,
   };
+}
+
+function timeRaceWordCount(time: RaceTime): number {
+  return Math.max(200, time * 8);
+}
+
+function raceDeadline(party: RaceParty, now: number): number {
+  if (party.settings.mode === "time") {
+    return now + party.settings.time * 1000 + TIME_RACE_GRACE_MS;
+  }
+  return now + RACE_HARD_TIMEOUT_MS;
 }
 
 function makeCode(): string {
@@ -200,9 +218,13 @@ function generateWords(settings: RaceSettings): string[] {
       QUOTES[Math.floor(Math.random() * QUOTES.length)] ?? QUOTES[0] ?? "Go.";
     return quote.split(/\s+/).filter((w) => w.length > 0);
   }
+  const count =
+    settings.mode === "time"
+      ? timeRaceWordCount(settings.time)
+      : settings.wordCount;
   const words: string[] = [];
   let previous = "";
-  while (words.length < settings.wordCount) {
+  while (words.length < count) {
     const word = WORDS[Math.floor(Math.random() * WORDS.length)] ?? "the";
     if (word === previous) continue;
     words.push(word);
@@ -230,6 +252,15 @@ function playersList(party: RaceParty): Omit<RacePlayer, "lastProgressAt">[] {
 
 function standings(party: RaceParty): Omit<RacePlayer, "lastProgressAt">[] {
   return playersList(party).sort((a, b) => {
+    if (party.settings.mode === "time") {
+      if (b.progress !== a.progress) return b.progress - a.progress;
+      if (typeof a.timeMs === "number" && typeof b.timeMs === "number") {
+        return a.timeMs - b.timeMs;
+      }
+      if (typeof a.timeMs === "number") return -1;
+      if (typeof b.timeMs === "number") return 1;
+      return 0;
+    }
     if (typeof a.timeMs === "number" && typeof b.timeMs === "number") {
       return a.timeMs - b.timeMs;
     }
@@ -293,6 +324,10 @@ function completeRace(party: RaceParty): void {
   party.status = "finished";
   party.finishDeadline = null;
   const ranked = standings(party);
+  if (party.settings.mode === "time") {
+    party.winnerId = ranked[0]?.id ?? null;
+    return;
+  }
   party.winnerId =
     party.winnerId ??
     ranked.find((p) => typeof p.timeMs === "number")?.id ??
@@ -308,6 +343,7 @@ function advance(party: RaceParty, now: number): void {
     party.status = "racing";
     party.startedAt = now;
     party.countdownEndsAt = null;
+    party.finishDeadline = raceDeadline(party, now);
     for (const player of Object.values(party.players)) {
       player.progress = 0;
       player.finishedAt = null;
@@ -850,6 +886,7 @@ async function handleAction(
       if (
         next.mode !== party.settings.mode ||
         next.wordCount !== party.settings.wordCount ||
+        next.time !== party.settings.time ||
         next.punctuation !== party.settings.punctuation
       ) {
         party.settings = next;
@@ -879,11 +916,17 @@ async function handleAction(
     if (party.status !== "racing" || typeof player.timeMs === "number") {
       return reply(party, player.id, request);
     }
-    player.progress = 100;
+    if (party.settings.mode !== "time") {
+      player.progress = 100;
+      party.winnerId ??= player.id;
+    }
     player.timeMs = Math.max(1, Math.floor(body.timeMs ?? 1));
     player.finishedAt = Date.now();
-    party.winnerId ??= player.id;
-    party.finishDeadline ??= Date.now() + FINISH_GRACE_MS;
+    const graceEnds = Date.now() + FINISH_GRACE_MS;
+    party.finishDeadline =
+      party.finishDeadline === null
+        ? graceEnds
+        : Math.min(party.finishDeadline, graceEnds);
     advance(party, Date.now());
     return reply(party, player.id, request);
   }
@@ -898,7 +941,14 @@ async function handleAction(
       await saveParty(party);
     } else {
       player.connected = false;
-      advance(party, Date.now());
+      const connected = Object.values(party.players).filter(
+        (p) => p.connected,
+      ).length;
+      if (player.isHost || connected < 2) {
+        completeRace(party);
+      } else {
+        advance(party, Date.now());
+      }
       await saveParty(party);
     }
     return jsonResponse(200, { ok: true, messages: [] });

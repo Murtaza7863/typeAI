@@ -44,6 +44,20 @@ function stopHttpPoll(): void {
   httpPollTimer = null;
 }
 
+function resetLocalRaceState(): void {
+  stopHttpPoll();
+  clearRaceSession();
+  setRaceParty(null);
+  setRaceYou(null);
+  setStandings([]);
+  setLocalFinished(false);
+  setCountdownSeconds(null);
+  setIsRaceActive(false);
+  setRaceStartedAt(null);
+  localPlayerId = null;
+  setRaceError(null);
+}
+
 function startHttpPoll(): void {
   stopHttpPoll();
   httpPollTimer = setInterval(() => {
@@ -136,7 +150,19 @@ async function httpRequest(
     body: JSON.stringify(body),
   });
   const data = (await response.json()) as HttpRoomResponse;
-  if (apply) applyHttpRoomResponse(data);
+  if (apply) {
+    const err = httpErrorMessage(data);
+    if (
+      body["type"] === "poll" &&
+      err !== undefined &&
+      /party not found|player not found/i.test(err)
+    ) {
+      resetLocalRaceState();
+      emit({ type: "error", message: err });
+      return data;
+    }
+    applyHttpRoomResponse(data);
+  }
   return data;
 }
 
@@ -365,17 +391,14 @@ export function sendFinished(timeMs: number): void {
 }
 
 export function leaveParty(): void {
-  send({ type: "leave" });
-  stopHttpPoll();
-  clearRaceSession();
-  setRaceParty(null);
-  setRaceYou(null);
-  setStandings([]);
-  setLocalFinished(false);
-  setCountdownSeconds(null);
-  setIsRaceActive(false);
-  setRaceStartedAt(null);
-  localPlayerId = null;
+  const session = getRaceSession();
+  const party = getRaceParty();
+  const code = party?.code ?? session?.code;
+  const playerId = localPlayerId ?? session?.playerId;
+  if (code !== undefined && playerId !== undefined) {
+    void httpRequest({ type: "leave", code, playerId }, false);
+  }
+  resetLocalRaceState();
 }
 
 export type { RacePartyState, RacePlayer };
