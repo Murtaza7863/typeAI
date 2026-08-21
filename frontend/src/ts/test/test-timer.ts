@@ -28,6 +28,7 @@ import * as SoundController from "../controllers/sound-controller";
 import { clearLowFpsMode, setLowFpsMode } from "../anim";
 import { createTimer } from "animejs";
 import { requestDebouncedAnimationFrame } from "../utils/debounced-animation-frame";
+import { getRaceParty, getRaceStartedAt, isRaceActive } from "../states/race";
 
 let lastLoop = 0;
 const newTimer = createTimer({
@@ -187,6 +188,21 @@ function checkIfFailed(
 
 function checkIfTimeIsUp(): void {
   if (timerDebug) console.time("times up check");
+  if (isRaceActive() && getRaceParty()?.settings?.mode === "time") {
+    const startedAt = getRaceStartedAt();
+    const duration = (getRaceParty()?.settings?.time ?? 30) * 1000;
+    if (startedAt !== null && Date.now() >= startedAt + duration) {
+      if (timer !== null) clearTimeout(timer);
+      Caret.hide();
+      TestInput.input.pushHistory();
+      TestInput.corrected.pushHistory();
+      SlowTimer.clear();
+      slowTimerCount = 0;
+      timerEvent.dispatch({ key: "finish" });
+      return;
+    }
+  }
+
   let maxTime = undefined;
 
   if (Config.mode === "time") {

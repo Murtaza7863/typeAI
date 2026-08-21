@@ -24,6 +24,7 @@ import {
   isRaceActive,
   setCountdownSeconds,
   setIsRaceActive,
+  setLocalFinished,
   setRaceStartedAt,
 } from "../states/race";
 import * as CustomText from "../test/custom-text";
@@ -54,10 +55,43 @@ type RaceSettingsSnapshot = {
 let lastSentProgress = -1;
 let initialized = false;
 let countdownTick: ReturnType<typeof setInterval> | null = null;
+let raceDeadlineTick: ReturnType<typeof setTimeout> | null = null;
 let savedBeforeRace: RaceSettingsSnapshot | null = null;
 let pendingRaceResults = false;
 let openedRaceResults = false;
 let localFinishInProgress = false;
+let raceRestartPermit = false;
+
+function clearRaceDeadline(): void {
+  if (raceDeadlineTick === null) return;
+  clearTimeout(raceDeadlineTick);
+  raceDeadlineTick = null;
+}
+
+export function permitNextRaceRestart(): void {
+  raceRestartPermit = true;
+}
+
+export function hasRaceRestartPermit(): boolean {
+  return raceRestartPermit;
+}
+
+export function consumeRaceRestartPermit(): void {
+  raceRestartPermit = false;
+}
+
+function armRaceDeadline(startedAt: number, settings?: RaceSettings): void {
+  clearRaceDeadline();
+  if (settings?.mode !== "time") return;
+  const delay = Math.max(50, startedAt + settings.time * 1000 - Date.now());
+  raceDeadlineTick = setTimeout(() => {
+    if (!isRaceActive() || getLocalFinished()) return;
+    void import("../test/test-logic").then((mod) => {
+      if (!isRaceActive() || getLocalFinished()) return;
+      void mod.finish();
+    });
+  }, delay);
+}
 
 function clearCountdownTick(): void {
   if (countdownTick === null) return;
@@ -85,9 +119,11 @@ function snapshotSettingsIfNeeded(): void {
 export function restoreAfterRace(): void {
   pendingRaceResults = false;
   clearCountdownTick();
+  clearRaceDeadline();
   setCountdownSeconds(null);
   setIsRaceActive(false);
   setRaceStartedAt(null);
+  setLocalFinished(false);
 
   const snapshot = savedBeforeRace;
   savedBeforeRace = null;
@@ -125,7 +161,7 @@ export function initRaceController(): void {
         remaining -= 1;
         if (remaining <= 0) {
           clearCountdownTick();
-          setCountdownSeconds(null);
+          setCountdownSeconds(0);
         } else {
           setCountdownSeconds(remaining);
         }
@@ -136,6 +172,19 @@ export function initRaceController(): void {
       clearCountdownTick();
       setCountdownSeconds(null);
       beginSharedRace(message.words, message.startedAt, message.settings);
+    }
+
+    if (
+      message.type === "partyState" &&
+      message.party.status === "racing" &&
+      !isRaceActive() &&
+      !getLocalFinished()
+    ) {
+      beginSharedRace(
+        message.party.words,
+        message.party.startedAt ?? Date.now(),
+        message.party.settings,
+      );
     }
 
     if (isRaceFinishedMessage(message)) {
@@ -173,12 +222,15 @@ function beginSharedRace(
   startedAt: number,
   settings?: RaceSettings,
 ): void {
+  if (isRaceActive() && getRaceStartedAt() === startedAt) return;
   snapshotSettingsIfNeeded();
   setIsRaceActive(true);
   setRaceStartedAt(startedAt);
   lastSentProgress = -1;
   pendingRaceResults = false;
   openedRaceResults = false;
+  permitNextRaceRestart();
+  armRaceDeadline(startedAt, settings);
 
   const text = words.length > 0 ? words : ["go"];
   const timed = settings?.mode === "time";

@@ -57,6 +57,8 @@ import {
   CompletedEventCustomText,
 } from "@typeai/schemas/results";
 import {
+  consumeRaceRestartPermit,
+  hasRaceRestartPermit,
   beginLocalRaceFinish,
   reportRaceFinished,
   settleRaceCompleteNavigation,
@@ -241,10 +243,11 @@ export function restart(options = {} as RestartOptions): void {
     options.event?.preventDefault();
     return;
   }
-  if (isRaceActive() && getLocalFinished()) {
+  if (isRaceActive() && !hasRaceRestartPermit()) {
     options.event?.preventDefault();
     return;
   }
+  consumeRaceRestartPermit();
   if (TestState.isActive) {
     if (options.isQuickRestart) {
       if (Config.mode !== "zen") options.event?.preventDefault();
@@ -1361,8 +1364,6 @@ async function finishRace(): Promise<void> {
     const typingTest = qs(".pageTest #typingTest");
     typingTest?.show().setStyle({ opacity: "1" });
     qs(".pageTest #wordsWrapper")?.hide();
-    qs(".pageTest #liveStatsTextTop")?.hide();
-    qs(".pageTest #liveStatsMini")?.hide();
   } finally {
     TestUI.setResultCalculating(false);
     settleRaceCompleteNavigation();

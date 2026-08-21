@@ -62,6 +62,7 @@ export const RacePartyStateSchema = z.object({
   startedAt: z.number().nullable().optional(),
   countdownEndsAt: z.number().nullable().optional(),
   winnerId: z.string().nullable().optional(),
+  rev: z.number().optional(),
 });
 export type RacePartyState = z.infer<typeof RacePartyStateSchema>;
 
@@ -95,6 +96,9 @@ export const RaceClientMessageSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("leave"),
+  }),
+  z.object({
+    type: z.literal("poll"),
   }),
   z.object({
     type: z.literal("playAgain"),

@@ -8,11 +8,13 @@ import {
   RaceSettings,
 } from "@typeai/schemas/race";
 
+import { navigationEvent } from "../events/navigation";
 import {
   clearRaceSession,
   getRaceError,
   getRaceParty,
   getRaceSession,
+  isRaceActive,
   setCountdownSeconds,
   setIsRaceActive,
   setLocalFinished,
@@ -105,8 +107,35 @@ function applyHttpRoomResponse(data: HttpRoomResponse): void {
   }
   for (const raw of data.messages ?? []) {
     const parsed = RaceServerMessageSchema.safeParse(raw);
-    if (parsed.success) applyServerMessage(parsed.data);
+    if (!parsed.success) {
+      console.warn("Dropped invalid race message", parsed.error.flatten(), raw);
+      continue;
+    }
+    applyServerMessage(parsed.data);
   }
+}
+
+function partyStatusRank(status: RacePartyState["status"]): number {
+  if (status === "finished") return 3;
+  if (status === "racing") return 2;
+  if (status === "countdown") return 1;
+  return 0;
+}
+
+function shouldApplyPartyState(next: RacePartyState): boolean {
+  const current = getRaceParty();
+  if (current === null || current.code !== next.code) return true;
+  const currentRev = current.rev ?? 0;
+  const nextRev = next.rev ?? 0;
+  if (nextRev < currentRev) return false;
+  if (nextRev > currentRev) return true;
+  if (
+    partyStatusRank(next.status) < partyStatusRank(current.status) &&
+    !(current.status === "finished" && next.status === "lobby")
+  ) {
+    return false;
+  }
+  return true;
 }
 
 function httpErrorMessage(data: HttpRoomResponse): string | undefined {
@@ -184,8 +213,13 @@ export function onRaceMessage(handler: MessageHandler): () => void {
 }
 
 function applyServerMessage(message: RaceServerMessage): void {
+  let skipEmit = false;
   switch (message.type) {
     case "partyState":
+      if (!shouldApplyPartyState(message.party)) {
+        skipEmit = true;
+        break;
+      }
       setRaceParty(message.party);
       setRaceYou(message.you);
       localPlayerId = message.you.id;
@@ -210,6 +244,10 @@ function applyServerMessage(message: RaceServerMessage): void {
       }
       break;
     case "countdown": {
+      if (getRaceParty()?.status === "finished") {
+        skipEmit = true;
+        break;
+      }
       setCountdownSeconds(message.seconds);
       {
         const party = getRaceParty();
@@ -224,6 +262,13 @@ function applyServerMessage(message: RaceServerMessage): void {
       break;
     }
     case "raceStart": {
+      if (
+        getRaceParty()?.status === "finished" ||
+        (isRaceActive() && getRaceParty()?.startedAt === message.startedAt)
+      ) {
+        skipEmit = true;
+        break;
+      }
       setCountdownSeconds(null);
       setLocalFinished(false);
       {
@@ -278,7 +323,7 @@ function applyServerMessage(message: RaceServerMessage): void {
       break;
   }
 
-  emit(message);
+  if (!skipEmit) emit(message);
 }
 
 /**
@@ -333,8 +378,18 @@ export async function createParty(
   }
   try {
     await httpRequest({ type: "createParty", displayName, settings });
-    if (getRaceParty() !== null) startHttpPoll();
-    else if (getRaceError() === null) setRaceError("Failed to create party");
+    if (getRaceParty() !== null) {
+      startHttpPoll();
+      const code = getRaceParty()?.code;
+      if (code !== undefined && code.length > 0) {
+        navigationEvent.dispatch({
+          url: `/race/${code}`,
+          options: { force: true },
+        });
+      }
+    } else if (getRaceError() === null) {
+      setRaceError("Failed to create party");
+    }
   } catch {
     setRaceError("Failed to create party");
   }
@@ -375,6 +430,13 @@ export async function joinParty(
           return;
         }
         startHttpPoll();
+        const joinedCode = getRaceParty()?.code;
+        if (joinedCode !== undefined && joinedCode.length > 0) {
+          navigationEvent.dispatch({
+            url: `/race/${joinedCode}`,
+            options: { force: true },
+          });
+        }
         return;
       }
       if (err !== undefined) {

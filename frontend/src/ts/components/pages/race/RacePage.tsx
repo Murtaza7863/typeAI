@@ -183,7 +183,7 @@ function RacePartyPanel(props: {
       <Show when={partyData()?.status === "countdown"}>
         <div class="bg-bg-2 rounded-lg border border-sub/30 p-10 text-center">
           <div class="text-sm text-sub">Race starting in</div>
-          <div class="text-6xl text-main">{getCountdownSeconds() ?? 3}</div>
+          <div class="text-6xl text-main">{getCountdownSeconds() ?? "Go"}</div>
           <Button
             class="mt-6"
             text="Leave"
@@ -306,6 +306,11 @@ export function RacePage(): JSXElement {
               setBusy(false);
             });
           }
+        } else if (getRaceParty() === null && session !== null) {
+          setBusy(true);
+          void joinParty(session.code, name, session.playerId).finally(() => {
+            setBusy(false);
+          });
         }
       })
       .catch(() => {

@@ -1151,6 +1151,21 @@ describe("HTTP race room — after start", () => {
     });
     expect(partyFrom(friendView.messages).status).toBe("finished");
     expect(ofType(friendView.messages, "raceComplete")).toHaveLength(1);
+    expect(
+      partyFrom(friendView.messages).players.find(
+        (p) => p.displayName === "Friend",
+      )?.isHost,
+    ).toBe(true);
+
+    resetRaceRoomsForTests();
+    const replay = await post({
+      type: "playAgain",
+      code: session.code,
+      playerId: session.friendId,
+    });
+    expect(replay.ok).toBe(true);
+    expect(partyFrom(replay.messages).status).toBe("lobby");
+    expect(partyFrom(replay.messages).hostId).toBe(session.friendId);
 
     const created = await post({
       type: "createParty",
@@ -1160,6 +1175,52 @@ describe("HTTP race room — after start", () => {
     expect(created.ok).toBe(true);
     expect(partyFrom(created.messages).status).toBe("lobby");
     expect(partyFrom(created.messages).code).not.toBe(session.code);
+  });
+
+  it("re-sends raceStart when a player reconnects mid-race", async () => {
+    const session = await lobby();
+    await goRacing(session);
+    resetRaceRoomsForTests();
+    const rejoin = await post({
+      type: "joinParty",
+      code: session.code,
+      displayName: "Friend",
+      playerId: session.friendId,
+    });
+    expect(rejoin.ok).toBe(true);
+    expect(partyFrom(rejoin.messages).status).toBe("racing");
+    expect(ofType(rejoin.messages, "raceStart")).toHaveLength(1);
+    expectClientAccepts(rejoin.messages);
+  });
+
+  it("never lowers a player's progress", async () => {
+    const session = await lobby();
+    await goRacing(session);
+    resetRaceRoomsForTests();
+    await post({
+      type: "progress",
+      code: session.code,
+      playerId: session.friendId,
+      progress: 40,
+    });
+    resetRaceRoomsForTests();
+    await post({
+      type: "progress",
+      code: session.code,
+      playerId: session.friendId,
+      progress: 10,
+    });
+    resetRaceRoomsForTests();
+    const hostView = await post({
+      type: "poll",
+      code: session.code,
+      playerId: session.hostId,
+    });
+    expect(
+      partyFrom(hostView.messages).players.find(
+        (p) => p.displayName === "Friend",
+      )?.progress,
+    ).toBe(40);
   });
 
   it("creates a timed race with enough words to last the clock", async () => {
