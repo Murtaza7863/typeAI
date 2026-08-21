@@ -5,6 +5,8 @@ import Page from "./page";
 import * as ModesNotice from "../elements/modes-notice";
 import * as Keymap from "../elements/keymap";
 import { blurInputElement } from "../input/input-element";
+import { restoreAfterRace } from "../race/controller";
+import { getRaceParty } from "../states/race";
 import { qsr } from "../utils/dom";
 
 export const page = new Page({
@@ -15,6 +17,9 @@ export const page = new Page({
     blurInputElement();
   },
   afterHide: async (): Promise<void> => {
+    if (getRaceParty()?.status === "finished") {
+      restoreAfterRace();
+    }
     TestLogic.restart({
       noAnim: true,
     });

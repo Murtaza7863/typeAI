@@ -313,10 +313,39 @@ function prune(now: number): void {
   }
 }
 
+function connectedCount(party: RaceParty): number {
+  return Object.values(party.players).filter((player) => player.connected)
+    .length;
+}
+
 function allDone(party: RaceParty): boolean {
   return Object.values(party.players).every(
     (player) => !player.connected || typeof player.timeMs === "number",
   );
+}
+
+function resetPartyToLobby(party: RaceParty): void {
+  for (const [id, player] of Object.entries(party.players)) {
+    if (!player.connected && player.id !== party.hostId) {
+      delete party.players[id];
+      continue;
+    }
+    player.progress = 0;
+    player.finishedAt = null;
+    player.timeMs = null;
+    player.lastProgressAt = 0;
+  }
+  party.status = "lobby";
+  party.startedAt = null;
+  party.countdownEndsAt = null;
+  party.winnerId = null;
+  party.finishDeadline = null;
+  party.words = generateWords(party.settings);
+  party.announced = {};
+  for (const id of Object.keys(party.players)) {
+    party.announced[id] = "lobby";
+  }
+  party.rev = (party.rev ?? 0) + 1;
 }
 
 function completeRace(party: RaceParty): void {
@@ -645,12 +674,16 @@ function statusRank(status: RaceStatus): number {
 }
 
 function mergePlayers(local: RaceParty, remote: RaceParty): void {
+  const localNewer = (local.rev ?? 0) > (remote.rev ?? 0);
+  const remoteNewer = (remote.rev ?? 0) > (local.rev ?? 0);
   for (const [id, player] of Object.entries(remote.players)) {
     const existing = local.players[id];
     if (existing === undefined) {
+      if (localNewer) continue;
       local.players[id] = player;
       continue;
     }
+    if (localNewer) continue;
     existing.progress = Math.max(existing.progress, player.progress);
     existing.connected = existing.connected || player.connected;
     if (typeof player.timeMs === "number") {
@@ -664,9 +697,21 @@ function mergePlayers(local: RaceParty, remote: RaceParty): void {
     }
   }
   for (const [id, status] of Object.entries(remote.announced)) {
+    if (localNewer) break;
     local.announced[id] ??= status;
   }
-  if (statusRank(remote.status) > statusRank(local.status)) {
+  if (remoteNewer) {
+    local.status = remote.status;
+    local.startedAt = remote.startedAt ?? local.startedAt;
+    local.countdownEndsAt = remote.countdownEndsAt ?? local.countdownEndsAt;
+    local.winnerId = remote.winnerId ?? local.winnerId;
+    local.finishDeadline = remote.finishDeadline ?? local.finishDeadline;
+    local.words = remote.words;
+    local.settings = remote.settings;
+  } else if (
+    !localNewer &&
+    statusRank(remote.status) > statusRank(local.status)
+  ) {
     local.status = remote.status;
     local.startedAt = remote.startedAt ?? local.startedAt;
     local.countdownEndsAt = remote.countdownEndsAt ?? local.countdownEndsAt;
@@ -878,7 +923,7 @@ async function handleAction(
   if (type === "startRace") {
     if (!player.isHost) return error("Only the host can start the race");
     if (party.status !== "lobby") return error("Race already started");
-    if (Object.keys(party.players).length < 2) {
+    if (connectedCount(party) < 2) {
       return error("Need at least 2 players to start");
     }
     if (body.settings !== undefined) {
@@ -931,9 +976,22 @@ async function handleAction(
     return reply(party, player.id, request);
   }
 
+  if (type === "playAgain") {
+    if (!player.isHost) return error("Only the host can play again");
+    if (party.status !== "finished") {
+      return error("Can only play again after the race finishes");
+    }
+    resetPartyToLobby(party);
+    if (connectedCount(party) < 1) {
+      return error("Party is empty");
+    }
+    return reply(party, player.id, request);
+  }
+
   if (type === "leave") {
     if (party.status === "lobby") {
       delete party.players[player.id];
+      party.rev = (party.rev ?? 0) + 1;
       if (player.id === party.hostId) {
         await removeParty(party.code);
         return jsonResponse(200, { ok: true, messages: [] });
@@ -941,6 +999,7 @@ async function handleAction(
       await saveParty(party);
     } else {
       player.connected = false;
+      party.rev = (party.rev ?? 0) + 1;
       const connected = Object.values(party.players).filter(
         (p) => p.connected,
       ).length;

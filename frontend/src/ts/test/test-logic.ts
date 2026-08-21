@@ -920,12 +920,12 @@ function buildCompletedEvent(
 }
 
 export async function finish(difficultyFailed = false): Promise<void> {
-  if (!TestState.isActive) return;
-
-  if (isRaceActive()) {
+  if (isRaceActive() && !getLocalFinished()) {
     await finishRace();
     return;
   }
+  if (!TestState.isActive) return;
+  if (isRaceActive()) return;
 
   TestUI.setResultCalculating(true);
   const now = performance.now();
@@ -1360,6 +1360,9 @@ async function finishRace(): Promise<void> {
     qs(".pageTest .loading")?.hide();
     const typingTest = qs(".pageTest #typingTest");
     typingTest?.show().setStyle({ opacity: "1" });
+    qs(".pageTest #wordsWrapper")?.hide();
+    qs(".pageTest #liveStatsTextTop")?.hide();
+    qs(".pageTest #liveStatsMini")?.hide();
   } finally {
     TestUI.setResultCalculating(false);
     settleRaceCompleteNavigation();

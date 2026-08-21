@@ -29,6 +29,7 @@ vi.mock("../../../../src/ts/race/client", () => ({
   onRaceMessage: vi.fn(() => vi.fn()),
   startRace: vi.fn(),
   updateRaceSettings: vi.fn(),
+  playAgain: vi.fn(),
 }));
 
 vi.mock("../../../../src/ts/race/controller", () => ({
@@ -156,5 +157,22 @@ describe("RacePage lobby", () => {
     expect(container.textContent).toContain("Race complete");
     expect(container.textContent).toContain("winner");
     expect(container.textContent).toContain("4.20s");
+    expect(container.textContent).toContain("Play again");
+  });
+
+  it("tells a guest to wait for the host after the race", () => {
+    setRaceYou(friend);
+    setRaceParty({
+      ...lobby([
+        { ...host, timeMs: 4200, progress: 100 },
+        { ...friend, timeMs: 6100, progress: 100 },
+      ]),
+      status: "finished",
+      winnerId: host.id,
+    });
+    const { container } = render(() => <RacePage />);
+    expect(container.textContent).toContain("Race complete");
+    expect(container.textContent).toContain("Waiting for the host");
+    expect(container.textContent).not.toContain("Play again");
   });
 });

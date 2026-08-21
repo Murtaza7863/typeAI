@@ -1,21 +1,17 @@
 import { For, JSXElement, Show } from "solid-js";
 
 import { navigate } from "../../../controllers/route-controller";
-import { leaveRaceAndRestore } from "../../../race/controller";
+import { playAgain } from "../../../race/client";
+import { leaveRaceAndRestore, openRaceResults } from "../../../race/controller";
 import { getActivePage } from "../../../states/core";
 import {
   getLocalFinished,
   getRaceParty,
   getRaceYou,
-  getStandings,
   isRaceActive,
 } from "../../../states/race";
 import { Button } from "../../common/Button";
-
-function formatTime(timeMs: number | null | undefined): string {
-  if (timeMs === null || timeMs === undefined) return "DNF";
-  return `${(timeMs / 1000).toFixed(2)}s`;
-}
+import { RaceStandings } from "./RaceStandings";
 
 export function RaceProgressBars(props: {
   /** When true, only render during an active race on the test page */
@@ -37,10 +33,8 @@ export function RaceProgressBars(props: {
     return true;
   };
 
-  const ranked = () => {
-    const standings = getStandings();
-    if (standings.length > 0) return standings;
-    return getRaceParty()?.players ?? [];
+  const goToLobby = (code: string): void => {
+    void navigate(code.length > 0 ? `/race/${code}` : "/race", { force: true });
   };
 
   return (
@@ -50,33 +44,32 @@ export function RaceProgressBars(props: {
           <Show when={party().status === "finished"}>
             <div class="bg-bg-2 rounded-lg border border-sub/30 p-4">
               <h2 class="mb-3 text-lg text-main">Race complete</h2>
-              <ol class="mb-4 flex flex-col gap-2">
-                <For each={ranked()}>
-                  {(player, index) => (
-                    <li class="flex items-center justify-between text-sm">
-                      <span>
-                        #{index() + 1} {player.displayName}
-                        <Show when={player.id === party().winnerId}>
-                          <span class="ml-2 text-xs text-main">winner</span>
-                        </Show>
-                      </span>
-                      <span class="text-sub">{formatTime(player.timeMs)}</span>
-                    </li>
-                  )}
-                </For>
-              </ol>
-              <Button
-                text="View results"
-                onClick={() => {
-                  const code = party().code;
-                  void navigate(
-                    code !== undefined && code.length > 0
-                      ? `/race/${code}`
-                      : "/race",
-                    { force: true },
-                  );
-                }}
-              />
+              <RaceStandings />
+              <div class="flex flex-wrap gap-2">
+                <Show when={getRaceYou()?.isHost}>
+                  <Button
+                    text="Play again"
+                    onClick={() => {
+                      playAgain();
+                      goToLobby(party().code);
+                    }}
+                  />
+                </Show>
+                <Button
+                  text="View results"
+                  variant="text"
+                  onClick={() => openRaceResults()}
+                />
+                <Button
+                  class="self-start"
+                  text="Leave race"
+                  variant="text"
+                  onClick={() => {
+                    leaveRaceAndRestore();
+                    void navigate("/race", { force: true });
+                  }}
+                />
+              </div>
             </div>
           </Show>
           <Show
@@ -128,14 +121,16 @@ export function RaceProgressBars(props: {
               }}
             </For>
           </Show>
-          <Show when={props.testOverlay === true}>
+          <Show
+            when={props.testOverlay === true && party().status !== "finished"}
+          >
             <Button
               class="mt-1 self-start"
               text="Leave race"
               variant="text"
               onClick={() => {
                 leaveRaceAndRestore();
-                void navigate("/race");
+                void navigate("/race", { force: true });
               }}
             />
           </Show>

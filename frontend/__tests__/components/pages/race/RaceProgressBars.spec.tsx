@@ -3,10 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../../src/ts/race/controller", () => ({
   leaveRaceAndRestore: vi.fn(),
+  openRaceResults: vi.fn(),
 }));
 
 vi.mock("../../../../src/ts/controllers/route-controller", () => ({
   navigate: vi.fn(),
+}));
+
+vi.mock("../../../../src/ts/race/client", () => ({
+  playAgain: vi.fn(),
 }));
 
 import { RaceProgressBars } from "../../../../src/ts/components/pages/race/RaceProgressBars";
@@ -111,6 +116,7 @@ describe("RaceProgressBars overlay", () => {
     expect(container.textContent).toContain("Race complete");
     expect(container.textContent).toContain("winner");
     expect(container.textContent).toContain("4.20s");
+    expect(container.textContent).toContain("Play again");
     expect(container.textContent).not.toContain(
       "You finished! Waiting for other players…",
     );

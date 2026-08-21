@@ -8,7 +8,11 @@ import { createEffectOn } from "../../../hooks/effects";
 import { useRefWithUtils } from "../../../hooks/useRefWithUtils";
 import { isAuthenticated } from "../../../states/core";
 import { showModal } from "../../../states/modals";
-import { isRaceActive } from "../../../states/race";
+import {
+  getLocalFinished,
+  getRaceParty,
+  isRaceActive,
+} from "../../../states/race";
 import { getResultVisible, getFocus } from "../../../states/test";
 import { FaObject } from "../../../types/font-awesome";
 import { areUnsortedArraysEqual } from "../../../utils/arrays";
@@ -30,8 +34,14 @@ const cardClass =
 const durationMs = 250;
 
 export function TestConfig(): JSXElement {
-  const settingsLocked = (): boolean =>
-    getFocus() || getResultVisible() || isRaceActive();
+  const settingsLocked = (): boolean => {
+    if (getFocus() || getResultVisible()) return true;
+    if (isRaceActive() || getLocalFinished()) return true;
+    const status = getRaceParty()?.status;
+    return (
+      status === "racing" || status === "countdown" || status === "finished"
+    );
+  };
 
   return (
     <>
@@ -61,7 +71,7 @@ export function TestConfig(): JSXElement {
         fa={{
           icon: "fa-cog",
         }}
-        disabled={isRaceActive()}
+        disabled={settingsLocked()}
       />
       <CoachModeSubtext class="mb-4 md:hidden" />
     </>

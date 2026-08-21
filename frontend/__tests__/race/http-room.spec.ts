@@ -937,6 +937,97 @@ describe("HTTP race room — after start", () => {
     expect(ofType(friendEnd.messages, "raceComplete")).toHaveLength(1);
   });
 
+  it("lets the host play again in the same party so the friend stays", async () => {
+    const session = await lobby();
+    await goRacing(session);
+    resetRaceRoomsForTests();
+    await post({
+      type: "finished",
+      code: session.code,
+      playerId: session.friendId,
+      timeMs: 4200,
+    });
+    resetRaceRoomsForTests();
+    await post({
+      type: "finished",
+      code: session.code,
+      playerId: session.hostId,
+      timeMs: 6100,
+    });
+
+    const guestReplay = await post({
+      type: "playAgain",
+      code: session.code,
+      playerId: session.friendId,
+    });
+    expect(guestReplay.ok).toBe(false);
+    expect(errorMessage(guestReplay.messages)).toMatch(/only the host/i);
+
+    resetRaceRoomsForTests();
+    const replay = await post({
+      type: "playAgain",
+      code: session.code,
+      playerId: session.hostId,
+    });
+    expect(replay.ok).toBe(true);
+    const replayed = partyFrom(replay.messages);
+    expect(replayed.status).toBe("lobby");
+    expect(replayed.code).toBe(session.code);
+    expect(replayed.winnerId).toBeNull();
+    expect(replayed.players).toHaveLength(2);
+    expect(replayed.players.every((p) => p.timeMs == null)).toBe(true);
+    expect(replayed.players.every((p) => p.progress === 0)).toBe(true);
+    expectClientAccepts(replay.messages);
+
+    resetRaceRoomsForTests();
+    const friendLobby = await post({
+      type: "poll",
+      code: session.code,
+      playerId: session.friendId,
+    });
+    expect(partyFrom(friendLobby.messages).status).toBe("lobby");
+    expect(names(friendLobby.messages)).toEqual(["Friend", "Host"]);
+  });
+
+  it("cannot start after play again if the friend already left", async () => {
+    const session = await lobby();
+    await goRacing(session);
+    resetRaceRoomsForTests();
+    await post({
+      type: "finished",
+      code: session.code,
+      playerId: session.friendId,
+      timeMs: 4200,
+    });
+    resetRaceRoomsForTests();
+    await post({
+      type: "finished",
+      code: session.code,
+      playerId: session.hostId,
+      timeMs: 6100,
+    });
+    resetRaceRoomsForTests();
+    await post({
+      type: "leave",
+      code: session.code,
+      playerId: session.friendId,
+    });
+    resetRaceRoomsForTests();
+    const replay = await post({
+      type: "playAgain",
+      code: session.code,
+      playerId: session.hostId,
+    });
+    expect(partyFrom(replay.messages).players).toHaveLength(1);
+    const started = await post({
+      type: "startRace",
+      code: session.code,
+      playerId: session.hostId,
+    });
+    expect(started.ok).toBe(false);
+    expect(errorMessage(started.messages)).toMatch(/at least 2 players/i);
+  });
+
   it("ends the race on the finish deadline and DNFs the slower player", async () => {
     const session = await lobby();
     const originalNow = Date.now;

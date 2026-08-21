@@ -7,7 +7,7 @@ import {
   MinimumWordsPerMinute,
   StopOnError,
 } from "@typeai/schemas/configs";
-import { RaceSettings } from "@typeai/schemas/race";
+import { RaceServerMessage, RaceSettings } from "@typeai/schemas/race";
 import { CustomTextSettings } from "@typeai/schemas/results";
 import { Mode } from "@typeai/schemas/shared";
 
@@ -138,12 +138,25 @@ export function initRaceController(): void {
       beginSharedRace(message.words, message.startedAt, message.settings);
     }
 
-    if (message.type === "raceComplete") {
+    if (isRaceFinishedMessage(message)) {
       if (localFinishInProgress) {
         pendingRaceResults = true;
         return;
       }
       goToRaceResults();
+    }
+
+    if (message.type === "partyState" && message.party.status === "lobby") {
+      const returningFromRace = openedRaceResults;
+      openedRaceResults = false;
+      pendingRaceResults = false;
+      restoreAfterRace();
+      if (returningFromRace) {
+        navigationEvent.dispatch({
+          url: `/race/${message.party.code}`,
+          options: { force: true },
+        });
+      }
     }
 
     if (
@@ -259,12 +272,27 @@ export function settleRaceCompleteNavigation(): void {
   }
 }
 
+export function openRaceResults(): void {
+  openedRaceResults = false;
+  goToRaceResults();
+}
+
+function isRaceFinishedMessage(message: RaceServerMessage): boolean {
+  return (
+    message.type === "raceComplete" ||
+    (message.type === "partyState" && message.party.status === "finished")
+  );
+}
+
 function goToRaceResults(): void {
   if (openedRaceResults) return;
+  if (getRaceParty()?.status !== "finished") return;
   openedRaceResults = true;
   pendingRaceResults = false;
   const code = getRaceParty()?.code;
-  restoreAfterRace();
   const url = code !== undefined && code.length > 0 ? `/race/${code}` : "/race";
+  if (getActivePage() === "race") {
+    restoreAfterRace();
+  }
   navigationEvent.dispatch({ url, options: { force: true } });
 }

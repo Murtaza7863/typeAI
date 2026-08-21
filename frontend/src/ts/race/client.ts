@@ -33,6 +33,7 @@ let mode: TransportMode = "none";
 let localPlayerId: string | null = null;
 let connectPromise: Promise<void> | null = null;
 let httpPollTimer: ReturnType<typeof setInterval> | null = null;
+let requestGeneration = 0;
 
 function raceHttpUrl(): string {
   return "/api/race-room";
@@ -45,6 +46,7 @@ function stopHttpPoll(): void {
 }
 
 function resetLocalRaceState(): void {
+  requestGeneration += 1;
   stopHttpPoll();
   clearRaceSession();
   setRaceParty(null);
@@ -142,6 +144,7 @@ async function httpRequest(
 ): Promise<HttpRoomResponse> {
   const body: Record<string, unknown> = { ...message };
   attachSession(body);
+  const generation = requestGeneration;
 
   const response = await fetch(raceHttpUrl(), {
     method: "POST",
@@ -150,6 +153,7 @@ async function httpRequest(
     body: JSON.stringify(body),
   });
   const data = (await response.json()) as HttpRoomResponse;
+  if (generation !== requestGeneration) return data;
   if (apply) {
     const err = httpErrorMessage(data);
     if (
@@ -191,6 +195,19 @@ function applyServerMessage(message: RaceServerMessage): void {
         displayName: message.you.displayName,
       });
       setRaceError(null);
+      if (message.party.status === "lobby") {
+        setLocalFinished(false);
+        setStandings([]);
+        setCountdownSeconds(null);
+        setIsRaceActive(false);
+        setRaceStartedAt(null);
+      }
+      if (message.party.status === "finished") {
+        setCountdownSeconds(null);
+        if (message.party.players.length > 0) {
+          setStandings(message.party.players);
+        }
+      }
       break;
     case "countdown": {
       setCountdownSeconds(message.seconds);
@@ -241,6 +258,7 @@ function applyServerMessage(message: RaceServerMessage): void {
       setStandings(message.standings);
       break;
     case "raceComplete": {
+      setCountdownSeconds(null);
       setStandings(message.standings);
       {
         const party = getRaceParty();
@@ -388,7 +406,29 @@ export function sendProgress(progress: number): void {
 
 export function sendFinished(timeMs: number): void {
   setLocalFinished(true);
-  send({ type: "finished", timeMs });
+  void retryFinished(timeMs);
+}
+
+async function retryFinished(timeMs: number): Promise<void> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    if (getRaceSession() === null && getRaceParty() === null) return;
+    try {
+      const data = await httpRequest({ type: "finished", timeMs });
+      const err = httpErrorMessage(data);
+      if (err !== undefined && /party not found|player not found/i.test(err)) {
+        return;
+      }
+      if (err === undefined && (data.messages ?? []).length > 0) return;
+    } catch {
+      // retry
+    }
+    if (getRaceSession() === null && getRaceParty() === null) return;
+    await sleep(400 * (attempt + 1));
+  }
+}
+
+export function playAgain(): void {
+  send({ type: "playAgain" });
 }
 
 export function leaveParty(): void {

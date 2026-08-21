@@ -21,6 +21,7 @@ import {
   createParty,
   joinParty,
   onRaceMessage,
+  playAgain,
   startRace,
   updateRaceSettings,
 } from "../../../race/client";
@@ -35,12 +36,12 @@ import {
   getRaceSession,
   getRaceWsConnected,
   getRaceYou,
-  getStandings,
   setRaceError,
 } from "../../../states/race";
 import { Button } from "../../common/Button";
 import { Fa } from "../../common/Fa";
 import { RaceProgressBars } from "./RaceProgressBars";
+import { RaceStandings } from "./RaceStandings";
 
 const NAME_KEY = "typeai-race-display-name";
 const WORD_COUNTS: RaceWordCount[] = [25, 50, 100];
@@ -179,11 +180,7 @@ function RacePartyPanel(props: {
         </div>
       </Show>
 
-      <Show
-        when={
-          partyData()?.status === "countdown" || getCountdownSeconds() !== null
-        }
-      >
+      <Show when={partyData()?.status === "countdown"}>
         <div class="bg-bg-2 rounded-lg border border-sub/30 p-10 text-center">
           <div class="text-sm text-sub">Race starting in</div>
           <div class="text-6xl text-main">{getCountdownSeconds() ?? 3}</div>
@@ -236,41 +233,15 @@ function RacePartyPanel(props: {
       <Show when={partyData()?.status === "finished"}>
         <div class="bg-bg-2 rounded-lg border border-sub/30 p-6">
           <h2 class="mb-4 text-xl text-main">Race complete</h2>
-          <ol class="mb-6 flex flex-col gap-2">
-            <For
-              each={
-                getStandings().length > 0
-                  ? getStandings()
-                  : (partyData()?.players ?? [])
-              }
-            >
-              {(player, index) => (
-                <li class="flex items-center justify-between rounded bg-bg px-3 py-2">
-                  <span>
-                    #{index() + 1} {player.displayName}
-                    <Show when={player.id === partyData()?.winnerId}>
-                      <span class="ml-2 text-xs text-main">winner</span>
-                    </Show>
-                  </span>
-                  <span class="text-sub">
-                    {player.timeMs !== null && player.timeMs !== undefined
-                      ? `${(player.timeMs / 1000).toFixed(2)}s`
-                      : "DNF"}
-                  </span>
-                </li>
-              )}
-            </For>
-          </ol>
+          <RaceStandings />
           <div class="flex flex-wrap gap-2">
             <Show when={you()?.isHost}>
-              <Button
-                text="Play again"
-                onClick={() => {
-                  leaveRaceAndRestore();
-                  const name = props.displayName().trim() || "Host";
-                  void createParty(name, props.draftSettings());
-                }}
-              />
+              <Button text="Play again" onClick={() => playAgain()} />
+            </Show>
+            <Show when={!you()?.isHost}>
+              <p class="w-full text-sm text-sub">
+                Waiting for the host to start another race, or leave.
+              </p>
             </Show>
             <Button
               text="Leave"

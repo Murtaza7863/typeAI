@@ -97,6 +97,9 @@ export const RaceClientMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("leave"),
   }),
   z.object({
+    type: z.literal("playAgain"),
+  }),
+  z.object({
     type: z.literal("reconnect"),
     code: z.string().min(4).max(8),
     playerId: z.string(),
