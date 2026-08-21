@@ -55,6 +55,9 @@ let lastSentProgress = -1;
 let initialized = false;
 let countdownTick: ReturnType<typeof setInterval> | null = null;
 let savedBeforeRace: RaceSettingsSnapshot | null = null;
+let pendingRaceResults = false;
+let openedRaceResults = false;
+let localFinishInProgress = false;
 
 function clearCountdownTick(): void {
   if (countdownTick === null) return;
@@ -80,6 +83,7 @@ function snapshotSettingsIfNeeded(): void {
 }
 
 export function restoreAfterRace(): void {
+  pendingRaceResults = false;
   clearCountdownTick();
   setCountdownSeconds(null);
   setIsRaceActive(false);
@@ -103,6 +107,7 @@ export function restoreAfterRace(): void {
 }
 
 export function leaveRaceAndRestore(): void {
+  openedRaceResults = false;
   leaveParty();
   restoreAfterRace();
 }
@@ -134,11 +139,11 @@ export function initRaceController(): void {
     }
 
     if (message.type === "raceComplete") {
-      restoreAfterRace();
-      const code = getRaceParty()?.code;
-      const url =
-        code !== undefined && code.length > 0 ? `/race/${code}` : "/race";
-      navigationEvent.dispatch({ url, options: { force: true } });
+      if (localFinishInProgress) {
+        pendingRaceResults = true;
+        return;
+      }
+      goToRaceResults();
     }
 
     if (
@@ -159,6 +164,8 @@ function beginSharedRace(
   setIsRaceActive(true);
   setRaceStartedAt(startedAt);
   lastSentProgress = -1;
+  pendingRaceResults = false;
+  openedRaceResults = false;
 
   const text = words.length > 0 ? words : ["go"];
   const timed = settings?.mode === "time";
@@ -239,4 +246,25 @@ export function reportRaceFinished(): void {
     sendProgress(100);
   }
   sendFinished(timeMs);
+}
+
+export function beginLocalRaceFinish(): void {
+  localFinishInProgress = true;
+}
+
+export function settleRaceCompleteNavigation(): void {
+  localFinishInProgress = false;
+  if (pendingRaceResults || getRaceParty()?.status === "finished") {
+    goToRaceResults();
+  }
+}
+
+function goToRaceResults(): void {
+  if (openedRaceResults) return;
+  openedRaceResults = true;
+  pendingRaceResults = false;
+  const code = getRaceParty()?.code;
+  restoreAfterRace();
+  const url = code !== undefined && code.length > 0 ? `/race/${code}` : "/race";
+  navigationEvent.dispatch({ url, options: { force: true } });
 }

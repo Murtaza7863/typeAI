@@ -56,8 +56,12 @@ import {
   CompletedEvent,
   CompletedEventCustomText,
 } from "@typeai/schemas/results";
-import { reportRaceFinished } from "../race/controller";
-import { isRaceActive } from "../states/race";
+import {
+  beginLocalRaceFinish,
+  reportRaceFinished,
+  settleRaceCompleteNavigation,
+} from "../race/controller";
+import { isRaceActive, getLocalFinished } from "../states/race";
 import {
   findSingleActiveFunboxWithFunction,
   getActiveFunboxes,
@@ -234,6 +238,10 @@ export function restart(options = {} as RestartOptions): void {
   }
 
   if (TestState.testRestarting || TestUI.resultCalculating) {
+    options.event?.preventDefault();
+    return;
+  }
+  if (isRaceActive() && getLocalFinished()) {
     options.event?.preventDefault();
     return;
   }
@@ -913,6 +921,12 @@ function buildCompletedEvent(
 
 export async function finish(difficultyFailed = false): Promise<void> {
   if (!TestState.isActive) return;
+
+  if (isRaceActive()) {
+    await finishRace();
+    return;
+  }
+
   TestUI.setResultCalculating(true);
   const now = performance.now();
   TestTimer.clear();
@@ -1323,6 +1337,33 @@ export async function finish(difficultyFailed = false): Promise<void> {
   resetSessionMistakes();
 
   await Promise.all([savingResultPromise, resultUpdatePromise]);
+}
+
+async function finishRace(): Promise<void> {
+  TestUI.setResultCalculating(true);
+  beginLocalRaceFinish();
+  try {
+    const now = performance.now();
+    TestTimer.clear();
+    TestStats.setEnd(now);
+    if (TestInput.input.current.length !== 0) {
+      TestInput.input.pushHistory();
+      TestInput.corrected.pushHistory();
+    }
+    TestInput.forceKeyup(now);
+    TestState.setActive(false);
+    TestUI.onTestFinish();
+    Replay.stopReplayRecording();
+    setResultVisible(false);
+    TestState.setResultVisible(false);
+    reportRaceFinished();
+    qs(".pageTest .loading")?.hide();
+    const typingTest = qs(".pageTest #typingTest");
+    typingTest?.show().setStyle({ opacity: "1" });
+  } finally {
+    TestUI.setResultCalculating(false);
+    settleRaceCompleteNavigation();
+  }
 }
 
 async function saveResult(

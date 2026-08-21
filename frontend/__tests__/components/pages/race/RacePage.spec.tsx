@@ -43,6 +43,8 @@ vi.mock("../../../../src/ts/states/notifications", () => ({
   showErrorNotification: vi.fn(),
 }));
 
+import { RacePlayer } from "@typeai/schemas/race";
+
 import { RacePage } from "../../../../src/ts/components/pages/race/RacePage";
 import { setActivePage } from "../../../../src/ts/states/core";
 import {
@@ -52,7 +54,7 @@ import {
   setRaceYou,
 } from "../../../../src/ts/states/race";
 
-const host = {
+const host: RacePlayer = {
   id: "host-1",
   displayName: "Host",
   progress: 0,
@@ -62,7 +64,7 @@ const host = {
   isHost: true,
 };
 
-const friend = {
+const friend: RacePlayer = {
   id: "friend-1",
   displayName: "Sam",
   progress: 0,
@@ -72,7 +74,7 @@ const friend = {
   isHost: false,
 };
 
-function lobby(players: (typeof host)[]) {
+function lobby(players: RacePlayer[]) {
   return {
     code: "ABC123",
     status: "lobby" as const,
@@ -139,5 +141,20 @@ describe("RacePage lobby", () => {
     });
     const { container } = render(() => <RacePage />);
     expect(container.textContent).toContain("Leave race");
+  });
+
+  it("shows a race complete screen when the party finishes", () => {
+    setRaceParty({
+      ...lobby([
+        { ...host, timeMs: 4200, progress: 100 },
+        { ...friend, timeMs: 6100, progress: 100 },
+      ]),
+      status: "finished",
+      winnerId: host.id,
+    });
+    const { container } = render(() => <RacePage />);
+    expect(container.textContent).toContain("Race complete");
+    expect(container.textContent).toContain("winner");
+    expect(container.textContent).toContain("4.20s");
   });
 });
