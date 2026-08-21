@@ -15,6 +15,7 @@ import { setConfig } from "../config/setters";
 import { Config } from "../config/store";
 import { navigationEvent } from "../events/navigation";
 import { restartTestEvent } from "../events/test";
+import { timerEvent } from "../events/timer";
 import { setCustomTextName } from "../legacy-states/custom-text-name";
 import { getActivePage } from "../states/core";
 import {
@@ -87,10 +88,7 @@ function armRaceDeadline(startedAt: number, settings?: RaceSettings): void {
   const delay = Math.max(50, startedAt + settings.time * 1000 - Date.now());
   raceDeadlineTick = setTimeout(() => {
     if (!isRaceActive() || getLocalFinished()) return;
-    void import("../test/test-logic").then((mod) => {
-      if (!isRaceActive() || getLocalFinished()) return;
-      void mod.finish();
-    });
+    timerEvent.dispatch({ key: "finish" });
   }, delay);
 }
 
