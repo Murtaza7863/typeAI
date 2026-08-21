@@ -43,6 +43,15 @@ function playersList(party: PartyInternal): RacePlayer[] {
 
 function standings(party: PartyInternal): RacePlayer[] {
   return playersList(party).sort((a, b) => {
+    if (party.settings.mode === "time") {
+      if (b.progress !== a.progress) return b.progress - a.progress;
+      if (typeof a.timeMs === "number" && typeof b.timeMs === "number") {
+        return a.timeMs - b.timeMs;
+      }
+      if (typeof a.timeMs === "number") return -1;
+      if (typeof b.timeMs === "number") return 1;
+      return 0;
+    }
     const aTime = typeof a.timeMs === "number";
     const bTime = typeof b.timeMs === "number";
     if (aTime && bTime) return (a.timeMs as number) - (b.timeMs as number);
@@ -346,10 +355,16 @@ export class PeerRaceHost {
     const player = this.playerFromConn(conn);
     if (player === undefined || typeof player.timeMs === "number") return;
 
-    player.progress = 100;
-    player.timeMs = timeMs;
+    if (this.party.settings.mode !== "time") {
+      player.progress = 100;
+      this.party.winnerId ??= player.id;
+    }
+    if (this.party.settings.mode === "time" && this.party.startedAt !== null) {
+      player.timeMs = Math.max(1, Date.now() - this.party.startedAt);
+    } else {
+      player.timeMs = Math.max(1, Math.floor(timeMs));
+    }
     player.finishedAt = Date.now();
-    this.party.winnerId ??= player.id;
 
     const ranking = standings(this.party);
     const place =
@@ -417,7 +432,9 @@ export class PeerRaceHost {
       this.party.finishTimeout = null;
     }
     const ranking = standings(this.party);
-    if (this.party.winnerId === null) {
+    if (this.party.settings.mode === "time") {
+      this.party.winnerId = ranking[0]?.id ?? null;
+    } else if (this.party.winnerId === null) {
       const winner = ranking.find((p) => typeof p.timeMs === "number");
       this.party.winnerId = winner?.id ?? null;
     }

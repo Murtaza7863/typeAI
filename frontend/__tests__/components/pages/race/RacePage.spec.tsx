@@ -144,7 +144,7 @@ describe("RacePage lobby", () => {
     expect(container.textContent).toContain("Leave race");
   });
 
-  it("shows a race complete screen when the party finishes", () => {
+  it("shows a race complete screen when a words race finishes", () => {
     setRaceParty({
       ...lobby([
         { ...host, timeMs: 4200, progress: 100 },
@@ -157,6 +157,30 @@ describe("RacePage lobby", () => {
     expect(container.textContent).toContain("Race complete");
     expect(container.textContent).toContain("winner");
     expect(container.textContent).toContain("4.20s");
+    expect(container.textContent).toContain("Play again");
+  });
+
+  it("shows progress on the finish screen after a timed race", () => {
+    setRaceParty({
+      ...lobby([
+        { ...host, timeMs: 15000, progress: 72 },
+        { ...friend, timeMs: 15020, progress: 40 },
+      ]),
+      status: "finished",
+      winnerId: host.id,
+      settings: {
+        mode: "time",
+        wordCount: 25,
+        time: 15,
+        punctuation: false,
+      },
+    });
+    const { container } = render(() => <RacePage />);
+    expect(container.textContent).toContain("Race complete");
+    expect(container.textContent).toContain("winner");
+    expect(container.textContent).toContain("72%");
+    expect(container.textContent).toContain("40%");
+    expect(container.textContent).toContain("15.00s");
     expect(container.textContent).toContain("Play again");
   });
 

@@ -1508,3 +1508,210 @@ describe("HTTP race room — client schema and full flows", () => {
     expect(partyFrom(next.messages).settings?.mode).toBe("time");
   });
 });
+
+describe("HTTP race room — finish for words and time", () => {
+  beforeEach(() => {
+    resetRaceRoomsForTests();
+    setRaceDurableStoreForTests(createRemoteStore());
+  });
+
+  async function startTwoPlayerRace(settings: {
+    mode: "words" | "time";
+    wordCount: 25 | 50 | 100;
+    time: 15 | 30 | 60;
+    punctuation: boolean;
+  }): Promise<{
+    code: string;
+    hostId: string;
+    friendId: string;
+    startedAt: number;
+    restoreNow: () => void;
+  }> {
+    const created = await post({
+      type: "createParty",
+      displayName: "Host",
+      settings,
+    });
+    expectClientAccepts(created.messages);
+    const code = partyFrom(created.messages).code;
+    const hostId = created.playerId as string;
+    const joined = await post({
+      type: "joinParty",
+      code,
+      displayName: "Friend",
+    });
+    expectClientAccepts(joined.messages);
+    const friendId = joined.playerId as string;
+    const originalNow = Date.now;
+    const startedAt = originalNow();
+    Date.now = () => startedAt;
+    await post({ type: "startRace", code, playerId: hostId });
+    Date.now = () => startedAt + 4000;
+    const racing = await post({ type: "poll", code, playerId: friendId });
+    expectClientAccepts(racing.messages);
+    expect(partyFrom(racing.messages).status).toBe("racing");
+    const start = ofType(racing.messages, "raceStart")[0] as {
+      settings?: { mode?: string; wordCount?: number; time?: number };
+      words?: string[];
+    };
+    expect(start.settings?.mode).toBe(settings.mode);
+    if (settings.mode === "words") {
+      expect(start.words).toHaveLength(settings.wordCount);
+    } else {
+      expect(start.words?.length).toBeGreaterThanOrEqual(200);
+      expect(start.settings?.time).toBe(settings.time);
+    }
+    return {
+      code,
+      hostId,
+      friendId,
+      startedAt,
+      restoreNow: () => {
+        Date.now = originalNow;
+      },
+    };
+  }
+
+  it.each([25, 50, 100] as const)(
+    "lets both players finish a %s-word race to a parseable results screen",
+    async (wordCount) => {
+      const race = await startTwoPlayerRace({
+        mode: "words",
+        wordCount,
+        time: 30,
+        punctuation: false,
+      });
+      try {
+        Date.now = () => race.startedAt + 8000;
+        const friendDone = await post({
+          type: "finished",
+          code: race.code,
+          playerId: race.friendId,
+          timeMs: 8000,
+        });
+        expectClientAccepts(friendDone.messages);
+        expect(partyFrom(friendDone.messages).status).toBe("racing");
+        expect(partyFrom(friendDone.messages).winnerId).toBe(race.friendId);
+        expect(
+          partyFrom(friendDone.messages).players.find(
+            (p) => p.id === race.friendId,
+          )?.progress,
+        ).toBe(100);
+
+        Date.now = () => race.startedAt + 9000;
+        const hostDone = await post({
+          type: "finished",
+          code: race.code,
+          playerId: race.hostId,
+          timeMs: 9000,
+        });
+        expectClientAccepts(hostDone.messages);
+        expect(partyFrom(hostDone.messages).status).toBe("finished");
+        expect(partyFrom(hostDone.messages).winnerId).toBe(race.friendId);
+        expect(ofType(hostDone.messages, "raceComplete")).toHaveLength(1);
+        const complete = ofType(hostDone.messages, "raceComplete")[0] as {
+          standings?: { id: string; progress: number; timeMs?: number }[];
+        };
+        expect(complete.standings?.map((p) => p.id)).toEqual([
+          race.friendId,
+          race.hostId,
+        ]);
+        expect(
+          complete.standings?.every(
+            (p) => p.progress === 100 && typeof p.timeMs === "number",
+          ),
+        ).toBe(true);
+
+        const replay = await post({
+          type: "playAgain",
+          code: race.code,
+          playerId: race.hostId,
+        });
+        expectClientAccepts(replay.messages);
+        expect(partyFrom(replay.messages).status).toBe("lobby");
+        expect(partyFrom(replay.messages).code).toBe(race.code);
+        expect(partyFrom(replay.messages).settings?.mode).toBe("words");
+        expect(partyFrom(replay.messages).words).toHaveLength(wordCount);
+      } finally {
+        race.restoreNow();
+      }
+    },
+  );
+
+  it.each([15, 30, 60] as const)(
+    "lets both players finish a %ss race without forcing 100% progress",
+    async (time) => {
+      const race = await startTwoPlayerRace({
+        mode: "time",
+        wordCount: 25,
+        time,
+        punctuation: false,
+      });
+      try {
+        Date.now = () => race.startedAt + 4000 + time * 1000;
+        await post({
+          type: "progress",
+          code: race.code,
+          playerId: race.hostId,
+          progress: 72,
+        });
+        const hostDone = await post({
+          type: "finished",
+          code: race.code,
+          playerId: race.hostId,
+          timeMs: 1,
+        });
+        expectClientAccepts(hostDone.messages);
+        expect(partyFrom(hostDone.messages).status).toBe("racing");
+        expect(
+          partyFrom(hostDone.messages).players.find((p) => p.id === race.hostId)
+            ?.progress,
+        ).toBe(72);
+        expect(
+          partyFrom(hostDone.messages).players.find((p) => p.id === race.hostId)
+            ?.timeMs,
+        ).toBe(time * 1000);
+
+        await post({
+          type: "progress",
+          code: race.code,
+          playerId: race.friendId,
+          progress: 40,
+        });
+        const friendDone = await post({
+          type: "finished",
+          code: race.code,
+          playerId: race.friendId,
+          timeMs: 99999,
+        });
+        expectClientAccepts(friendDone.messages);
+        expect(partyFrom(friendDone.messages).status).toBe("finished");
+        expect(partyFrom(friendDone.messages).winnerId).toBe(race.hostId);
+        expect(ofType(friendDone.messages, "raceComplete")).toHaveLength(1);
+        expect(
+          partyFrom(friendDone.messages).players.find(
+            (p) => p.id === race.friendId,
+          )?.progress,
+        ).toBe(40);
+        const complete = ofType(friendDone.messages, "raceComplete")[0] as {
+          standings?: { id: string; progress: number }[];
+        };
+        expect(complete.standings?.[0]?.id).toBe(race.hostId);
+        expect(complete.standings?.[0]?.progress).toBe(72);
+
+        const replay = await post({
+          type: "playAgain",
+          code: race.code,
+          playerId: race.hostId,
+        });
+        expectClientAccepts(replay.messages);
+        expect(partyFrom(replay.messages).status).toBe("lobby");
+        expect(partyFrom(replay.messages).code).toBe(race.code);
+        expect(partyFrom(replay.messages).settings?.mode).toBe("time");
+        expect(partyFrom(replay.messages).settings?.time).toBe(time);
+      } finally {
+        race.restoreNow();
+      }
+    },
+  );
+});

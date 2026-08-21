@@ -307,7 +307,8 @@ export function reportRaceFinished(): void {
   if (!isRaceActive() || getLocalFinished()) return;
   const startedAt = getRaceStartedAt();
   const timeMs = startedAt !== null ? Math.max(1, Date.now() - startedAt) : 1;
-  if (getRaceParty()?.settings?.mode !== "time") {
+  const mode = getRaceParty()?.settings?.mode;
+  if (mode === "words" || mode === "quote") {
     sendProgress(100);
   }
   sendFinished(timeMs);

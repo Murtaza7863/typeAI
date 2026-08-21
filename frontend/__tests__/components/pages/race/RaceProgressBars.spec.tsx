@@ -87,7 +87,7 @@ describe("RaceProgressBars overlay", () => {
     );
   });
 
-  it("shows a race complete standings screen on the test page", () => {
+  it("shows a race complete standings screen after a words race", () => {
     setRaceParty({
       code: "ABC123",
       status: "finished",
@@ -117,6 +117,68 @@ describe("RaceProgressBars overlay", () => {
     expect(container.textContent).toContain("winner");
     expect(container.textContent).toContain("4.20s");
     expect(container.textContent).toContain("Play again");
+    expect(container.textContent).not.toContain(
+      "You finished! Waiting for other players…",
+    );
+  });
+
+  it("shows waiting then progress standings after a timed race finishes", () => {
+    setRaceParty({
+      code: "ABC123",
+      status: "racing",
+      hostId: host.id,
+      words: ["the", "quick"],
+      settings: {
+        mode: "time",
+        wordCount: 25,
+        time: 15,
+        punctuation: false,
+      },
+      players: [
+        { ...host, progress: 72, timeMs: 15000, finishedAt: 1 },
+        { ...friend, progress: 40, finishedAt: null, timeMs: null },
+      ],
+      inviteUrl: "https://typeaiapp.vercel.app/race/ABC123",
+      startedAt: 1,
+      countdownEndsAt: null,
+      winnerId: null,
+    });
+    const waiting = render(() => <RaceProgressBars testOverlay />);
+    expect(waiting.container.textContent).toContain(
+      "You finished! Waiting for other players…",
+    );
+    waiting.unmount();
+
+    setRaceParty({
+      code: "ABC123",
+      status: "finished",
+      hostId: host.id,
+      words: ["the", "quick"],
+      settings: {
+        mode: "time",
+        wordCount: 25,
+        time: 15,
+        punctuation: false,
+      },
+      players: [
+        { ...host, progress: 72, timeMs: 15000, finishedAt: 1 },
+        { ...friend, progress: 40, timeMs: 15020, finishedAt: 2 },
+      ],
+      inviteUrl: "https://typeaiapp.vercel.app/race/ABC123",
+      startedAt: 1,
+      countdownEndsAt: null,
+      winnerId: host.id,
+    });
+    setStandings([
+      { ...host, progress: 72, timeMs: 15000, finishedAt: 1 },
+      { ...friend, progress: 40, timeMs: 15020, finishedAt: 2 },
+    ]);
+    const { container } = render(() => <RaceProgressBars testOverlay />);
+    expect(container.textContent).toContain("Race complete");
+    expect(container.textContent).toContain("winner");
+    expect(container.textContent).toContain("72%");
+    expect(container.textContent).toContain("40%");
+    expect(container.textContent).toContain("15.00s");
     expect(container.textContent).not.toContain(
       "You finished! Waiting for other players…",
     );

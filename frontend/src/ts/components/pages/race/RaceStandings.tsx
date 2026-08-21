@@ -8,6 +8,13 @@ function formatTime(timeMs: number | null | undefined): string {
   return `${(timeMs / 1000).toFixed(2)}s`;
 }
 
+function scoreLabel(player: RacePlayer): string {
+  if (getRaceParty()?.settings?.mode === "time") {
+    return `${player.progress}% · ${formatTime(player.timeMs)}`;
+  }
+  return formatTime(player.timeMs);
+}
+
 export function rankedRacePlayers(): RacePlayer[] {
   const party = getRaceParty();
   const source =
@@ -46,7 +53,7 @@ export function RaceStandings(): JSXElement {
                 <span class="ml-2 text-xs text-main">winner</span>
               </Show>
             </span>
-            <span class="text-sub">{formatTime(player.timeMs)}</span>
+            <span class="text-sub">{scoreLabel(player)}</span>
           </li>
         )}
       </For>

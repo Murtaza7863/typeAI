@@ -290,6 +290,55 @@ describe("PeerRaceHost", () => {
     ).toBe(true);
     vi.useRealTimers();
   });
+
+  it("finishes a timed race by progress instead of first to send finished", () => {
+    vi.useFakeTimers();
+    const onMessage = vi.fn();
+    const mocked = mockPeer("hostid1");
+    const host = new PeerRaceHost(mocked.peer, {
+      onMessage,
+      sendTo: vi.fn(),
+    });
+    host.createParty("Host", {
+      mode: "time",
+      wordCount: 25,
+      time: 15,
+      punctuation: false,
+    });
+    const guestConn = mockConnection();
+    mocked.connectionHandler(guestConn);
+    guestConn.emitData({
+      type: "joinParty",
+      code: "HOSTID1",
+      displayName: "Guest",
+    });
+
+    host.handleLocalMessage({ type: "startRace" });
+    vi.advanceTimersByTime(RACE_COUNTDOWN_SECONDS * 1000);
+
+    host.handleLocalMessage({ type: "progress", progress: 72 });
+    guestConn.emitData({ type: "progress", progress: 40 });
+    guestConn.emitData({ type: "finished", timeMs: 15000 });
+    host.handleLocalMessage({ type: "finished", timeMs: 15020 });
+
+    const complete = [...onMessage.mock.calls]
+      .reverse()
+      .map(
+        (c) =>
+          c[1] as {
+            type: string;
+            winnerId?: string;
+            standings?: { progress: number }[];
+          },
+      )
+      .find((msg) => msg.type === "raceComplete");
+    expect(complete?.standings?.[0]?.progress).toBe(72);
+    expect(complete?.standings?.[1]?.progress).toBe(40);
+    const hostId = (onMessage.mock.calls[0]?.[1] as { you?: { id: string } })
+      .you?.id;
+    expect(complete?.winnerId).toBe(hostId);
+    vi.useRealTimers();
+  });
 });
 
 // silence unused Mock import if lint complains via type-only usage
