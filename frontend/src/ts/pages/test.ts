@@ -5,8 +5,8 @@ import Page from "./page";
 import * as ModesNotice from "../elements/modes-notice";
 import * as Keymap from "../elements/keymap";
 import { blurInputElement } from "../input/input-element";
-import { restoreAfterRace } from "../race/controller";
-import { getRaceParty } from "../states/race";
+import { permitNextRaceRestart, restoreAfterRace } from "../race/controller";
+import { getRaceParty, isRaceActive } from "../states/race";
 import { qsr } from "../utils/dom";
 
 export const page = new Page({
@@ -20,13 +20,19 @@ export const page = new Page({
     if (getRaceParty()?.status === "finished") {
       restoreAfterRace();
     }
-    TestLogic.restart({
-      noAnim: true,
-    });
-    void Funbox.clear();
+    if (!isRaceActive()) {
+      TestLogic.restart({
+        noAnim: true,
+      });
+      void Funbox.clear();
+    }
     void ModesNotice.update();
   },
   beforeShow: async (): Promise<void> => {
+    const status = getRaceParty()?.status;
+    if (isRaceActive() || status === "racing" || status === "countdown") {
+      permitNextRaceRestart();
+    }
     TestStats.resetIncomplete();
     TestLogic.restart({
       noAnim: true,

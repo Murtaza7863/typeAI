@@ -504,4 +504,21 @@ export function leaveParty(): void {
   resetLocalRaceState();
 }
 
+export function leaveRaceOnPageHide(): void {
+  const session = getRaceSession();
+  const party = getRaceParty();
+  const code = party?.code ?? session?.code;
+  const playerId = localPlayerId ?? session?.playerId;
+  if (code === undefined || playerId === undefined) return;
+  const payload = JSON.stringify({ type: "leave", code, playerId });
+  try {
+    navigator.sendBeacon(
+      raceHttpUrl(),
+      new Blob([payload], { type: "application/json" }),
+    );
+  } catch {
+    // page is closing
+  }
+}
+
 export type { RacePartyState, RacePlayer };

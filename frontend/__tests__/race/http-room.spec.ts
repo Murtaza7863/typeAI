@@ -1495,8 +1495,12 @@ describe("HTTP race room — client schema and full flows", () => {
     await post({ type: "leave", code, playerId: hostId });
     const friendView = await post({ type: "poll", code, playerId: friendId });
     expectClientAccepts(friendView.messages);
-    expect(partyFrom(friendView.messages).status).toBe("finished");
-    expect(ofType(friendView.messages, "raceComplete")).toHaveLength(1);
+    expect(partyFrom(friendView.messages).status).toBe("lobby");
+    expect(
+      partyFrom(friendView.messages).players.find((p) => p.id === friendId)
+        ?.isHost,
+    ).toBe(true);
+    expect(ofType(friendView.messages, "raceComplete")).toHaveLength(0);
 
     const next = await post({
       type: "createParty",
@@ -1608,6 +1612,11 @@ describe("HTTP race room — finish for words and time", () => {
         expectClientAccepts(hostDone.messages);
         expect(partyFrom(hostDone.messages).status).toBe("finished");
         expect(partyFrom(hostDone.messages).winnerId).toBe(race.friendId);
+        expect(
+          partyFrom(hostDone.messages).players.find(
+            (p) => p.id === race.friendId,
+          )?.timeMs,
+        ).toBe(8000);
         expect(ofType(hostDone.messages, "raceComplete")).toHaveLength(1);
         const complete = ofType(hostDone.messages, "raceComplete")[0] as {
           standings?: { id: string; progress: number; timeMs?: number }[];
@@ -1714,4 +1723,30 @@ describe("HTTP race room — finish for words and time", () => {
       }
     },
   );
+
+  it("drops a lobby player who stopped polling so the host is not stuck", async () => {
+    const created = await post({
+      type: "createParty",
+      displayName: "Host",
+      settings: { mode: "words", wordCount: 25, punctuation: false },
+    });
+    const code = partyFrom(created.messages).code;
+    const hostId = created.playerId as string;
+    await post({ type: "joinParty", code, displayName: "Friend" });
+    const originalNow = Date.now;
+    const t = originalNow();
+    Date.now = () => t + 20_000;
+    try {
+      const hostView = await post({ type: "poll", code, playerId: hostId });
+      expectClientAccepts(hostView.messages);
+      expect(
+        partyFrom(hostView.messages).players.find(
+          (p) => p.displayName === "Friend",
+        ),
+      ).toBeUndefined();
+      expect(partyFrom(hostView.messages).players).toHaveLength(1);
+    } finally {
+      Date.now = originalNow;
+    }
+  });
 });

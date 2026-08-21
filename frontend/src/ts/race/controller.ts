@@ -36,6 +36,7 @@ import {
   onRaceMessage,
   sendFinished,
   sendProgress,
+  leaveRaceOnPageHide,
 } from "./client";
 
 type RaceSettingsSnapshot = {
@@ -151,6 +152,9 @@ export function leaveRaceAndRestore(): void {
 export function initRaceController(): void {
   if (initialized) return;
   initialized = true;
+  if (typeof window !== "undefined") {
+    window.addEventListener("pagehide", leaveRaceOnPageHide);
+  }
 
   onRaceMessage((message) => {
     if (message.type === "countdown") {

@@ -9,6 +9,7 @@ import { configEvent } from "../events/config";
 import { applyReducedMotion } from "../utils/misc";
 import { requestDebouncedAnimationFrame } from "../utils/debounced-animation-frame";
 import { animate } from "animejs";
+import { getRaceParty, getRaceStartedAt, isRaceActive } from "../states/race";
 
 const barEl = document.querySelector("#barTimerProgress .bar") as HTMLElement;
 const barOpacityEl = document.querySelector(
@@ -135,7 +136,13 @@ function updateTimer(el: HTMLElement, outof: number, wrapInDiv: boolean): void {
 
 export function update(): void {
   requestDebouncedAnimationFrame("timer-progress.update", () => {
-    const time = Time.get();
+    let time = Time.get();
+    if (isRaceActive() && getRaceParty()?.settings?.mode === "time") {
+      const startedAt = getRaceStartedAt();
+      if (startedAt !== null) {
+        time = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+      }
+    }
     if (
       Config.mode === "time" ||
       (Config.mode === "custom" && CustomText.getLimitMode() === "time")

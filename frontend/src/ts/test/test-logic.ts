@@ -545,21 +545,6 @@ async function init(): Promise<boolean> {
     console.debug("Custom text", CustomText.getData());
   }
 
-  console.log("Inializing test", {
-    language: {
-      ...language,
-      words: `${language.words.length} words`,
-    },
-    customText: {
-      ...CustomText.getData(),
-      text: `${CustomText.getText().length} words`,
-    },
-    mode: Config.mode,
-    mode2: Misc.getMode2(Config, null),
-    funbox: Config.funbox,
-    currentQuote: TestWords.currentQuote,
-  });
-
   let wordsHaveTab = false;
   let wordsHaveNewline = false;
   let allRightToLeft: boolean | undefined = undefined;
@@ -1053,11 +1038,6 @@ export async function finish(difficultyFailed = false): Promise<void> {
 
   let dontSave = false;
 
-  if (isRaceActive()) {
-    reportRaceFinished();
-    dontSave = true;
-  }
-
   if (countUndefined(ce) > 0) {
     console.log(ce);
     showErrorNotification(
@@ -1306,17 +1286,6 @@ export async function finish(difficultyFailed = false): Promise<void> {
     });
   }
 
-  if (isRaceActive()) {
-    resetSessionMistakes();
-    qs(".pageTest .loading")?.hide();
-    const typingTest = qs(".pageTest #typingTest");
-    typingTest?.show().setStyle({ opacity: "1" });
-    setResultVisible(false);
-    TestState.setResultVisible(false);
-    TestUI.setResultCalculating(false);
-    return;
-  }
-
   const resultUpdatePromise = Result.update(
     completedEvent,
     difficultyFailed,
@@ -1393,8 +1362,6 @@ async function saveResult(
   //@ts-expect-error just in case this is repeated and already has a hash
   delete result.hash;
   result.hash = objectHash(result);
-
-  console.trace();
 
   setAccountButtonSpinner(true);
 

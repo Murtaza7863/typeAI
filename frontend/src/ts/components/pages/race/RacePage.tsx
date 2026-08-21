@@ -81,7 +81,6 @@ function settingsSummary(settings: RaceSettings): string {
 }
 
 function RacePartyPanel(props: {
-  displayName: () => string;
   draftSettings: () => RaceSettings;
   inviteUrl: () => string;
   settingsControls: (editable: boolean) => JSXElement;
@@ -90,6 +89,8 @@ function RacePartyPanel(props: {
   const partyData = () => getRaceParty();
   const you = () => getRaceYou();
   const playerCount = (): number => partyData()?.players.length ?? 0;
+  const connectedCount = (): number =>
+    partyData()?.players.filter((player) => player.connected).length ?? 0;
   const liveSettings = (): RaceSettings =>
     settingsFromParty(partyData()?.settings);
 
@@ -167,10 +168,10 @@ function RacePartyPanel(props: {
           >
             <Button
               text="Start race"
-              disabled={playerCount() < 2}
+              disabled={connectedCount() < 2}
               onClick={() => startRace(props.draftSettings())}
             />
-            <Show when={playerCount() < 2}>
+            <Show when={connectedCount() < 2}>
               <p class="mt-2 text-xs text-sub">
                 Need at least 2 players to start. Share the invite link and keep
                 this page open.
@@ -302,7 +303,11 @@ export function RacePage(): JSXElement {
           setJoinCode((current) => (current.length === 0 ? pathCode : current));
           if (getRaceParty() === null) {
             setBusy(true);
-            void joinParty(pathCode, name, session?.playerId).finally(() => {
+            const resumeId =
+              session?.code.toUpperCase() === pathCode.toUpperCase()
+                ? session.playerId
+                : undefined;
+            void joinParty(pathCode, name, resumeId).finally(() => {
               setBusy(false);
             });
           }
@@ -380,7 +385,13 @@ export function RacePage(): JSXElement {
     setBusy(true);
     try {
       await connectRaceWs();
-      await joinParty(code, name, getRaceSession()?.playerId);
+      await joinParty(
+        code,
+        name,
+        getRaceSession()?.code.toUpperCase() === code.toUpperCase()
+          ? getRaceSession()?.playerId
+          : undefined,
+      );
     } finally {
       setBusy(false);
     }
@@ -546,7 +557,6 @@ export function RacePage(): JSXElement {
           }
         >
           <RacePartyPanel
-            displayName={displayName}
             draftSettings={draftSettings}
             inviteUrl={inviteUrl}
             settingsControls={settingsControls}

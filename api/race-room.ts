@@ -20,6 +20,7 @@ type RacePlayer = {
   connected: boolean;
   isHost: boolean;
   lastProgressAt: number;
+  lastSeenAt: number;
 };
 
 type RaceParty = {
@@ -68,6 +69,7 @@ const COUNTDOWN_MS = 3000;
 const FINISH_GRACE_MS = 60_000;
 const RACE_HARD_TIMEOUT_MS = 10 * 60 * 1000;
 const TIME_RACE_GRACE_MS = 15_000;
+const STALE_MS = 12_000;
 const ROOM_TTL_MS = 2 * 60 * 60 * 1000;
 const ROOM_TTL_SECONDS = Math.floor(ROOM_TTL_MS / 1000);
 const STORE_PREFIX = "typeai-race-";
@@ -244,10 +246,10 @@ function generateWords(settings: RaceSettings): string[] {
   return out;
 }
 
-function playersList(party: RaceParty): Omit<RacePlayer, "lastProgressAt">[] {
-  return Object.values(party.players).map(
-    ({ lastProgressAt: _l, ...player }) => player,
-  );
+function playersList(
+  party: RaceParty,
+): Omit<RacePlayer, "lastProgressAt" | "lastSeenAt">[] {
+  return Object.values(party.players).map((player) => publicPlayer(player));
 }
 
 function standings(party: RaceParty): Omit<RacePlayer, "lastProgressAt">[] {
@@ -279,8 +281,10 @@ function inviteUrl(request: Request, code: string): string {
   return `${proto}://${host}/race/${code}`;
 }
 
-function publicPlayer(player: RacePlayer): Omit<RacePlayer, "lastProgressAt"> {
-  const { lastProgressAt: _l, ...rest } = player;
+function publicPlayer(
+  player: RacePlayer,
+): Omit<RacePlayer, "lastProgressAt" | "lastSeenAt"> {
+  const { lastProgressAt: _p, lastSeenAt: _s, ...rest } = player;
   return rest;
 }
 
@@ -310,6 +314,7 @@ function partyState(
 
 function prune(now: number): void {
   for (const [code, party] of rooms) {
+    dropStalePlayers(party, now);
     if (now - party.createdAt > ROOM_TTL_MS) rooms.delete(code);
   }
 }
@@ -363,6 +368,52 @@ function completeRace(party: RaceParty): void {
     party.winnerId ??
     ranked.find((p) => typeof p.timeMs === "number")?.id ??
     null;
+}
+
+function playerSeenAt(player: RacePlayer, party: RaceParty): number {
+  if (player.lastSeenAt > 0) return player.lastSeenAt;
+  if (player.lastProgressAt > 0) return player.lastProgressAt;
+  return party.createdAt;
+}
+
+function dropStalePlayers(party: RaceParty, now: number): void {
+  let changed = false;
+  for (const player of Object.values(party.players)) {
+    if (!player.connected) continue;
+    if (now - playerSeenAt(player, party) < STALE_MS) continue;
+    if (party.status === "racing") continue;
+    player.connected = false;
+    changed = true;
+  }
+  if (!changed) return;
+  party.rev = (party.rev ?? 0) + 1;
+  transferHost(party);
+  if (party.status === "lobby") {
+    for (const [id, player] of Object.entries(party.players)) {
+      if (!player.connected && player.id !== party.hostId) {
+        delete party.players[id];
+      }
+    }
+    return;
+  }
+  if (party.status === "countdown" && connectedCount(party) < 2) {
+    resetPartyToLobby(party);
+  }
+}
+
+function afterDisconnect(party: RaceParty): void {
+  transferHost(party);
+  if (connectedCount(party) >= 2) {
+    advance(party, Date.now());
+    return;
+  }
+  if (party.status === "countdown") {
+    resetPartyToLobby(party);
+    return;
+  }
+  if (party.status === "racing") {
+    completeRace(party);
+  }
 }
 
 function advance(party: RaceParty, now: number): void {
@@ -462,6 +513,8 @@ function parsePlayer(value: unknown): RacePlayer | undefined {
     isHost: value["isHost"] === true,
     lastProgressAt:
       typeof value["lastProgressAt"] === "number" ? value["lastProgressAt"] : 0,
+    lastSeenAt:
+      typeof value["lastSeenAt"] === "number" ? value["lastSeenAt"] : 0,
   };
 }
 
@@ -721,6 +774,7 @@ function mergePlayers(local: RaceParty, remote: RaceParty): void {
     }
     if (localNewer) continue;
     existing.progress = Math.max(existing.progress, player.progress);
+    existing.lastSeenAt = Math.max(existing.lastSeenAt, player.lastSeenAt);
     if (remoteNewer) {
       existing.connected = player.connected;
     } else {
@@ -883,6 +937,7 @@ async function handleCreate(
     connected: true,
     isHost: true,
     lastProgressAt: 0,
+    lastSeenAt: Date.now(),
   };
   const party: RaceParty = {
     code,
@@ -913,6 +968,7 @@ async function handleJoin(
     return error("Party not found — ask the host to keep the race page open.");
   }
   advance(party, Date.now());
+  dropStalePlayers(party, Date.now());
   if (
     body.playerId !== undefined &&
     party.players[body.playerId] !== undefined
@@ -920,6 +976,7 @@ async function handleJoin(
     const existing = party.players[body.playerId];
     if (existing !== undefined) {
       existing.connected = true;
+      existing.lastSeenAt = Date.now();
       if (party.status === "racing" || party.status === "countdown") {
         delete party.announced[existing.id];
       }
@@ -940,6 +997,7 @@ async function handleJoin(
     connected: true,
     isHost: false,
     lastProgressAt: 0,
+    lastSeenAt: Date.now(),
   };
   party.announced[playerId] = "lobby";
   return reply(party, playerId, request);
@@ -958,6 +1016,10 @@ async function requirePartyPlayer(
   const playerId = body.playerId ?? "";
   const player = party.players[playerId];
   if (player === undefined) return error("Player not found");
+  const now = Date.now();
+  player.lastSeenAt = now;
+  player.connected = true;
+  dropStalePlayers(party, now);
   return { party, player, before };
 }
 
@@ -1073,14 +1135,7 @@ async function handleAction(
     } else {
       player.connected = false;
       party.rev = (party.rev ?? 0) + 1;
-      if (player.id === party.hostId) {
-        transferHost(party);
-      }
-      if (connectedCount(party) < 2) {
-        completeRace(party);
-      } else {
-        advance(party, Date.now());
-      }
+      afterDisconnect(party);
       await saveParty(party);
     }
     return jsonResponse(200, { ok: true, messages: [] });

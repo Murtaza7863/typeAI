@@ -52,6 +52,7 @@ vi.mock("../../src/ts/race/client", () => ({
   sendProgress: vi.fn(),
   sendFinished: vi.fn(),
   leaveParty: vi.fn(),
+  leaveRaceOnPageHide: vi.fn(),
 }));
 
 import { sendFinished, sendProgress } from "../../src/ts/race/client";
