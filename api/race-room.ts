@@ -37,6 +37,7 @@ type RaceParty = {
   finishDeadline: number | null;
   announced: Record<string, RaceStatus>;
   rev: number;
+  left: Record<string, number>;
 };
 
 type ClientMessage = {
@@ -69,7 +70,7 @@ const COUNTDOWN_MS = 3000;
 const FINISH_GRACE_MS = 60_000;
 const RACE_HARD_TIMEOUT_MS = 10 * 60 * 1000;
 const TIME_RACE_GRACE_MS = 15_000;
-const STALE_MS = 12_000;
+const STALE_MS = 45_000;
 const ROOM_TTL_MS = 2 * 60 * 60 * 1000;
 const ROOM_TTL_SECONDS = Math.floor(ROOM_TTL_MS / 1000);
 const STORE_PREFIX = "typeai-race-";
@@ -331,8 +332,10 @@ function allDone(party: RaceParty): boolean {
 }
 
 function resetPartyToLobby(party: RaceParty): void {
+  party.left ??= {};
   for (const [id, player] of Object.entries(party.players)) {
     if (!player.connected && player.id !== party.hostId) {
+      party.left[id] = Date.now();
       delete party.players[id];
       continue;
     }
@@ -386,19 +389,24 @@ function dropStalePlayers(party: RaceParty, now: number): void {
     changed = true;
   }
   if (!changed) return;
-  party.rev = (party.rev ?? 0) + 1;
   transferHost(party);
-  if (party.status === "lobby") {
-    for (const [id, player] of Object.entries(party.players)) {
-      if (!player.connected && player.id !== party.hostId) {
-        delete party.players[id];
-      }
-    }
-    return;
-  }
   if (party.status === "countdown" && connectedCount(party) < 2) {
     resetPartyToLobby(party);
   }
+}
+
+function pruneDisconnectedLobby(party: RaceParty, now: number): void {
+  if (party.status !== "lobby") return;
+  for (const [id, player] of Object.entries(party.players)) {
+    if (player.connected || player.id === party.hostId) continue;
+    party.left[id] = now;
+    delete party.players[id];
+  }
+}
+
+function markLeft(party: RaceParty, playerId: string, now: number): void {
+  party.left[playerId] = now;
+  delete party.players[playerId];
 }
 
 function afterDisconnect(party: RaceParty): void {
@@ -540,6 +548,11 @@ function parseParty(raw: unknown): RaceParty | undefined {
   for (const [id, status] of Object.entries(announcedRaw)) {
     if (isRaceStatus(status)) announced[id] = status;
   }
+  const leftRaw = isRecord(raw["left"]) ? raw["left"] : {};
+  const left: Record<string, number> = {};
+  for (const [id, at] of Object.entries(leftRaw)) {
+    if (typeof at === "number") left[id] = at;
+  }
   const settingsRaw = isRecord(raw["settings"])
     ? (raw["settings"] as Partial<RaceSettings>)
     : undefined;
@@ -563,6 +576,7 @@ function parseParty(raw: unknown): RaceParty | undefined {
       typeof raw["finishDeadline"] === "number" ? raw["finishDeadline"] : null,
     announced,
     rev: typeof raw["rev"] === "number" ? raw["rev"] : 0,
+    left,
   };
 }
 
@@ -755,44 +769,65 @@ function mergeAnnounced(
   }
 }
 
+function mergePlayer(local: RacePlayer, remote: RacePlayer): RacePlayer {
+  const newer = local.lastSeenAt >= remote.lastSeenAt ? local : remote;
+  return {
+    id: local.id,
+    displayName: newer.displayName || local.displayName,
+    progress: Math.max(local.progress, remote.progress),
+    finishedAt:
+      typeof local.finishedAt === "number" &&
+      typeof remote.finishedAt === "number"
+        ? Math.min(local.finishedAt, remote.finishedAt)
+        : (local.finishedAt ?? remote.finishedAt),
+    timeMs:
+      typeof local.timeMs === "number" && typeof remote.timeMs === "number"
+        ? Math.min(local.timeMs, remote.timeMs)
+        : (local.timeMs ?? remote.timeMs),
+    connected: newer.connected,
+    isHost: local.isHost || remote.isHost,
+    lastProgressAt: Math.max(local.lastProgressAt, remote.lastProgressAt),
+    lastSeenAt: Math.max(local.lastSeenAt, remote.lastSeenAt),
+  };
+}
+
 function mergePlayers(local: RaceParty, remote: RaceParty): void {
   const localNewer = (local.rev ?? 0) > (remote.rev ?? 0);
   const remoteNewer = (remote.rev ?? 0) > (local.rev ?? 0);
-
-  if (remoteNewer) {
-    for (const id of Object.keys(local.players)) {
-      if (remote.players[id] === undefined) delete local.players[id];
-    }
-  }
+  local.left = { ...(remote.left ?? {}), ...(local.left ?? {}) };
 
   for (const [id, player] of Object.entries(remote.players)) {
+    if (local.left[id] !== undefined) continue;
     const existing = local.players[id];
     if (existing === undefined) {
-      if (localNewer) continue;
-      local.players[id] = player;
+      local.players[id] = localNewer
+        ? {
+            ...player,
+            progress: 0,
+            timeMs: null,
+            finishedAt: null,
+          }
+        : player;
       continue;
     }
-    if (localNewer) continue;
-    existing.progress = Math.max(existing.progress, player.progress);
-    existing.lastSeenAt = Math.max(existing.lastSeenAt, player.lastSeenAt);
-    if (remoteNewer) {
-      existing.connected = player.connected;
-    } else {
-      existing.connected = existing.connected && player.connected;
-    }
-    if (typeof player.timeMs === "number") {
-      if (
-        typeof existing.timeMs !== "number" ||
-        player.timeMs < existing.timeMs
-      ) {
-        existing.timeMs = player.timeMs;
-        existing.finishedAt = player.finishedAt;
+    if (localNewer) {
+      existing.lastSeenAt = Math.max(existing.lastSeenAt, player.lastSeenAt);
+      existing.lastProgressAt = Math.max(
+        existing.lastProgressAt,
+        player.lastProgressAt,
+      );
+      if (player.lastSeenAt >= existing.lastSeenAt) {
+        existing.connected = player.connected;
+        existing.displayName = player.displayName || existing.displayName;
       }
+      existing.isHost = existing.isHost || player.isHost;
+      continue;
     }
-    if (player.isHost) {
-      existing.isHost = true;
-      local.hostId = player.id;
-    }
+    local.players[id] = mergePlayer(existing, player);
+  }
+
+  for (const id of Object.keys(local.left)) {
+    delete local.players[id];
   }
 
   mergeAnnounced(local, remote, localNewer);
@@ -830,6 +865,7 @@ function fingerprint(party: RaceParty): string {
     winnerId: party.winnerId,
     finishDeadline: party.finishDeadline,
     announced: party.announced,
+    left: Object.keys(party.left).sort(),
     players: Object.keys(party.players)
       .sort()
       .map((id) => {
@@ -901,7 +937,8 @@ async function reply(
     partyState(party, you, request),
     ...eventsFor(party, playerId),
   ];
-  if (persist || fingerprint(party) !== before) {
+  const after = fingerprint(party);
+  if (persist || after !== before) {
     await saveParty(party);
   } else {
     rooms.set(party.code, party);
@@ -953,6 +990,7 @@ async function handleCreate(
     finishDeadline: null,
     announced: { [playerId]: "lobby" },
     rev: 0,
+    left: {},
   };
   await saveParty(party);
   return reply(party, playerId, request);
@@ -963,7 +1001,11 @@ async function handleJoin(
   request: Request,
 ): Promise<Response> {
   const code = (body.code ?? "").toUpperCase();
-  const party = await loadParty(code);
+  let party = await loadParty(code);
+  for (let attempt = 0; party === undefined && attempt < 4; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    party = await loadParty(code);
+  }
   if (party === undefined) {
     return error("Party not found — ask the host to keep the race page open.");
   }
@@ -977,6 +1019,7 @@ async function handleJoin(
     if (existing !== undefined) {
       existing.connected = true;
       existing.lastSeenAt = Date.now();
+      delete party.left[existing.id];
       if (party.status === "racing" || party.status === "countdown") {
         delete party.announced[existing.id];
       }
@@ -984,10 +1027,12 @@ async function handleJoin(
     }
   }
   if (party.status !== "lobby") return error("Race already started");
+  pruneDisconnectedLobby(party, Date.now());
   if (Object.keys(party.players).length >= MAX_PLAYERS) {
     return error("Party is full (max 8 players)");
   }
   const playerId = crypto.randomUUID();
+  delete party.left[playerId];
   party.players[playerId] = {
     id: playerId,
     displayName: (body.displayName ?? "Player").trim().slice(0, 24) || "Player",
@@ -1051,7 +1096,9 @@ async function handleAction(
   if (type === "startRace") {
     if (!player.isHost) return error("Only the host can start the race");
     if (party.status !== "lobby") return error("Race already started");
+    pruneDisconnectedLobby(party, Date.now());
     if (connectedCount(party) < 2) {
+      await saveParty(party);
       return error("Need at least 2 players to start");
     }
     if (body.settings !== undefined) {
@@ -1124,12 +1171,17 @@ async function handleAction(
   }
 
   if (type === "leave") {
-    if (party.status === "lobby") {
-      delete party.players[player.id];
+    const now = Date.now();
+    if (party.status === "lobby" || party.status === "finished") {
+      const wasHost = player.id === party.hostId;
+      markLeft(party, player.id, now);
       party.rev = (party.rev ?? 0) + 1;
-      if (player.id === party.hostId) {
-        await removeParty(party.code);
-        return jsonResponse(200, { ok: true, messages: [] });
+      if (wasHost) {
+        transferHost(party);
+        if (connectedCount(party) < 1) {
+          await removeParty(party.code);
+          return jsonResponse(200, { ok: true, messages: [] });
+        }
       }
       await saveParty(party);
     } else {

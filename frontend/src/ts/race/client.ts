@@ -36,6 +36,7 @@ let localPlayerId: string | null = null;
 let connectPromise: Promise<void> | null = null;
 let httpPollTimer: ReturnType<typeof setInterval> | null = null;
 let requestGeneration = 0;
+let rejoinFromPoll = false;
 
 function raceHttpUrl(): string {
   return "/api/race-room";
@@ -190,6 +191,22 @@ async function httpRequest(
       err !== undefined &&
       /party not found|player not found/i.test(err)
     ) {
+      const session = getRaceSession();
+      if (
+        session !== null &&
+        /player not found/i.test(err) &&
+        !rejoinFromPoll
+      ) {
+        rejoinFromPoll = true;
+        void joinParty(
+          session.code,
+          session.displayName,
+          session.playerId,
+        ).finally(() => {
+          rejoinFromPoll = false;
+        });
+        return data;
+      }
       resetLocalRaceState();
       emit({ type: "error", message: err });
       return data;
@@ -407,7 +424,7 @@ export async function joinParty(
   }
   try {
     let lastError = "Failed to join party";
-    for (let attempt = 0; attempt < 8; attempt++) {
+    for (let attempt = 0; attempt < 12; attempt++) {
       const body: Record<string, unknown> = {
         type: "joinParty",
         code: code.toUpperCase(),
@@ -446,7 +463,7 @@ export async function joinParty(
           return;
         }
       }
-      await sleep(400);
+      await sleep(250);
     }
     setRaceError(lastError);
   } catch {
@@ -505,6 +522,8 @@ export function leaveParty(): void {
 }
 
 export function leaveRaceOnPageHide(): void {
+  const status = getRaceParty()?.status;
+  if (status === "countdown" || status === "racing") return;
   const session = getRaceSession();
   const party = getRaceParty();
   const code = party?.code ?? session?.code;

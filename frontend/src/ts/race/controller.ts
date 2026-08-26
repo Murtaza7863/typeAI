@@ -232,15 +232,16 @@ function beginSharedRace(
   pendingRaceResults = false;
   openedRaceResults = false;
   permitNextRaceRestart();
-  armRaceDeadline(startedAt, settings);
+  const resolved = settings ?? getRaceParty()?.settings;
+  armRaceDeadline(startedAt, resolved);
 
   const text = words.length > 0 ? words : ["go"];
-  const timed = settings?.mode === "time";
+  const timed = resolved?.mode === "time";
   CustomText.applyData({
     text,
     mode: "repeat",
     limit: timed
-      ? { value: settings.time, mode: "time" }
+      ? { value: resolved?.time ?? 30, mode: "time" }
       : { value: text.length, mode: "word" },
     pipeDelimiter: false,
   });

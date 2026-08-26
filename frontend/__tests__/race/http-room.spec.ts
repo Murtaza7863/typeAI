@@ -466,9 +466,34 @@ describe("HTTP race room", () => {
     expect(names(hostPoll.messages)).toEqual(["Host"]);
   });
 
-  it("deletes the party when the host leaves the lobby", async () => {
+  it("keeps the party when the host leaves a lobby that still has players", async () => {
     const { code, hostId } = await createHost();
-    await post({ type: "joinParty", code, displayName: "Friend" });
+    const joined = await post({
+      type: "joinParty",
+      code,
+      displayName: "Friend",
+    });
+    await post({ type: "leave", code, playerId: hostId });
+    const friendPoll = await post({
+      type: "poll",
+      code,
+      playerId: joined.playerId,
+    });
+    expect(friendPoll.ok).toBe(true);
+    expect(names(friendPoll.messages)).toEqual(["Friend"]);
+    expect(partyFrom(friendPoll.messages).players[0]?.isHost).toBe(true);
+
+    const third = await post({
+      type: "joinParty",
+      code,
+      displayName: "Other",
+    });
+    expect(third.ok).toBe(true);
+    expect(names(third.messages)).toEqual(["Friend", "Other"]);
+  });
+
+  it("deletes the party when the last player leaves the lobby", async () => {
+    const { code, hostId } = await createHost();
     await post({ type: "leave", code, playerId: hostId });
     const missing = await post({
       type: "joinParty",
@@ -505,6 +530,55 @@ describe("HTTP race room", () => {
     await post({ type: "joinParty", code, displayName: "C" });
     const hostPoll = await post({ type: "poll", code, playerId: hostId });
     expect(names(hostPoll.messages)).toEqual(["A", "B", "C"]);
+  });
+
+  it("keeps a friend in the lobby after the host has been polling for a while", async () => {
+    const originalNow = Date.now;
+    const startedAt = originalNow();
+    Date.now = () => startedAt;
+    try {
+      const { code, hostId } = await createHost("Host");
+      const joined = await post({
+        type: "joinParty",
+        code,
+        displayName: "Friend",
+      });
+      Date.now = () => startedAt + 20_000;
+      const hostPoll = await post({ type: "poll", code, playerId: hostId });
+      expect(names(hostPoll.messages)).toEqual(["Friend", "Host"]);
+      const friendPoll = await post({
+        type: "poll",
+        code,
+        playerId: joined.playerId,
+      });
+      expect(friendPoll.ok).toBe(true);
+      expect(names(friendPoll.messages)).toEqual(["Friend", "Host"]);
+      const started = await post({ type: "startRace", code, playerId: hostId });
+      expect(started.ok).toBe(true);
+      expect(partyFrom(started.messages).players).toHaveLength(2);
+    } finally {
+      Date.now = originalNow;
+    }
+  });
+
+  it("lets a third player join a timed lobby and start", async () => {
+    const created = await post({
+      type: "createParty",
+      displayName: "A",
+      settings: { mode: "time", time: 15, punctuation: false },
+    });
+    const code = partyFrom(created.messages).code;
+    const hostId = created.playerId as string;
+    const b = await post({ type: "joinParty", code, displayName: "B" });
+    const c = await post({ type: "joinParty", code, displayName: "C" });
+    expect(b.ok).toBe(true);
+    expect(c.ok).toBe(true);
+    const hostPoll = await post({ type: "poll", code, playerId: hostId });
+    expect(names(hostPoll.messages)).toEqual(["A", "B", "C"]);
+    expect(partyFrom(hostPoll.messages).settings?.mode).toBe("time");
+    const started = await post({ type: "startRace", code, playerId: hostId });
+    expect(started.ok).toBe(true);
+    expect(partyFrom(started.messages).players).toHaveLength(3);
   });
 
   it("uses a fallback name when displayName is blank", async () => {
@@ -670,6 +744,31 @@ describe("HTTP race room — separate instances", () => {
       playerId: hostId,
     });
     expect(started.ok).toBe(true);
+  });
+
+  it("keeps a friend after 20s of stale host polls on another instance", async () => {
+    const remote = createRemoteStore({ staleGets: true });
+    setRaceDurableStoreForTests(remote);
+    const originalNow = Date.now;
+    const t = originalNow();
+    Date.now = () => t;
+    try {
+      const { code, hostId } = await createHost();
+      await post({ type: "poll", code, playerId: hostId });
+      await post({ type: "joinParty", code, displayName: "Friend" });
+      Date.now = () => t + 20_000;
+      resetRaceRoomsForTests();
+      await post({ type: "poll", code, playerId: hostId });
+      remote.bust();
+      resetRaceRoomsForTests();
+      const fresh = await post({ type: "poll", code, playerId: hostId });
+      expect(names(fresh.messages)).toEqual(["Friend", "Host"]);
+      const started = await post({ type: "startRace", code, playerId: hostId });
+      expect(started.ok).toBe(true);
+      expect(partyFrom(started.messages).players).toHaveLength(2);
+    } finally {
+      Date.now = originalNow;
+    }
   });
 
   it("propagates host settings to a friend on another instance", async () => {
@@ -1724,7 +1823,48 @@ describe("HTTP race room — finish for words and time", () => {
     },
   );
 
-  it("drops a lobby player who stopped polling so the host is not stuck", async () => {
+  it("lets three players finish a words race", async () => {
+    const created = await post({
+      type: "createParty",
+      displayName: "A",
+      settings: { mode: "words", wordCount: 25, punctuation: false },
+    });
+    const code = partyFrom(created.messages).code;
+    const a = created.playerId as string;
+    const b = (await post({ type: "joinParty", code, displayName: "B" }))
+      .playerId as string;
+    const c = (await post({ type: "joinParty", code, displayName: "C" }))
+      .playerId as string;
+    const originalNow = Date.now;
+    const startedAt = originalNow();
+    Date.now = () => startedAt;
+    try {
+      await post({ type: "startRace", code, playerId: a });
+      Date.now = () => startedAt + 4000;
+      const racing = await post({ type: "poll", code, playerId: b });
+      expect(partyFrom(racing.messages).status).toBe("racing");
+      expect(partyFrom(racing.messages).players).toHaveLength(3);
+      Date.now = () => startedAt + 8000;
+      await post({ type: "finished", code, playerId: a, timeMs: 8000 });
+      Date.now = () => startedAt + 9000;
+      await post({ type: "finished", code, playerId: b, timeMs: 9000 });
+      Date.now = () => startedAt + 10000;
+      const done = await post({
+        type: "finished",
+        code,
+        playerId: c,
+        timeMs: 10000,
+      });
+      expectClientAccepts(done.messages);
+      expect(partyFrom(done.messages).status).toBe("finished");
+      expect(partyFrom(done.messages).winnerId).toBe(a);
+      expect(partyFrom(done.messages).players).toHaveLength(3);
+    } finally {
+      Date.now = originalNow;
+    }
+  });
+
+  it("marks a lobby player disconnected after they stop polling, then drops them on start", async () => {
     const created = await post({
       type: "createParty",
       displayName: "Host",
@@ -1737,14 +1877,27 @@ describe("HTTP race room — finish for words and time", () => {
     const t = originalNow();
     Date.now = () => t + 20_000;
     try {
+      const stillThere = await post({ type: "poll", code, playerId: hostId });
+      expectClientAccepts(stillThere.messages);
+      expect(
+        partyFrom(stillThere.messages).players.find(
+          (p) => p.displayName === "Friend",
+        )?.connected,
+      ).toBe(true);
+
+      Date.now = () => t + 50_000;
       const hostView = await post({ type: "poll", code, playerId: hostId });
       expectClientAccepts(hostView.messages);
-      expect(
-        partyFrom(hostView.messages).players.find(
-          (p) => p.displayName === "Friend",
-        ),
-      ).toBeUndefined();
-      expect(partyFrom(hostView.messages).players).toHaveLength(1);
+      const friend = partyFrom(hostView.messages).players.find(
+        (p) => p.displayName === "Friend",
+      );
+      expect(friend?.connected).toBe(false);
+
+      const started = await post({ type: "startRace", code, playerId: hostId });
+      expect(started.ok).toBe(false);
+      expect(errorMessage(started.messages)).toMatch(/at least 2 players/i);
+      const afterStart = await post({ type: "poll", code, playerId: hostId });
+      expect(partyFrom(afterStart.messages).players).toHaveLength(1);
     } finally {
       Date.now = originalNow;
     }

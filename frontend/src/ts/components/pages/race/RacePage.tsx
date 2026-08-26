@@ -495,9 +495,8 @@ export function RacePage(): JSXElement {
           <div>
             <h1 class="text-2xl text-text">Competitive</h1>
             <p class="text-sm text-sub">
-              Race a friend on the same test — words, timed, or a quote. First
-              to finish wins timed races by progress. Keep this tab open while
-              friends join.
+              Race a friend — or up to 8 people — on the same test. Words,
+              timed, and quote all work. Keep this tab open while others join.
             </p>
           </div>
         </div>
