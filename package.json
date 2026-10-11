@@ -65,7 +65,7 @@
     "@typeai/release": "workspace:*",
     "@types/node": "24.9.1",
     "@vitest/coverage-v8": "4.1.5",
-    "caniuse-lite": "1.0.30001778",
+    "caniuse-lite": "1.0.30001815",
     "conventional-changelog": "6.0.0",
     "husky": "8.0.1",
     "knip": "2.19.2",
