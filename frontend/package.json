@@ -84,7 +84,7 @@
     "@tanstack/eslint-plugin-query": "5.100.3",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.9.1",
-    "@testing-library/user-event": "14.6.1",
+    "@testing-library/user-event": "14.6.7",
     "@typeai/oxlint-config": "workspace:*",
     "@typeai/typescript-config": "workspace:*",
     "@types/canvas-confetti": "1.4.3",
