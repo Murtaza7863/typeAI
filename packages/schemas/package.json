@@ -25,7 +25,7 @@
   "devDependencies": {
     "@typeai/tsup-config": "workspace:*",
     "@typeai/typescript-config": "workspace:*",
-    "@types/node": "24.9.1",
+    "@types/node": "26.6.6",
     "madge": "8.0.0",
     "oxlint": "1.64.0",
     "oxlint-tsgolint": "0.22.1",
