@@ -8,11 +8,13 @@ services:
     runtime: node
     plan: free
     region: singapore
-    buildCommand: corepack enable && NODE_ENV=development pnpm install --frozen-lockfile --filter @typeai/backend... && pnpm --filter @typeai/schemas build && pnpm --filter @typeai/backend build:race
-    startCommand: pnpm --filter @typeai/backend start:race
+    buildCommand: npm install -g pnpm@10.28.1 && NODE_ENV=development pnpm install --frozen-lockfile --ignore-scripts --filter @typeai/backend... && pnpm --filter @typeai/schemas build && pnpm --filter @typeai/backend build:race
+    startCommand: node backend/dist/race/standalone.js
     healthCheckPath: /health
     envVars:
       - key: NODE_VERSION
-        value: "24.11.0"
+        value: "24.22.1"
+      - key: SKIP_INSTALL_DEPS
+        value: "true"
       - key: FRONTEND_URL
         sync: false
