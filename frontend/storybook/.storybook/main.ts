@@ -15,6 +15,7 @@ function stubVirtualEnvConfig(): Plugin {
         return `export const envConfig = ${JSON.stringify({
           isDevelopment: true,
           backendUrl: "http://localhost:5005",
+          raceWsUrl: null,
           clientVersion: "storybook",
           recaptchaSiteKey: "",
           quickLoginEmail: undefined,

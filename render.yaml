@@ -1,0 +1,18 @@
+# Live race server. Login stays off; this process only hosts /race-ws.
+# After the first deploy, set Vercel RACE_WS_URL to
+# wss://<this-service>.onrender.com/race-ws and redeploy the frontend.
+# FRONTEND_URL should be the public site, for example https://your-app.vercel.app
+services:
+  - type: web
+    name: typeai-race
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: corepack enable && NODE_ENV=development pnpm install --frozen-lockfile --filter @typeai/backend... && pnpm --filter @typeai/schemas build && pnpm --filter @typeai/backend build:race
+    startCommand: pnpm --filter @typeai/backend start:race
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "24.11.0"
+      - key: FRONTEND_URL
+        sync: false

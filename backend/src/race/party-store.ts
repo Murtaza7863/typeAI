@@ -162,6 +162,32 @@ export function deleteParty(code: string): void {
   parties.delete(code);
 }
 
+export function resetPartyToLobby(party: RaceParty): void {
+  if (party.finishTimeout !== null) {
+    clearTimeout(party.finishTimeout);
+    party.finishTimeout = null;
+  }
+  if (party.countdownTimeout !== null) {
+    clearTimeout(party.countdownTimeout);
+    party.countdownTimeout = null;
+  }
+  for (const [id, player] of party.players) {
+    if (!player.connected) {
+      party.players.delete(id);
+      continue;
+    }
+    player.progress = 0;
+    player.finishedAt = null;
+    player.timeMs = null;
+    player.lastProgressAt = 0;
+  }
+  party.status = "lobby";
+  party.startedAt = null;
+  party.countdownEndsAt = null;
+  party.winnerId = null;
+  party.words = generateRaceText(party.settings);
+}
+
 export function playersList(party: RaceParty): RacePlayer[] {
   return [...party.players.values()].map(
     ({ lastProgressAt: _l, ...player }) => player,
@@ -170,6 +196,12 @@ export function playersList(party: RaceParty): RacePlayer[] {
 
 export function standings(party: RaceParty): RacePlayer[] {
   return playersList(party).sort((a, b) => {
+    if (party.settings.mode === "time") {
+      if (b.progress !== a.progress) return b.progress - a.progress;
+      const aTime = a.timeMs ?? Number.POSITIVE_INFINITY;
+      const bTime = b.timeMs ?? Number.POSITIVE_INFINITY;
+      return aTime - bTime;
+    }
     if (
       a.timeMs !== null &&
       a.timeMs !== undefined &&

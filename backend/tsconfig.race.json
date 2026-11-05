@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": [
+    "src/race/standalone.ts",
+    "src/race/prepare-logs.ts",
+    "src/race/ws-server.ts",
+    "src/race/party-store.ts",
+    "src/race/word-list.ts",
+    "src/utils/logger.ts"
+  ],
+  "exclude": ["node_modules", "**/*.spec.ts"]
+}

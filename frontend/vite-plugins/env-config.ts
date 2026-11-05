@@ -9,6 +9,12 @@ function fallback(value: string | undefined | null, fallback: string): string {
   return value;
 }
 
+function parseRaceWsUrl(raw: string | undefined): string | null {
+  if (raw === undefined) return null;
+  const trimmed = raw.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 function parseFirebaseConfig(
   raw: string | undefined,
 ): EnvConfig["firebaseConfig"] {
@@ -73,12 +79,14 @@ export function envConfig(options: {
         const firebaseConfig = parseFirebaseConfig(
           options.env["FIREBASE_CONFIG"],
         );
+        const raceWsUrl = parseRaceWsUrl(options.env["RACE_WS_URL"]);
         const devConfig: EnvConfig = {
           isDevelopment: true,
           backendUrl: fallback(
             options.env["BACKEND_URL"],
             "http://localhost:5005",
           ),
+          raceWsUrl,
           liteMode,
           clientVersion: options.clientVersion,
           recaptchaSiteKey: "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI",
@@ -93,6 +101,7 @@ export function envConfig(options: {
             options.env["BACKEND_URL"],
             "https://api.typeai.com",
           ),
+          raceWsUrl,
           liteMode,
           recaptchaSiteKey: options.env["RECAPTCHA_SITE_KEY"] ?? "",
           quickLoginEmail: undefined,

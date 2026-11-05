@@ -7,6 +7,7 @@ import {
   RaceServerMessageSchema,
   RaceSettings,
 } from "@typeai/schemas/race";
+import { envConfig } from "virtual:env-config";
 
 import { navigationEvent } from "../events/navigation";
 import {
@@ -28,7 +29,7 @@ import {
 } from "../states/race";
 
 type MessageHandler = (message: RaceServerMessage) => void;
-type TransportMode = "none" | "http";
+type TransportMode = "none" | "http" | "ws";
 
 let handlers: MessageHandler[] = [];
 let mode: TransportMode = "none";
@@ -37,6 +38,10 @@ let connectPromise: Promise<void> | null = null;
 let httpPollTimer: ReturnType<typeof setInterval> | null = null;
 let requestGeneration = 0;
 let rejoinFromPoll = false;
+let socket: WebSocket | null = null;
+let intentionalClose = false;
+let reconnectAttempts = 0;
+let socketGeneration = 0;
 
 function raceHttpUrl(): string {
   return "/api/race-room";
@@ -100,6 +105,151 @@ type HttpRoomResponse = {
 
 async function sleep(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function configuredRaceWsUrl(): string | null {
+  const raw = envConfig.raceWsUrl;
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function sendWs(message: RaceClientMessage): void {
+  if (socket === null || socket.readyState !== WebSocket.OPEN) return;
+  socket.send(JSON.stringify(message));
+}
+
+async function waitForParty(timeoutMs = 8000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      stop();
+      reject(new Error("Timed out waiting for the race server"));
+    }, timeoutMs);
+    const stop = onRaceMessage((message) => {
+      if (message.type === "partyState") {
+        clearTimeout(timer);
+        stop();
+        resolve();
+        return;
+      }
+      if (message.type === "error") {
+        clearTimeout(timer);
+        stop();
+        reject(new Error(message.message));
+      }
+    });
+  });
+}
+
+async function wsRequest(message: RaceClientMessage): Promise<void> {
+  const pending = waitForParty();
+  sendWs(message);
+  await pending;
+}
+
+function attachSocket(ws: WebSocket): void {
+  const generation = ++socketGeneration;
+  socket = ws;
+  mode = "ws";
+  intentionalClose = false;
+  setRaceWsConnected(true);
+  setRaceError(null);
+  ws.addEventListener("message", (event) => {
+    if (typeof event.data !== "string") return;
+    let parsedJson: unknown;
+    try {
+      parsedJson = JSON.parse(event.data);
+    } catch {
+      return;
+    }
+    const parsed = RaceServerMessageSchema.safeParse(parsedJson);
+    if (!parsed.success) {
+      console.warn(
+        "Dropped invalid race message",
+        parsed.error.flatten(),
+        parsedJson,
+      );
+      return;
+    }
+    applyServerMessage(parsed.data);
+  });
+  ws.addEventListener("close", () => {
+    if (generation !== socketGeneration) return;
+    socket = null;
+    mode = "none";
+    setRaceWsConnected(false);
+    if (intentionalClose) return;
+    void reconnectOpenSocket();
+  });
+}
+
+async function openRaceSocket(url: string, timeoutMs: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(url);
+    let settled = false;
+    const fail = (error: Error): void => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      ws.close();
+      reject(error);
+    };
+    const timer = window.setTimeout(() => {
+      fail(new Error("Could not reach the race server"));
+    }, timeoutMs);
+    ws.addEventListener("open", () => {
+      if (settled) {
+        ws.close();
+        return;
+      }
+      settled = true;
+      window.clearTimeout(timer);
+      attachSocket(ws);
+      resolve();
+    });
+    ws.addEventListener("error", () => {
+      fail(new Error("Could not reach the race server"));
+    });
+  });
+}
+
+async function reconnectOpenSocket(): Promise<void> {
+  const url = configuredRaceWsUrl();
+  const session = getRaceSession();
+  if (url === null || session === null) return;
+  if (reconnectAttempts >= 3) {
+    setRaceError("Lost the race server. Refresh to rejoin.");
+    return;
+  }
+  reconnectAttempts += 1;
+  try {
+    await openRaceSocket(url, 20000);
+    sendWs({
+      type: "reconnect",
+      code: session.code,
+      playerId: session.playerId,
+    });
+  } catch {
+    setRaceError("Lost the race server. Refresh to rejoin.");
+  }
+}
+
+async function connectConfiguredSocket(): Promise<boolean> {
+  const wsUrl = configuredRaceWsUrl();
+  if (wsUrl === null) return false;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await openRaceSocket(wsUrl, 20000);
+      reconnectAttempts = 0;
+      setRaceError(null);
+      return true;
+    } catch {
+      await sleep(1000 * (attempt + 1));
+    }
+  }
+  setRaceWsConnected(false);
+  setRaceError("Could not reach the race server. Refresh and try again.");
+  return true;
 }
 
 function applyHttpRoomResponse(data: HttpRoomResponse): void {
@@ -351,9 +501,15 @@ export async function connectRaceWs(): Promise<void> {
     setRaceWsConnected(true);
     return;
   }
+  if (mode === "ws" && socket?.readyState === WebSocket.OPEN) {
+    setRaceWsConnected(true);
+    return;
+  }
   if (connectPromise !== null) return connectPromise;
 
   connectPromise = (async () => {
+    const usedSocket = await connectConfiguredSocket();
+    if (usedSocket) return;
     for (let attempt = 0; attempt < 4; attempt++) {
       const httpOk = await tryHttpRace(8000);
       if (httpOk) {
@@ -375,11 +531,18 @@ export async function connectRaceWs(): Promise<void> {
 
 export function disconnectRaceWs(): void {
   stopHttpPoll();
+  intentionalClose = true;
+  socket?.close();
+  socket = null;
   mode = "none";
   setRaceWsConnected(false);
 }
 
 function send(message: RaceClientMessage): void {
+  if (mode === "ws") {
+    sendWs(message);
+    return;
+  }
   if (mode !== "http") return;
   void httpRequest({ ...message });
 }
@@ -389,8 +552,29 @@ export async function createParty(
   settings: RaceSettings = DEFAULT_RACE_SETTINGS,
 ): Promise<void> {
   await connectRaceWs();
+  if (mode === "ws") {
+    try {
+      await wsRequest({ type: "createParty", displayName, settings });
+      const code = getRaceParty()?.code;
+      if (code !== undefined && code.length > 0) {
+        navigationEvent.dispatch({
+          url: `/race/${code}`,
+          options: { force: true },
+        });
+      } else if (getRaceError() === null) {
+        setRaceError("Failed to create party");
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to create party";
+      setRaceError(message);
+    }
+    return;
+  }
   if (mode !== "http") {
-    setRaceError("Could not reach the race lobby. Refresh and try again.");
+    if (getRaceError() === null) {
+      setRaceError("Could not reach the race lobby. Refresh and try again.");
+    }
     return;
   }
   try {
@@ -418,8 +602,54 @@ export async function joinParty(
   playerId?: string,
 ): Promise<void> {
   await connectRaceWs();
+  if (mode === "ws") {
+    let lastError = "Failed to join party";
+    try {
+      for (let attempt = 0; attempt < 8; attempt++) {
+        try {
+          const normalized = code.toUpperCase();
+          const body: RaceClientMessage =
+            playerId === undefined
+              ? {
+                  type: "joinParty",
+                  code: normalized,
+                  displayName,
+                }
+              : {
+                  type: "joinParty",
+                  code: normalized,
+                  displayName,
+                  playerId,
+                };
+          await wsRequest(body);
+          const joinedCode = getRaceParty()?.code;
+          if (joinedCode !== undefined && joinedCode.length > 0) {
+            navigationEvent.dispatch({
+              url: `/race/${joinedCode}`,
+              options: { force: true },
+            });
+          }
+          return;
+        } catch (error) {
+          lastError =
+            error instanceof Error ? error.message : "Failed to join party";
+          if (!/party not found/i.test(lastError)) {
+            setRaceError(lastError);
+            return;
+          }
+          await sleep(300);
+        }
+      }
+      setRaceError(lastError);
+    } catch {
+      setRaceError("Failed to join party");
+    }
+    return;
+  }
   if (mode !== "http") {
-    setRaceError("Could not reach the race lobby. Refresh and try again.");
+    if (getRaceError() === null) {
+      setRaceError("Could not reach the race lobby. Refresh and try again.");
+    }
     return;
   }
   try {
@@ -485,6 +715,10 @@ export function sendProgress(progress: number): void {
 
 export function sendFinished(timeMs: number): void {
   setLocalFinished(true);
+  if (mode === "ws") {
+    sendWs({ type: "finished", timeMs });
+    return;
+  }
   void retryFinished(timeMs);
 }
 
@@ -511,12 +745,20 @@ export function playAgain(): void {
 }
 
 export function leaveParty(): void {
-  const session = getRaceSession();
-  const party = getRaceParty();
-  const code = party?.code ?? session?.code;
-  const playerId = localPlayerId ?? session?.playerId;
-  if (code !== undefined && playerId !== undefined) {
-    void httpRequest({ type: "leave", code, playerId }, false);
+  if (mode === "ws") {
+    sendWs({ type: "leave" });
+    intentionalClose = true;
+    socket?.close();
+    socket = null;
+    mode = "none";
+  } else {
+    const session = getRaceSession();
+    const party = getRaceParty();
+    const code = party?.code ?? session?.code;
+    const playerId = localPlayerId ?? session?.playerId;
+    if (code !== undefined && playerId !== undefined) {
+      void httpRequest({ type: "leave", code, playerId }, false);
+    }
   }
   resetLocalRaceState();
 }
@@ -524,6 +766,12 @@ export function leaveParty(): void {
 export function leaveRaceOnPageHide(): void {
   const status = getRaceParty()?.status;
   if (status === "countdown" || status === "racing") return;
+  if (mode === "ws") {
+    sendWs({ type: "leave" });
+    intentionalClose = true;
+    socket?.close();
+    return;
+  }
   const session = getRaceSession();
   const party = getRaceParty();
   const code = party?.code ?? session?.code;

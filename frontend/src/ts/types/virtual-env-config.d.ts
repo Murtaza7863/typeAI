@@ -1,5 +1,7 @@
 export type EnvConfig = {
   backendUrl: string;
+  /** WebSocket URL for live races, for example wss://typeai-race.onrender.com/race-ws */
+  raceWsUrl: string | null;
   isDevelopment: boolean;
   liteMode: boolean;
   clientVersion: string;

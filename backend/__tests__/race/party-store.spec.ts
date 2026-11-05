@@ -131,6 +131,51 @@ describe("race party store", () => {
     expect(ranking.map((p) => p.id)).toEqual(["fast", "slow", "h"]);
   });
 
+  it("ranks a time race by progress", () => {
+    const party = Store.createParty("h", "Host", {
+      mode: "time",
+      wordCount: 50,
+      time: 30,
+      punctuation: false,
+    });
+    Store.addPlayer(party, "more", "More");
+    const host = party.players.get("h");
+    const more = party.players.get("more");
+    if (host === undefined || more === undefined) {
+      throw new Error("expected players");
+    }
+    host.progress = 40;
+    host.timeMs = 30000;
+    more.progress = 70;
+    more.timeMs = 30100;
+    expect(Store.standings(party).map((player) => player.id)).toEqual([
+      "more",
+      "h",
+    ]);
+  });
+
+  it("resets a finished party back to the lobby", () => {
+    const party = Store.createParty("h", "Host");
+    Store.addPlayer(party, "g", "Guest");
+    party.status = "finished";
+    party.winnerId = "h";
+    const host = party.players.get("h");
+    const guest = party.players.get("g");
+    if (host === undefined || guest === undefined) {
+      throw new Error("expected players");
+    }
+    host.progress = 100;
+    host.timeMs = 1000;
+    guest.connected = false;
+    Store.resetPartyToLobby(party);
+    expect(party.status).toBe("lobby");
+    expect(party.winnerId).toBeNull();
+    expect(party.players.has("g")).toBe(false);
+    expect(party.players.get("h")?.progress).toBe(0);
+    expect(party.players.get("h")?.timeMs).toBeNull();
+    expect(party.words.length).toBeGreaterThan(0);
+  });
+
   it("treats disconnected unfinished players as done for completion", () => {
     const party = Store.createParty("h", "Host");
     Store.addPlayer(party, "g", "Guest");

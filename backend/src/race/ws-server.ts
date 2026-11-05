@@ -82,7 +82,9 @@ function completeRace(party: Store.RaceParty): void {
     party.finishTimeout = null;
   }
   const ranking = Store.standings(party);
-  if (party.winnerId === null) {
+  if (party.settings.mode === "time") {
+    party.winnerId = ranking[0]?.id ?? null;
+  } else if (party.winnerId === null) {
     const winner = ranking.find(
       (p) => p.timeMs !== null && p.timeMs !== undefined,
     );
@@ -213,7 +215,10 @@ function handleStartRace(ws: WebSocket, settings?: RaceSettings): void {
     send(ws, { type: "error", message: "Race already started" });
     return;
   }
-  if (party.players.size < 2) {
+  const connected = [...party.players.values()].filter(
+    (player) => player.connected,
+  ).length;
+  if (connected < 2) {
     send(ws, { type: "error", message: "Need at least 2 players to start" });
     return;
   }
@@ -331,11 +336,14 @@ function handleFinished(ws: WebSocket, timeMs: number): void {
     return;
   }
 
-  player.progress = 100;
-  player.timeMs = timeMs;
+  if (party.settings.mode === "time") {
+    player.timeMs = Math.max(1, Math.floor(timeMs));
+  } else {
+    player.progress = 100;
+    player.timeMs = Math.max(1, Math.floor(timeMs));
+    party.winnerId ??= player.id;
+  }
   player.finishedAt = Date.now();
-
-  party.winnerId ??= player.id;
 
   const ranking = Store.standings(party);
   const place =
@@ -364,6 +372,43 @@ function handleFinished(ws: WebSocket, timeMs: number): void {
   }, RACE_FINISH_TIMEOUT_MS);
 
   maybeCompleteRace(party);
+}
+
+function handlePlayAgain(ws: WebSocket): void {
+  const meta = sockets.get(ws);
+  if (meta === undefined || meta.partyCode === null) return;
+
+  const party = Store.getParty(meta.partyCode);
+  if (party === undefined) {
+    send(ws, { type: "error", message: "Party not found" });
+    return;
+  }
+  if (party.status !== "finished") {
+    send(ws, {
+      type: "error",
+      message: "Can only play again after the race finishes",
+    });
+    return;
+  }
+
+  const currentHost = party.players.get(party.hostId);
+  if (currentHost === undefined || !currentHost.connected) {
+    if (currentHost !== undefined) currentHost.isHost = false;
+    const next = [...party.players.values()].find((player) => player.connected);
+    if (next === undefined) {
+      send(ws, { type: "error", message: "Party is empty" });
+      return;
+    }
+    next.isHost = true;
+    party.hostId = next.id;
+  }
+  if (meta.playerId !== party.hostId) {
+    send(ws, { type: "error", message: "Only the host can play again" });
+    return;
+  }
+
+  Store.resetPartyToLobby(party);
+  broadcastPartyState(party);
 }
 
 function handleLeave(ws: WebSocket): void {
@@ -427,6 +472,15 @@ function handleMessage(ws: WebSocket, raw: string): void {
     case "leave":
       handleLeave(ws);
       break;
+    case "playAgain":
+      handlePlayAgain(ws);
+      break;
+    case "poll":
+      break;
+    default: {
+      const unreachable: never = msg;
+      return unreachable;
+    }
   }
 }
 
