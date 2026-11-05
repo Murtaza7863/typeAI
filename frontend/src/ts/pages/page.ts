@@ -18,7 +18,8 @@ export type PageName =
   | "accountSettings"
   | "leaderboards"
   | "friends"
-  | "race";
+  | "race"
+  | "daily";
 
 type Options<T> = {
   params?: Record<string, string>;

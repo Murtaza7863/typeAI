@@ -1,0 +1,13 @@
+name: Keep race server awake
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health
+        run: curl -fsS --retry 2 --max-time 90 https://typeai-race.onrender.com/health

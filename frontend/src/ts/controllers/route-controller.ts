@@ -45,6 +45,7 @@ function isAllowedLitePath(pathname: string): boolean {
     pathname === "/verify" ||
     pathname === "/race" ||
     pathname.startsWith("/race/") ||
+    pathname === "/daily" ||
     pathname === "/settings"
   );
 }
@@ -195,6 +196,12 @@ const routes: Route[] = [
     path: "/race/:code",
     load: async (_params, options) => {
       await PageController.change("race", options);
+    },
+  },
+  {
+    path: "/daily",
+    load: async (_params, options) => {
+      await PageController.change("daily", options);
     },
   },
 ];

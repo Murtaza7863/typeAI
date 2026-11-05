@@ -11,21 +11,24 @@ import {
   RACE_FINISH_TIMEOUT_MS,
 } from "@typeai/schemas/race";
 import Logger from "../utils/logger";
+import {
+  configuredFrontendOrigin,
+  allowedFrontendOrigin,
+} from "./frontend-origin";
 import * as Store from "./party-store";
 import { generateRaceText } from "./word-list";
 
 type ClientMeta = {
   playerId: string;
   partyCode: string | null;
+  origin: string | null;
 };
 
 const sockets = new Map<WebSocket, ClientMeta>();
 
-function inviteUrl(code: string): string {
-  const frontend = (
-    process.env["FRONTEND_URL"] ?? "http://localhost:3000"
-  ).replace(/\/$/, "");
-  return `${frontend}/race/${code}`;
+function inviteUrl(party: Store.RaceParty): string {
+  const frontend = party.hostOrigin ?? configuredFrontendOrigin();
+  return `${frontend}/race/${party.code}`;
 }
 
 function send(ws: WebSocket, message: RaceServerMessage): void {
@@ -56,7 +59,7 @@ function partyStatePayload(
       words: party.words,
       settings: party.settings,
       players: Store.playersList(party),
-      inviteUrl: inviteUrl(party.code),
+      inviteUrl: inviteUrl(party),
       startedAt: party.startedAt,
       countdownEndsAt: party.countdownEndsAt,
       winnerId: party.winnerId,
@@ -136,6 +139,7 @@ function handleCreateParty(
     settings ?? DEFAULT_RACE_SETTINGS,
   );
   meta.partyCode = party.code;
+  party.hostOrigin = meta.origin;
   const you = party.players.get(playerId);
   if (you === undefined) {
     send(ws, { type: "error", message: "Failed to create party" });
@@ -513,8 +517,15 @@ export function attachRaceWebSocket(server: HttpServer): void {
     });
   });
 
-  wss.on("connection", (ws) => {
-    sockets.set(ws, { playerId: randomUUID(), partyCode: null });
+  wss.on("connection", (ws, request: IncomingMessage) => {
+    const header = request.headers.origin;
+    sockets.set(ws, {
+      playerId: randomUUID(),
+      partyCode: null,
+      origin: allowedFrontendOrigin(
+        typeof header === "string" ? header : undefined,
+      ),
+    });
 
     ws.on("message", (data) => {
       const raw =

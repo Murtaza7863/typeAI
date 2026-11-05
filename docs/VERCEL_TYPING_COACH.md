@@ -36,17 +36,33 @@ Optional: `LLM_MODEL` (default `gpt-4o-mini`), `TYPING_FEEDBACK_MIN_TESTS` (defa
 
 1. Complete 3+ tests (guest / localStorage).
 2. Open result screen → Typing coach.
-3. Network tab should show `POST /api/typing-feedback` (not `api.typeai.com/dev/...`).
+3. Network tab should show `POST https://<render-host>/typing-feedback` after 3 saved tests. Rule-based text appears even if that request fails.
 4. With `FIREBASE_CONFIG` set: open **Login** → sign in → **Account** should load your stats.
 
 If AI times out, you still get rule-based feedback (no error).
+
+## Typing coach
+
+Guest feedback is built in the browser. After 3 saved tests, the result screen also asks the Render server for an AI summary at `POST /typing-feedback`. That URL comes from `RACE_WS_URL`. Put `OPENAI_API_KEY` on the Render service, not on Vercel. If Render is asleep, errors, or has no key, the rule-based feedback still shows.
+
+## Today's board
+
+`/daily` and the result screen post a nickname plus that test to Render `POST /daily-board`. Scores live in Upstash Redis for the UTC day. On the Render service set:
+
+| Variable | Purpose |
+|----------|---------|
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token |
+
+Without those, the board says it is not connected. Login stays off, so names are not verified.
 
 ## Competitive races
 
 Live races need the Render service in `render.yaml` (`typeai-race`). It is a long-running process with a WebSocket at `/race-ws`. Vercel’s `/api/race-room` lobby can start a race, but finish updates get overwritten, so the race often never completes.
 
-1. Deploy the blueprint on Render. Set `FRONTEND_URL` to the public site.
+1. Deploy the blueprint on Render. Invite links use the site the host opened (`*.vercel.app`, localhost, or `FRONTEND_URL`).
 2. Set Vercel `RACE_WS_URL` to `wss://<service>.onrender.com/race-ws`.
 3. Redeploy the frontend. The URL is baked in at build time.
+4. Optional: `OPENAI_API_KEY` and the two Upstash variables on Render, then redeploy Render.
 
-Accounts stay off (`ACCOUNTS_ENABLED` is false). The free Render instance sleeps after idle; the first join after that can take up to a minute.
+Accounts stay off (`ACCOUNTS_ENABLED` is false). A GitHub Action pings `/health` every 10 minutes. If the free instance still sleeps, the first join can take up to a minute.

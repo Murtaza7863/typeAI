@@ -5,14 +5,17 @@ import {
   getTypingFeedbackQueryOptions,
   invalidateTypingFeedback,
 } from "../../../queries/typing-feedback";
+import { raceHttpOrigin } from "../../../race/http-origin";
 import { getCoachMode } from "../../../states/coach-mode";
 import { isAuthenticated } from "../../../states/core";
 import { showNoticeNotification } from "../../../states/notifications";
 import { getResultVisible } from "../../../states/test";
+import { fetchLocalTypingFeedback } from "../../../typing-feedback/fetch-local-feedback";
 import {
   clearLocalTypingHistory,
   getLocalTypingHistoryVersion,
   getLocalTypingSessionCount,
+  getLocalTypingSessions,
 } from "../../../typing-feedback/local-history";
 import { getCoachProgress } from "../../../typing-feedback/mistake-insights";
 import {
@@ -64,6 +67,21 @@ export function TypingFeedbackPanel(props: {
   const query = useQuery(() => ({
     ...getTypingFeedbackQueryOptions({ enabled: enabled() }),
   }));
+
+  const ai = useQuery(() => {
+    const count = localSessionCount();
+    return {
+      queryKey: ["typingFeedbackAi", count, getLocalTypingHistoryVersion()],
+      enabled:
+        enabled() &&
+        !isAuthenticated() &&
+        count >= 3 &&
+        raceHttpOrigin() !== null,
+      retry: false,
+      staleTime: 60 * 60 * 1000,
+      queryFn: async () => fetchLocalTypingFeedback(getLocalTypingSessions()),
+    };
+  });
 
   const resetLocalHistory = (): void => {
     clearLocalTypingHistory();
@@ -121,7 +139,7 @@ export function TypingFeedbackPanel(props: {
 
       <AsyncContent queries={{ query }}>
         {({ queryData }) => {
-          const data = queryData();
+          const data = ai.data ?? queryData();
 
           return (
             <Show
@@ -138,6 +156,9 @@ export function TypingFeedbackPanel(props: {
               }
             >
               <div class="flex flex-col gap-4">
+                <Show when={ai.isFetching}>
+                  <p class="text-xs text-sub">Asking the coach…</p>
+                </Show>
                 <Show when={data.summary}>
                   <p class="leading-relaxed">{data.summary}</p>
                 </Show>

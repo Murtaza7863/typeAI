@@ -11,7 +11,7 @@
     "clean": "tsc --build --clean",
     "ts-check": "tsc --noEmit",
     "start": "node ./dist/server.js",
-    "build:race": "tsc -p tsconfig.race.json",
+    "build:race": "tsc -p tsconfig.race.json && node scripts/emit-typing-coach.cjs",
     "start:race": "node ./dist/race/standalone.js",
     "test": "vitest run --project=unit",
     "integration-test": "vitest run --project=integration --project=integration-isolated",

@@ -132,6 +132,21 @@ export function Nav(): JSXElement {
       <Button
         variant="text"
         fa={{
+          icon: "fa-list-ol",
+          fixedWidth: true,
+        }}
+        router-link
+        dataset={{
+          "data-nav-item": "daily",
+        }}
+        class={buttonClass()}
+        href="/daily"
+      >
+        <NavLabel text="today" />
+      </Button>
+      <Button
+        variant="text"
+        fa={{
           icon: "fa-cog",
           fixedWidth: true,
         }}

@@ -2,21 +2,22 @@ import {
   TypingFeedback,
   TypingSessionInput,
 } from "@typeai/schemas/typing-feedback";
+import { raceHttpOrigin } from "../race/http-origin";
 import { envConfig } from "virtual:env-config";
 
-const LOCAL_FEEDBACK_TIMEOUT_MS = 12_000;
+const LOCAL_FEEDBACK_TIMEOUT_MS = 20_000;
 
 type LocalTypingFeedbackResponse = {
   message?: string;
   data?: TypingFeedback;
 };
 
-/** Production static deploy uses same-origin Vercel function; local dev uses backend. */
 function resolveLocalFeedbackUrl(): string {
-  if (envConfig.isDevelopment) {
-    return `${envConfig.backendUrl}/dev/typingFeedback`;
+  const origin = raceHttpOrigin();
+  if (origin === null) {
+    throw new Error("Live coach is not configured");
   }
-  return "/api/typing-feedback";
+  return `${origin}/typing-feedback`;
 }
 
 export async function fetchLocalTypingFeedback(

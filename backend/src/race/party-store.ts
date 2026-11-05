@@ -23,6 +23,7 @@ export type RaceParty = {
   startedAt: number | null;
   countdownEndsAt: number | null;
   winnerId: string | null;
+  hostOrigin: string | null;
   finishTimeout: ReturnType<typeof setTimeout> | null;
   countdownTimeout: ReturnType<typeof setTimeout> | null;
 };
@@ -77,6 +78,7 @@ export function createParty(
     startedAt: null,
     countdownEndsAt: null,
     winnerId: null,
+    hostOrigin: null,
     finishTimeout: null,
     countdownTimeout: null,
   };

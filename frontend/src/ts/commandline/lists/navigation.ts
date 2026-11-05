@@ -36,6 +36,15 @@ const commands: Command[] = [
     },
   },
   {
+    id: "viewDailyBoard",
+    display: "View today's board",
+    alias: "navigate go to daily scores",
+    icon: "fa-list-ol",
+    exec: (): void => {
+      void navigate("/daily");
+    },
+  },
+  {
     id: "viewAbout",
     display: "View About Page",
     alias: "navigate go to",

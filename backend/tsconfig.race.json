@@ -10,6 +10,8 @@
     "src/race/ws-server.ts",
     "src/race/party-store.ts",
     "src/race/word-list.ts",
+    "src/race/frontend-origin.ts",
+    "src/race/public-http.ts",
     "src/utils/logger.ts"
   ],
   "exclude": ["node_modules", "**/*.spec.ts"]

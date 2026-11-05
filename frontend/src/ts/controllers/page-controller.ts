@@ -83,6 +83,9 @@ const pages = {
   race: solidPage("race", {
     path: "/race",
   }),
+  daily: solidPage("daily", {
+    path: "/daily",
+  }),
   404: Page404.page,
   accountSettings: PageAccountSettings.page,
   leaderboards: solidPage("leaderboards", {

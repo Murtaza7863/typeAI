@@ -15,6 +15,8 @@ import { Modals } from "./modals/Modals";
 import { AboutPage } from "./pages/AboutPage";
 import { AccountPage } from "./pages/account/AccountPage";
 import { MyProfile } from "./pages/account/MyProfile";
+import { DailyBoard } from "./pages/daily/DailyBoard";
+import { DailyPage } from "./pages/daily/DailyPage";
 import { LeaderboardPage } from "./pages/leaderboard/LeaderboardPage";
 import { LoginPage } from "./pages/login/LoginPage";
 import { ProfilePage } from "./pages/profile/ProfilePage";
@@ -33,6 +35,8 @@ const fullComponents: Record<string, () => JSXElement> = {
   loginpage: () => <LoginPage />,
   leaderboardpage: () => <LeaderboardPage />,
   racepage: () => <RacePage />,
+  dailypage: () => <DailyPage />,
+  dailyboard: () => <DailyBoard variant="result" />,
   raceprogressbars: () => <RaceProgressBars testOverlay />,
   profilepage: () => <ProfilePage />,
   profilesearchpage: () => <ProfileSearchPage />,
@@ -59,6 +63,8 @@ const liteComponents: Record<string, () => JSXElement> = {
   accountpage: () => <AccountPage />,
   loginpage: () => <LoginPage />,
   racepage: () => <RacePage />,
+  dailypage: () => <DailyPage />,
+  dailyboard: () => <DailyBoard variant="result" />,
   raceprogressbars: () => <RaceProgressBars testOverlay />,
   typingfeedbackpanel: () => <TypingFeedbackPanel variant="result" />,
   resultprogresspanel: () => <ResultProgressPanel />,
