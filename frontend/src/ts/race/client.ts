@@ -15,6 +15,7 @@ import {
   getRaceError,
   getRaceParty,
   getRaceSession,
+  getRaceYou,
   isRaceActive,
   setCountdownSeconds,
   setIsRaceActive,
@@ -466,9 +467,22 @@ function applyServerMessage(message: RaceServerMessage): void {
       }
       break;
     }
-    case "playerFinished":
+    case "playerFinished": {
       setStandings(message.standings);
+      const party = getRaceParty();
+      if (party !== null) {
+        const finishedById = new Map(
+          message.standings.map((player) => [player.id, player]),
+        );
+        setRaceParty({
+          ...party,
+          players: party.players.map(
+            (player) => finishedById.get(player.id) ?? player,
+          ),
+        });
+      }
       break;
+    }
     case "raceComplete": {
       setCountdownSeconds(null);
       setStandings(message.standings);
@@ -713,10 +727,28 @@ export function sendProgress(progress: number): void {
   send({ type: "progress", progress });
 }
 
+function localFinishRecorded(): boolean {
+  const youId = getRaceYou()?.id;
+  if (youId === undefined) return false;
+  const player = getRaceParty()?.players.find(
+    (candidate) => candidate.id === youId,
+  );
+  return typeof player?.timeMs === "number";
+}
+
+async function retryWsFinished(timeMs: number): Promise<void> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    if (localFinishRecorded()) return;
+    sendWs({ type: "finished", timeMs });
+    if (localFinishRecorded()) return;
+    await sleep(400 * (attempt + 1));
+  }
+}
+
 export function sendFinished(timeMs: number): void {
   setLocalFinished(true);
   if (mode === "ws") {
-    sendWs({ type: "finished", timeMs });
+    void retryWsFinished(timeMs);
     return;
   }
   void retryFinished(timeMs);

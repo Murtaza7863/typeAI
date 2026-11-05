@@ -74,6 +74,27 @@ function broadcastPartyState(party: Store.RaceParty): void {
   }
 }
 
+function assignWinner(party: Store.RaceParty): void {
+  const ranking = Store.standings(party);
+  if (party.settings.mode === "time") {
+    party.winnerId = ranking[0]?.id ?? null;
+    return;
+  }
+  party.winnerId =
+    ranking.find((p) => p.timeMs !== null && p.timeMs !== undefined)?.id ??
+    null;
+}
+
+function announceResults(party: Store.RaceParty): void {
+  assignWinner(party);
+  broadcast(party, {
+    type: "raceComplete",
+    winnerId: party.winnerId,
+    standings: Store.standings(party),
+  });
+  broadcastPartyState(party);
+}
+
 function completeRace(party: Store.RaceParty): void {
   if (party.status === "finished") return;
   party.status = "finished";
@@ -81,21 +102,7 @@ function completeRace(party: Store.RaceParty): void {
     clearTimeout(party.finishTimeout);
     party.finishTimeout = null;
   }
-  const ranking = Store.standings(party);
-  if (party.settings.mode === "time") {
-    party.winnerId = ranking[0]?.id ?? null;
-  } else if (party.winnerId === null) {
-    const winner = ranking.find(
-      (p) => p.timeMs !== null && p.timeMs !== undefined,
-    );
-    party.winnerId = winner?.id ?? null;
-  }
-  broadcast(party, {
-    type: "raceComplete",
-    winnerId: party.winnerId,
-    standings: ranking,
-  });
-  broadcastPartyState(party);
+  announceResults(party);
 }
 
 function maybeCompleteRace(party: Store.RaceParty): void {
@@ -326,7 +333,12 @@ function handleFinished(ws: WebSocket, timeMs: number): void {
   if (meta === undefined || meta.partyCode === null) return;
 
   const party = Store.getParty(meta.partyCode);
-  if (party === undefined || party.status !== "racing") return;
+  if (
+    party === undefined ||
+    (party.status !== "racing" && party.status !== "finished")
+  ) {
+    return;
+  }
 
   const player = party.players.get(meta.playerId);
   if (
@@ -336,13 +348,11 @@ function handleFinished(ws: WebSocket, timeMs: number): void {
     return;
   }
 
-  if (party.settings.mode === "time") {
-    player.timeMs = Math.max(1, Math.floor(timeMs));
-  } else {
+  const recordedMs = Math.max(1, Math.floor(timeMs));
+  if (party.settings.mode !== "time") {
     player.progress = 100;
-    player.timeMs = Math.max(1, Math.floor(timeMs));
-    party.winnerId ??= player.id;
   }
+  player.timeMs = recordedMs;
   player.finishedAt = Date.now();
 
   const ranking = Store.standings(party);
@@ -352,11 +362,16 @@ function handleFinished(ws: WebSocket, timeMs: number): void {
   broadcast(party, {
     type: "playerFinished",
     playerId: player.id,
-    timeMs,
+    timeMs: recordedMs,
     place,
     standings: ranking,
   });
   broadcastPartyState(party);
+
+  if (party.status === "finished") {
+    announceResults(party);
+    return;
+  }
 
   if (Store.connectedUnfinishedCount(party) === 0) {
     completeRace(party);
@@ -517,6 +532,12 @@ export function attachRaceWebSocket(server: HttpServer): void {
       const meta = sockets.get(ws);
       sockets.delete(ws);
       if (meta === undefined || meta.partyCode === null) return;
+      const stillConnected = [...sockets.values()].some(
+        (other) =>
+          other.playerId === meta.playerId &&
+          other.partyCode === meta.partyCode,
+      );
+      if (stillConnected) return;
       const party = Store.getParty(meta.partyCode);
       if (party === undefined) return;
       Store.removePlayer(party, meta.playerId);
