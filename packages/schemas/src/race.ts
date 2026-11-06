@@ -46,6 +46,8 @@ export const RacePlayerSchema = z.object({
   progress: z.number().min(0).max(100),
   finishedAt: z.number().nullable().optional(),
   timeMs: z.number().nullable().optional(),
+  /** Characters typed. Time-mode races rank by this. */
+  score: z.number().nonnegative().optional(),
   connected: z.boolean(),
   isHost: z.boolean(),
 });
@@ -89,10 +91,12 @@ export const RaceClientMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("progress"),
     progress: z.number().min(0).max(100),
+    score: z.number().nonnegative().optional(),
   }),
   z.object({
     type: z.literal("finished"),
     timeMs: z.number().positive(),
+    score: z.number().nonnegative().optional(),
   }),
   z.object({
     type: z.literal("leave"),

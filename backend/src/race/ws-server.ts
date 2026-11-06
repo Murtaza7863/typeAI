@@ -8,13 +8,18 @@ import {
   RaceServerMessage,
   RaceSettings,
   RACE_COUNTDOWN_SECONDS,
-  RACE_FINISH_TIMEOUT_MS,
+  RACE_HARD_TIMEOUT_MS,
 } from "@typeai/schemas/race";
 import Logger from "../utils/logger";
 import {
   configuredFrontendOrigin,
   allowedFrontendOrigin,
 } from "./frontend-origin";
+import {
+  forgetParty,
+  loadRememberedParties,
+  rememberParty,
+} from "./party-persist";
 import * as Store from "./party-store";
 import { generateRaceText } from "./word-list";
 
@@ -25,6 +30,36 @@ type ClientMeta = {
 };
 
 const sockets = new Map<WebSocket, ClientMeta>();
+const DISCONNECT_GRACE_MS = 5_000;
+const TIME_RESULT_GRACE_MS = 1_500;
+const IDLE_AFTER_FINISH_MS = 30_000;
+const RESTORE_GRACE_MS = 45_000;
+const saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+Store.setPartyDeletedHook((code) => {
+  const pending = saveTimers.get(code);
+  if (pending !== undefined) clearTimeout(pending);
+  saveTimers.delete(code);
+  void forgetParty(code).catch((error: unknown) => {
+    console.error("party delete failed", error);
+  });
+});
+
+function remember(party: Store.RaceParty, immediate = false): void {
+  const pending = saveTimers.get(party.code);
+  if (pending !== undefined) clearTimeout(pending);
+  const write = (): void => {
+    saveTimers.delete(party.code);
+    void rememberParty(party).catch((error: unknown) => {
+      console.error("party save failed", error);
+    });
+  };
+  if (immediate) {
+    write();
+    return;
+  }
+  saveTimers.set(party.code, setTimeout(write, 400));
+}
 
 function inviteUrl(party: Store.RaceParty): string {
   const frontend = party.hostOrigin ?? configuredFrontendOrigin();
@@ -75,6 +110,7 @@ function broadcastPartyState(party: Store.RaceParty): void {
     if (you === undefined) continue;
     send(socket, partyStatePayload(party, you));
   }
+  remember(party);
 }
 
 function assignWinner(party: Store.RaceParty): void {
@@ -98,14 +134,51 @@ function announceResults(party: Store.RaceParty): void {
   broadcastPartyState(party);
 }
 
+function settleTimeMode(party: Store.RaceParty): void {
+  if (party.settings.mode !== "time") return;
+  const duration = party.settings.time * 1000;
+  for (const player of party.players.values()) {
+    if (
+      !player.connected &&
+      (player.timeMs === null || player.timeMs === undefined)
+    ) {
+      continue;
+    }
+    player.timeMs ??= duration;
+  }
+}
+
+function clearIdle(party: Store.RaceParty): void {
+  if (party.idleTimeout === null) return;
+  clearInterval(party.idleTimeout);
+  party.idleTimeout = null;
+}
+
+function armIdleWatch(party: Store.RaceParty): void {
+  if (party.settings.mode === "time" || party.idleTimeout !== null) return;
+  party.idleTimeout = setInterval(() => {
+    if (party.status !== "racing") {
+      clearIdle(party);
+      return;
+    }
+    if (!Store.stalledAfterFinish(party, Date.now(), IDLE_AFTER_FINISH_MS)) {
+      return;
+    }
+    completeRace(party);
+  }, 5_000);
+}
+
 function completeRace(party: Store.RaceParty): void {
   if (party.status === "finished") return;
+  clearIdle(party);
+  settleTimeMode(party);
   party.status = "finished";
   if (party.finishTimeout !== null) {
     clearTimeout(party.finishTimeout);
     party.finishTimeout = null;
   }
   announceResults(party);
+  remember(party, true);
 }
 
 function maybeCompleteRace(party: Store.RaceParty): void {
@@ -113,6 +186,21 @@ function maybeCompleteRace(party: Store.RaceParty): void {
   if (Store.allFinishedOrDisconnected(party)) {
     completeRace(party);
   }
+}
+
+function armHardTimeout(party: Store.RaceParty): void {
+  if (party.finishTimeout !== null) {
+    clearTimeout(party.finishTimeout);
+    party.finishTimeout = null;
+  }
+  const limitMs =
+    party.settings.mode === "time"
+      ? party.settings.time * 1000 + TIME_RESULT_GRACE_MS
+      : RACE_HARD_TIMEOUT_MS;
+  party.finishTimeout = setTimeout(() => {
+    party.finishTimeout = null;
+    if (party.status === "racing") completeRace(party);
+  }, limitMs);
 }
 
 function handleCreateParty(
@@ -260,23 +348,29 @@ function handleStartRace(ws: WebSocket, settings?: RaceSettings): void {
 
   party.countdownTimeout = setTimeout(() => {
     party.countdownTimeout = null;
-    if (party.status !== "countdown") return;
-    party.status = "racing";
-    party.startedAt = Date.now();
-    party.countdownEndsAt = null;
-    for (const player of party.players.values()) {
-      player.progress = 0;
-      player.finishedAt = null;
-      player.timeMs = null;
-    }
-    broadcast(party, {
-      type: "raceStart",
-      startedAt: party.startedAt,
-      words: party.words,
-      settings: party.settings,
-    });
-    broadcastPartyState(party);
+    startRaceClock(party);
   }, RACE_COUNTDOWN_SECONDS * 1000);
+}
+
+function startRaceClock(party: Store.RaceParty): void {
+  if (party.status !== "countdown") return;
+  party.status = "racing";
+  party.startedAt = Date.now();
+  party.countdownEndsAt = null;
+  for (const player of party.players.values()) {
+    player.progress = 0;
+    player.finishedAt = null;
+    player.timeMs = null;
+    player.score = undefined;
+  }
+  broadcast(party, {
+    type: "raceStart",
+    startedAt: party.startedAt,
+    words: party.words,
+    settings: party.settings,
+  });
+  broadcastPartyState(party);
+  armHardTimeout(party);
 }
 
 function handleUpdateSettings(ws: WebSocket, settings: RaceSettings): void {
@@ -302,7 +396,16 @@ function handleUpdateSettings(ws: WebSocket, settings: RaceSettings): void {
   }
 }
 
-function handleProgress(ws: WebSocket, progress: number): void {
+function rememberScore(
+  player: Store.RacePlayerInternal,
+  score: number | undefined,
+): void {
+  if (score === undefined || !Number.isFinite(score)) return;
+  const next = Math.max(0, Math.floor(score));
+  player.score = Math.max(player.score ?? 0, next);
+}
+
+function handleProgress(ws: WebSocket, progress: number, score?: number): void {
   const meta = sockets.get(ws);
   if (meta === undefined || meta.partyCode === null) return;
 
@@ -317,13 +420,14 @@ function handleProgress(ws: WebSocket, progress: number): void {
     return;
   }
 
+  rememberScore(player, score);
   const now = Date.now();
   if (now - player.lastProgressAt < 100) return;
   player.lastProgressAt = now;
 
   const clamped = Math.max(0, Math.min(100, Math.floor(progress)));
   if (clamped === player.progress) return;
-  player.progress = clamped;
+  player.progress = Math.max(player.progress, clamped);
 
   broadcast(party, {
     type: "progressUpdate",
@@ -332,7 +436,7 @@ function handleProgress(ws: WebSocket, progress: number): void {
   });
 }
 
-function handleFinished(ws: WebSocket, timeMs: number): void {
+function handleFinished(ws: WebSocket, timeMs: number, score?: number): void {
   const meta = sockets.get(ws);
   if (meta === undefined || meta.partyCode === null) return;
 
@@ -345,17 +449,25 @@ function handleFinished(ws: WebSocket, timeMs: number): void {
   }
 
   const player = party.players.get(meta.playerId);
-  if (
-    player === undefined ||
-    (player.timeMs !== null && player.timeMs !== undefined)
-  ) {
+  if (player === undefined) return;
+  if (player.timeMs !== null && player.timeMs !== undefined) {
+    const previous = player.score ?? 0;
+    rememberScore(player, score);
+    if ((player.score ?? 0) !== previous && party.status === "finished") {
+      announceResults(party);
+      remember(party, true);
+    }
     return;
   }
 
-  const recordedMs = Math.max(1, Math.floor(timeMs));
+  const recordedMs =
+    party.settings.mode === "time"
+      ? party.settings.time * 1000
+      : Math.max(1, Math.floor(timeMs));
   if (party.settings.mode !== "time") {
     player.progress = 100;
   }
+  rememberScore(player, score);
   player.timeMs = recordedMs;
   player.finishedAt = Date.now();
 
@@ -374,23 +486,12 @@ function handleFinished(ws: WebSocket, timeMs: number): void {
 
   if (party.status === "finished") {
     announceResults(party);
+    remember(party, true);
     return;
   }
-
-  if (Store.connectedUnfinishedCount(party) === 0) {
-    completeRace(party);
-    return;
-  }
-
-  party.finishTimeout ??= setTimeout(() => {
-    party.finishTimeout = null;
-    maybeCompleteRace(party);
-    if (party.status === "racing") {
-      completeRace(party);
-    }
-  }, RACE_FINISH_TIMEOUT_MS);
 
   maybeCompleteRace(party);
+  if (party.status === "racing") armIdleWatch(party);
 }
 
 function handlePlayAgain(ws: WebSocket): void {
@@ -410,24 +511,18 @@ function handlePlayAgain(ws: WebSocket): void {
     return;
   }
 
-  const currentHost = party.players.get(party.hostId);
-  if (currentHost === undefined || !currentHost.connected) {
-    if (currentHost !== undefined) currentHost.isHost = false;
-    const next = [...party.players.values()].find((player) => player.connected);
-    if (next === undefined) {
-      send(ws, { type: "error", message: "Party is empty" });
-      return;
-    }
-    next.isHost = true;
-    party.hostId = next.id;
-  }
-  if (meta.playerId !== party.hostId) {
-    send(ws, { type: "error", message: "Only the host can play again" });
+  const you = party.players.get(meta.playerId);
+  if (you === undefined || !you.connected) {
+    send(ws, { type: "error", message: "You are not in this party" });
     return;
   }
+  for (const player of party.players.values()) player.isHost = false;
+  you.isHost = true;
+  party.hostId = you.id;
 
   Store.resetPartyToLobby(party);
   broadcastPartyState(party);
+  remember(party, true);
 }
 
 function handleLeave(ws: WebSocket): void {
@@ -483,10 +578,10 @@ function handleMessage(ws: WebSocket, raw: string): void {
       handleStartRace(ws, msg.settings);
       break;
     case "progress":
-      handleProgress(ws, msg.progress);
+      handleProgress(ws, msg.progress, msg.score);
       break;
     case "finished":
-      handleFinished(ws, msg.timeMs);
+      handleFinished(ws, msg.timeMs, msg.score);
       break;
     case "leave":
       handleLeave(ws);
@@ -500,6 +595,64 @@ function handleMessage(ws: WebSocket, raw: string): void {
       const unreachable: never = msg;
       return unreachable;
     }
+  }
+}
+
+function dropAbsentPlayers(code: string): void {
+  const party = Store.getParty(code);
+  if (party === undefined) return;
+  if (party.status !== "racing" && party.status !== "countdown") return;
+  let changed = false;
+  for (const player of party.players.values()) {
+    const online = [...sockets.values()].some(
+      (meta) => meta.playerId === player.id && meta.partyCode === party.code,
+    );
+    if (!online && player.connected) {
+      player.connected = false;
+      changed = true;
+    }
+  }
+  if (!changed) return;
+  broadcastPartyState(party);
+  maybeCompleteRace(party);
+}
+
+function resumeParty(party: Store.RaceParty): void {
+  const now = Date.now();
+  if (party.status === "countdown" && party.countdownEndsAt !== null) {
+    const delay = Math.max(0, party.countdownEndsAt - now);
+    party.countdownTimeout = setTimeout(() => {
+      party.countdownTimeout = null;
+      startRaceClock(party);
+    }, delay);
+  } else if (party.status === "racing" && party.startedAt !== null) {
+    const limit =
+      party.settings.mode === "time"
+        ? party.settings.time * 1000 + TIME_RESULT_GRACE_MS
+        : RACE_HARD_TIMEOUT_MS;
+    const delay = Math.max(0, party.startedAt + limit - now);
+    party.finishTimeout = setTimeout(() => {
+      party.finishTimeout = null;
+      if (party.status === "racing") completeRace(party);
+    }, delay);
+    armIdleWatch(party);
+  }
+  if (party.status === "racing" || party.status === "countdown") {
+    setTimeout(() => {
+      dropAbsentPlayers(party.code);
+    }, RESTORE_GRACE_MS);
+  }
+}
+
+export async function restoreParties(): Promise<void> {
+  try {
+    const snapshots = await loadRememberedParties();
+    for (const snapshot of snapshots) {
+      const party = Store.importParty(snapshot);
+      if (party !== undefined) resumeParty(party);
+    }
+  } catch (error) {
+    console.error("party restore failed", error);
   }
 }
 
@@ -543,20 +696,29 @@ export function attachRaceWebSocket(server: HttpServer): void {
       const meta = sockets.get(ws);
       sockets.delete(ws);
       if (meta === undefined || meta.partyCode === null) return;
-      const stillConnected = [...sockets.values()].some(
-        (other) =>
-          other.playerId === meta.playerId &&
-          other.partyCode === meta.partyCode,
-      );
-      if (stillConnected) return;
+      const drop = (): void => {
+        if (meta.partyCode === null) return;
+        const stillConnected = [...sockets.values()].some(
+          (other) =>
+            other.playerId === meta.playerId &&
+            other.partyCode === meta.partyCode,
+        );
+        if (stillConnected) return;
+        const party = Store.getParty(meta.partyCode);
+        if (party === undefined) return;
+        Store.removePlayer(party, meta.playerId);
+        const still = Store.getParty(party.code);
+        if (still !== undefined) {
+          broadcastPartyState(still);
+          maybeCompleteRace(still);
+        }
+      };
       const party = Store.getParty(meta.partyCode);
-      if (party === undefined) return;
-      Store.removePlayer(party, meta.playerId);
-      const still = Store.getParty(party.code);
-      if (still !== undefined) {
-        broadcastPartyState(still);
-        maybeCompleteRace(still);
+      if (party?.status === "racing") {
+        setTimeout(drop, DISCONNECT_GRACE_MS);
+        return;
       }
+      drop();
     });
   });
 

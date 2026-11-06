@@ -26,9 +26,29 @@ export type RaceParty = {
   hostOrigin: string | null;
   finishTimeout: ReturnType<typeof setTimeout> | null;
   countdownTimeout: ReturnType<typeof setTimeout> | null;
+  idleTimeout: ReturnType<typeof setInterval> | null;
+};
+
+export type PartySnapshot = {
+  code: string;
+  hostId: string;
+  status: RacePartyStatus;
+  words: string[];
+  settings: RaceSettings;
+  players: RacePlayerInternal[];
+  createdAt: number;
+  startedAt: number | null;
+  countdownEndsAt: number | null;
+  winnerId: string | null;
+  hostOrigin: string | null;
 };
 
 const parties = new Map<string, RaceParty>();
+let partyDeleted: (code: string) => void = () => undefined;
+
+export function setPartyDeletedHook(hook: (code: string) => void): void {
+  partyDeleted = hook;
+}
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -81,6 +101,7 @@ export function createParty(
     hostOrigin: null,
     finishTimeout: null,
     countdownTimeout: null,
+    idleTimeout: null,
   };
 
   parties.set(code, party);
@@ -156,23 +177,25 @@ export function removePlayer(party: RaceParty, playerId: string): void {
   }
 }
 
+function clearTimers(party: RaceParty): void {
+  if (party.finishTimeout !== null) clearTimeout(party.finishTimeout);
+  if (party.countdownTimeout !== null) clearTimeout(party.countdownTimeout);
+  if (party.idleTimeout !== null) clearInterval(party.idleTimeout);
+  party.finishTimeout = null;
+  party.countdownTimeout = null;
+  party.idleTimeout = null;
+}
+
 export function deleteParty(code: string): void {
   const party = parties.get(code);
   if (party === undefined) return;
-  if (party.finishTimeout !== null) clearTimeout(party.finishTimeout);
-  if (party.countdownTimeout !== null) clearTimeout(party.countdownTimeout);
+  clearTimers(party);
   parties.delete(code);
+  partyDeleted(code);
 }
 
 export function resetPartyToLobby(party: RaceParty): void {
-  if (party.finishTimeout !== null) {
-    clearTimeout(party.finishTimeout);
-    party.finishTimeout = null;
-  }
-  if (party.countdownTimeout !== null) {
-    clearTimeout(party.countdownTimeout);
-    party.countdownTimeout = null;
-  }
+  clearTimers(party);
   for (const [id, player] of party.players) {
     if (!player.connected) {
       party.players.delete(id);
@@ -181,6 +204,7 @@ export function resetPartyToLobby(party: RaceParty): void {
     player.progress = 0;
     player.finishedAt = null;
     player.timeMs = null;
+    player.score = undefined;
     player.lastProgressAt = 0;
   }
   party.status = "lobby";
@@ -199,7 +223,9 @@ export function playersList(party: RaceParty): RacePlayer[] {
 export function standings(party: RaceParty): RacePlayer[] {
   return playersList(party).sort((a, b) => {
     if (party.settings.mode === "time") {
-      if (b.progress !== a.progress) return b.progress - a.progress;
+      const aScore = a.score ?? a.progress;
+      const bScore = b.score ?? b.progress;
+      if (bScore !== aScore) return bScore - aScore;
       const aTime = a.timeMs ?? Number.POSITIVE_INFINITY;
       const bTime = b.timeMs ?? Number.POSITIVE_INFINITY;
       return aTime - bTime;
@@ -228,6 +254,72 @@ export function allFinishedOrDisconnected(party: RaceParty): boolean {
     }
   }
   return true;
+}
+
+export function stalledAfterFinish(
+  party: RaceParty,
+  now: number,
+  idleMs: number,
+): boolean {
+  let someoneFinished = false;
+  let unfinished = 0;
+  for (const player of party.players.values()) {
+    if (player.timeMs !== null && player.timeMs !== undefined) {
+      someoneFinished = true;
+      continue;
+    }
+    if (!player.connected) continue;
+    unfinished += 1;
+    const seen =
+      player.lastProgressAt > 0
+        ? player.lastProgressAt
+        : (party.startedAt ?? now);
+    if (now - seen < idleMs) return false;
+  }
+  return someoneFinished && unfinished > 0;
+}
+
+export function exportParty(party: RaceParty): PartySnapshot {
+  return {
+    code: party.code,
+    hostId: party.hostId,
+    status: party.status,
+    words: [...party.words],
+    settings: { ...party.settings },
+    players: [...party.players.values()].map((player) => ({ ...player })),
+    createdAt: party.createdAt,
+    startedAt: party.startedAt,
+    countdownEndsAt: party.countdownEndsAt,
+    winnerId: party.winnerId,
+    hostOrigin: party.hostOrigin,
+  };
+}
+
+export function importParty(snapshot: PartySnapshot): RaceParty | undefined {
+  if (parties.has(snapshot.code)) return parties.get(snapshot.code);
+  const players = new Map<string, RacePlayerInternal>();
+  for (const player of snapshot.players) {
+    players.set(player.id, { ...player });
+  }
+  if (players.size === 0) return undefined;
+  const party: RaceParty = {
+    code: snapshot.code,
+    hostId: snapshot.hostId,
+    status: snapshot.status,
+    words: [...snapshot.words],
+    settings: { ...snapshot.settings },
+    players,
+    createdAt: snapshot.createdAt,
+    startedAt: snapshot.startedAt,
+    countdownEndsAt: snapshot.countdownEndsAt,
+    winnerId: snapshot.winnerId,
+    hostOrigin: snapshot.hostOrigin,
+    finishTimeout: null,
+    countdownTimeout: null,
+    idleTimeout: null,
+  };
+  parties.set(party.code, party);
+  return party;
 }
 
 export function connectedUnfinishedCount(party: RaceParty): number {

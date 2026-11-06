@@ -1,6 +1,6 @@
 # Live race server, typing coach, and the guest daily board.
-# Login stays off. After the first deploy, set Vercel RACE_WS_URL to
-# wss://<this-service>.onrender.com/race-ws and redeploy the frontend.
+# Login stays off. Production builds use wss://typeai-race.onrender.com/race-ws
+# unless Vercel RACE_WS_URL is set.
 # FRONTEND_URL is optional when players open a *.vercel.app site.
 # OPENAI_API_KEY turns on AI coach summaries.
 # UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN store today's scores.

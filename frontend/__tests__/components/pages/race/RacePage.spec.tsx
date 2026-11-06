@@ -184,7 +184,7 @@ describe("RacePage lobby", () => {
     expect(container.textContent).toContain("Play again");
   });
 
-  it("tells a guest to wait for the host after the race", () => {
+  it("lets a guest play again after the race", () => {
     setRaceYou(friend);
     setRaceParty({
       ...lobby([
@@ -196,7 +196,7 @@ describe("RacePage lobby", () => {
     });
     const { container } = render(() => <RacePage />);
     expect(container.textContent).toContain("Race complete");
-    expect(container.textContent).toContain("Waiting for the host");
-    expect(container.textContent).not.toContain("Play again");
+    expect(container.textContent).toContain("Play again");
+    expect(container.textContent).not.toContain("Waiting for the host");
   });
 });

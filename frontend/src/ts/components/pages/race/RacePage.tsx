@@ -236,14 +236,7 @@ function RacePartyPanel(props: {
           <h2 class="mb-4 text-xl text-main">Race complete</h2>
           <RaceStandings />
           <div class="flex flex-wrap gap-2">
-            <Show when={you()?.isHost}>
-              <Button text="Play again" onClick={() => playAgain()} />
-            </Show>
-            <Show when={!you()?.isHost}>
-              <p class="w-full text-sm text-sub">
-                Waiting for the host to start another race, or leave.
-              </p>
-            </Show>
+            <Button text="Play again" onClick={() => playAgain()} />
             <Button
               text="Leave"
               variant="text"

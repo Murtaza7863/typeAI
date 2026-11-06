@@ -1,5 +1,6 @@
-import { createRequire } from "node:module";
+import { randomBytes } from "node:crypto";
 import { IncomingMessage, ServerResponse } from "node:http";
+import { createRequire } from "node:module";
 import { allowedFrontendOrigin } from "./frontend-origin";
 
 const loadModule = createRequire(__filename);
@@ -75,7 +76,13 @@ function clientIp(req: IncomingMessage): string {
   return req.socket.remoteAddress ?? "unknown";
 }
 
-function allowPost(ip: string): boolean {
+async function allowPost(ip: string): Promise<boolean> {
+  if (redisConfigured()) {
+    const key = `typeai:daily:rate:${ip}`;
+    const count = Number(await redis(["INCR", key]));
+    if (count === 1) await redis(["EXPIRE", key, Math.floor(HOUR_MS / 1000)]);
+    return Number.isFinite(count) && count <= POST_LIMIT;
+  }
   const now = Date.now();
   const recent = (postsByIp.get(ip) ?? []).filter(
     (time) => time > now - HOUR_MS,
@@ -89,13 +96,18 @@ function allowPost(ip: string): boolean {
   return true;
 }
 
+function chunkBytes(chunk: unknown): Buffer {
+  if (typeof chunk === "string") return Buffer.from(chunk);
+  if (Buffer.isBuffer(chunk)) return Buffer.from(chunk);
+  if (chunk instanceof Uint8Array) return Buffer.from(chunk);
+  return Buffer.alloc(0);
+}
+
 async function readJson(req: IncomingMessage, limit: number): Promise<unknown> {
   const chunks: Buffer[] = [];
   let size = 0;
   for await (const chunk of req) {
-    const view =
-      typeof chunk === "string" ? chunk : new Uint8Array(chunk as ArrayBuffer);
-    const buf = Buffer.from(view);
+    const buf = chunkBytes(chunk);
     size += buf.length;
     if (size > limit) throw new Error("body too large");
     chunks.push(buf);
@@ -137,6 +149,7 @@ async function redis(command: (string | number)[]): Promise<unknown> {
 function dailyKeys(now = new Date()): {
   board: string;
   meta: string;
+  claims: string;
   expireAt: number;
 } {
   const day = now.toISOString().slice(0, 10);
@@ -151,13 +164,16 @@ function dailyKeys(now = new Date()): {
   return {
     board: `typeai:daily:${day}`,
     meta: `typeai:daily:${day}:meta`,
+    claims: `typeai:daily:${day}:claim`,
     expireAt,
   };
 }
 
 export function parseDailyPost(
   body: unknown,
-): { ok: true; entry: DailyEntry } | { ok: false; message: string } {
+):
+  | { ok: true; entry: DailyEntry; token?: string }
+  | { ok: false; message: string } {
   if (body === null || typeof body !== "object") {
     return { ok: false, message: "Invalid body" };
   }
@@ -195,7 +211,28 @@ export function parseDailyPost(
   if (typeof mode2 !== "string" || mode2.length < 1 || mode2.length > 16) {
     return { ok: false, message: "Invalid mode" };
   }
-  return { ok: true, entry: { nickname, wpm, acc, mode, mode2 } };
+  const posted = record["token"];
+  const token =
+    typeof posted === "string" && /^[a-f0-9]{32}$/.test(posted)
+      ? posted
+      : undefined;
+  return { ok: true, entry: { nickname, wpm, acc, mode, mode2 }, token };
+}
+
+async function claimNickname(
+  nickname: string,
+  token: string | undefined,
+): Promise<{ ok: true; token: string } | { ok: false }> {
+  const { claims, expireAt } = dailyKeys();
+  const fresh = randomBytes(16).toString("hex");
+  const created = await redis(["HSETNX", claims, nickname, fresh]);
+  await redis(["EXPIREAT", claims, expireAt]);
+  if (created === 1 || created === "1") return { ok: true, token: fresh };
+  const existing = await redis(["HGET", claims, nickname]);
+  if (typeof existing === "string" && existing === token) {
+    return { ok: true, token: existing };
+  }
+  return { ok: false };
 }
 
 function parseRange(value: unknown): [string, number][] {
@@ -267,12 +304,26 @@ async function readBoard(): Promise<DailyEntry[]> {
 
 async function saveIfHigher(entry: DailyEntry): Promise<void> {
   const { board, meta, expireAt } = dailyKeys();
-  const existing = Number(await redis(["ZSCORE", board, entry.nickname]));
-  if (Number.isFinite(existing) && existing >= entry.wpm) return;
-  await redis(["ZADD", board, entry.wpm, entry.nickname]);
+  const updated = await redis(["ZADD", board, "GT", entry.wpm, entry.nickname]);
+  if (updated === 0 || updated === "0") return;
   await redis(["HSET", meta, entry.nickname, JSON.stringify(entry)]);
   await redis(["EXPIREAT", board, expireAt]);
   await redis(["EXPIREAT", meta, expireAt]);
+}
+
+async function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error("timeout"));
+    }, ms);
+  });
+  void work.catch(() => undefined);
+  try {
+    return await Promise.race([work, timeout]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
 }
 
 function loadCoach(): CoachCaller {
@@ -308,14 +359,7 @@ async function handleTypingFeedback(
     return;
   }
   try {
-    const feedback = await Promise.race([
-      loadCoach()(sessions),
-      new Promise<never>((_resolve, reject) => {
-        setTimeout(() => {
-          reject(new Error("timeout"));
-        }, COACH_TIMEOUT_MS);
-      }),
-    ]);
+    const feedback = await withTimeout(loadCoach()(sessions), COACH_TIMEOUT_MS);
     sendJson(req, res, 200, {
       message: "Typing feedback generated",
       data: feedback,
@@ -368,15 +412,23 @@ async function handleDailyPost(
     sendJson(req, res, 400, { message: parsed.message });
     return;
   }
-  if (!allowPost(clientIp(req))) {
-    sendJson(req, res, 429, { message: "Too many scores from this network" });
-    return;
-  }
   try {
+    if (!(await allowPost(clientIp(req)))) {
+      sendJson(req, res, 429, { message: "Too many scores from this network" });
+      return;
+    }
+    const claimed = await claimNickname(parsed.entry.nickname, parsed.token);
+    if (!claimed.ok) {
+      sendJson(req, res, 403, {
+        message: "That nickname is already taken today",
+      });
+      return;
+    }
     await saveIfHigher(parsed.entry);
     sendJson(req, res, 200, {
       configured: true,
       entries: await readBoard(),
+      token: claimed.token,
     });
   } catch (error) {
     console.error("daily board write failed", error);

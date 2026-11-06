@@ -39,7 +39,14 @@ function memoryRedis(): (command: Command) => Promise<unknown> {
     }
     if (op === "ZADD") {
       const board = scores.get(key) ?? new Map<string, number>();
-      board.set(String(command[3]), Number(command[2]));
+      const greaterOnly = command[2] === "GT";
+      const score = Number(greaterOnly ? command[3] : command[2]);
+      const member = String(command[greaterOnly ? 4 : 3]);
+      const current = board.get(member);
+      if (greaterOnly && current !== undefined && current >= score) {
+        return 0;
+      }
+      board.set(member, score);
       scores.set(key, board);
       return 1;
     }
@@ -49,7 +56,25 @@ function memoryRedis(): (command: Command) => Promise<unknown> {
       hashes.set(key, hash);
       return 1;
     }
-    if (op === "EXPIREAT") return 1;
+    if (op === "HSETNX") {
+      const hash = hashes.get(key) ?? new Map<string, string>();
+      const field = String(command[2]);
+      if (hash.has(field)) return 0;
+      hash.set(field, String(command[3]));
+      hashes.set(key, hash);
+      return 1;
+    }
+    if (op === "HGET") {
+      return hashes.get(key)?.get(String(command[2])) ?? null;
+    }
+    if (op === "INCR") {
+      const counts = hashes.get("__counts") ?? new Map<string, string>();
+      const next = Number(counts.get(key) ?? "0") + 1;
+      counts.set(key, String(next));
+      hashes.set("__counts", counts);
+      return next;
+    }
+    if (op === "EXPIRE" || op === "EXPIREAT") return 1;
     if (op === "ZRANGE") {
       const board = [...(scores.get(key)?.entries() ?? [])];
       board.sort((left, right) => right[1] - left[1]);
@@ -115,6 +140,7 @@ describe("race public http", () => {
       }),
     });
     expect(first.status).toBe(200);
+    const firstBody = (await first.json()) as { token?: string };
     const second = await fetch(`${server.url}/daily-board`, {
       method: "POST",
       headers,
@@ -124,6 +150,7 @@ describe("race public http", () => {
         acc: 90,
         mode: "time",
         mode2: "15",
+        token: firstBody.token,
       }),
     });
     const body = (await second.json()) as {
@@ -134,6 +161,18 @@ describe("race public http", () => {
       wpm: 120,
       acc: 98,
     });
+    const impostor = await fetch(`${server.url}/daily-board`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        nickname: "Ada",
+        wpm: 200,
+        acc: 99,
+        mode: "time",
+        mode2: "60",
+      }),
+    });
+    expect(impostor.status).toBe(403);
     await server.close();
   });
 

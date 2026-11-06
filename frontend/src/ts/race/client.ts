@@ -41,8 +41,10 @@ let requestGeneration = 0;
 let rejoinFromPoll = false;
 let socket: WebSocket | null = null;
 let intentionalClose = false;
-let reconnectAttempts = 0;
+let reconnecting = false;
 let socketGeneration = 0;
+let pendingFinish: { timeMs: number; score: number } | null = null;
+const FINISH_RETRY_MS = 70_000;
 
 function raceHttpUrl(): string {
   return "/api/race-room";
@@ -66,6 +68,7 @@ function resetLocalRaceState(): void {
   setIsRaceActive(false);
   setRaceStartedAt(null);
   localPlayerId = null;
+  pendingFinish = null;
   setRaceError(null);
 }
 
@@ -214,34 +217,49 @@ async function openRaceSocket(url: string, timeoutMs: number): Promise<void> {
   });
 }
 
+const RECONNECT_WINDOW_MS = 3 * 60 * 1000;
+let reconnectSince = 0;
+
 async function reconnectOpenSocket(): Promise<void> {
   const url = configuredRaceWsUrl();
   const session = getRaceSession();
-  if (url === null || session === null) return;
-  if (reconnectAttempts >= 3) {
+  if (url === null || session === null || reconnecting || intentionalClose) {
+    return;
+  }
+  if (socket !== null && socket.readyState === WebSocket.OPEN) return;
+  if (reconnectSince === 0) reconnectSince = Date.now();
+  if (Date.now() - reconnectSince > RECONNECT_WINDOW_MS) {
     setRaceError("Lost the race server. Refresh to rejoin.");
     return;
   }
-  reconnectAttempts += 1;
+  reconnecting = true;
   try {
-    await openRaceSocket(url, 20000);
+    await openRaceSocket(url, 45_000);
     sendWs({
       type: "reconnect",
       code: session.code,
       playerId: session.playerId,
     });
+    reconnectSince = 0;
+    setRaceError(null);
   } catch {
-    setRaceError("Lost the race server. Refresh to rejoin.");
+    setTimeout(() => {
+      if (intentionalClose) return;
+      void reconnectOpenSocket();
+    }, 2_000);
+  } finally {
+    reconnecting = false;
   }
 }
 
 async function connectConfiguredSocket(): Promise<boolean> {
   const wsUrl = configuredRaceWsUrl();
   if (wsUrl === null) return false;
-  for (let attempt = 0; attempt < 3; attempt++) {
+  const timeouts = [90_000, 60_000, 60_000];
+  for (let attempt = 0; attempt < timeouts.length; attempt++) {
     try {
-      await openRaceSocket(wsUrl, 20000);
-      reconnectAttempts = 0;
+      await openRaceSocket(wsUrl, timeouts[attempt] ?? 60_000);
+      reconnectSince = 0;
       setRaceError(null);
       return true;
     } catch {
@@ -723,8 +741,12 @@ export function startRace(settings?: RaceSettings): void {
   send({ type: "startRace", settings });
 }
 
-export function sendProgress(progress: number): void {
-  send({ type: "progress", progress });
+export function sendProgress(progress: number, score?: number): void {
+  send(
+    score === undefined
+      ? { type: "progress", progress }
+      : { type: "progress", progress, score },
+  );
 }
 
 function localFinishRecorded(): boolean {
@@ -733,32 +755,55 @@ function localFinishRecorded(): boolean {
   const player = getRaceParty()?.players.find(
     (candidate) => candidate.id === youId,
   );
-  return typeof player?.timeMs === "number";
+  if (typeof player?.timeMs !== "number") return false;
+  if (pendingFinish !== null && pendingFinish.score > (player.score ?? 0)) {
+    return false;
+  }
+  return true;
 }
 
-async function retryWsFinished(timeMs: number): Promise<void> {
-  for (let attempt = 0; attempt < 5; attempt++) {
+function finishedPayload(): RaceClientMessage | null {
+  if (pendingFinish === null) return null;
+  return {
+    type: "finished",
+    timeMs: pendingFinish.timeMs,
+    score: pendingFinish.score,
+  };
+}
+
+async function retryWsFinished(): Promise<void> {
+  const started = Date.now();
+  while (Date.now() - started < FINISH_RETRY_MS) {
     if (localFinishRecorded()) return;
-    sendWs({ type: "finished", timeMs });
+    if (getRaceSession() === null && getRaceParty() === null) return;
+    const message = finishedPayload();
+    if (message === null) return;
+    if (socket === null || socket.readyState !== WebSocket.OPEN) {
+      await reconnectOpenSocket();
+    }
+    if (socket !== null && socket.readyState === WebSocket.OPEN) {
+      sendWs(message);
+    }
     if (localFinishRecorded()) return;
-    await sleep(400 * (attempt + 1));
+    await sleep(500);
   }
 }
 
-export function sendFinished(timeMs: number): void {
+export function sendFinished(timeMs: number, score = 0): void {
   setLocalFinished(true);
-  if (mode === "ws") {
-    void retryWsFinished(timeMs);
+  pendingFinish = { timeMs, score: Math.max(0, Math.floor(score)) };
+  if (configuredRaceWsUrl() !== null) {
+    void retryWsFinished();
     return;
   }
-  void retryFinished(timeMs);
+  void retryFinished(pendingFinish.timeMs, pendingFinish.score);
 }
 
-async function retryFinished(timeMs: number): Promise<void> {
+async function retryFinished(timeMs: number, score: number): Promise<void> {
   for (let attempt = 0; attempt < 5; attempt++) {
     if (getRaceSession() === null && getRaceParty() === null) return;
     try {
-      const data = await httpRequest({ type: "finished", timeMs });
+      const data = await httpRequest({ type: "finished", timeMs, score });
       const err = httpErrorMessage(data);
       if (err !== undefined && /party not found|player not found/i.test(err)) {
         return;

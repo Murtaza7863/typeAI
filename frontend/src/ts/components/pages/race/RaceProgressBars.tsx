@@ -46,15 +46,13 @@ export function RaceProgressBars(props: {
               <h2 class="mb-3 text-lg text-main">Race complete</h2>
               <RaceStandings />
               <div class="flex flex-wrap gap-2">
-                <Show when={getRaceYou()?.isHost}>
-                  <Button
-                    text="Play again"
-                    onClick={() => {
-                      playAgain();
-                      goToLobby(party().code);
-                    }}
-                  />
-                </Show>
+                <Button
+                  text="Play again"
+                  onClick={() => {
+                    playAgain();
+                    goToLobby(party().code);
+                  }}
+                />
                 <Button
                   text="View results"
                   variant="text"

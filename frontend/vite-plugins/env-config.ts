@@ -9,10 +9,17 @@ function fallback(value: string | undefined | null, fallback: string): string {
   return value;
 }
 
-function parseRaceWsUrl(raw: string | undefined): string | null {
-  if (raw === undefined) return null;
-  const trimmed = raw.trim();
-  return trimmed.length > 0 ? trimmed : null;
+const PRODUCTION_RACE_WS_URL = "wss://typeai-race.onrender.com/race-ws";
+
+function parseRaceWsUrl(
+  raw: string | undefined,
+  isDevelopment: boolean,
+): string | null {
+  if (raw !== undefined) {
+    const trimmed = raw.trim();
+    if (trimmed.length > 0) return trimmed;
+  }
+  return isDevelopment ? null : PRODUCTION_RACE_WS_URL;
 }
 
 function parseFirebaseConfig(
@@ -79,7 +86,10 @@ export function envConfig(options: {
         const firebaseConfig = parseFirebaseConfig(
           options.env["FIREBASE_CONFIG"],
         );
-        const raceWsUrl = parseRaceWsUrl(options.env["RACE_WS_URL"]);
+        const raceWsUrl = parseRaceWsUrl(
+          options.env["RACE_WS_URL"],
+          options.isDevelopment,
+        );
         const devConfig: EnvConfig = {
           isDevelopment: true,
           backendUrl: fallback(

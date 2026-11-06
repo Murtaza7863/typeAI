@@ -52,12 +52,12 @@ export function DailyBoard(props: { variant: "result" | "page" }): JSXElement {
 
   const post = async (): Promise<void> => {
     const name = nickname().trim();
-    saveDailyNickname(name);
     const context = getTestProgressContext();
     if (!dailyNicknameValid(name)) {
       setMessage("Use 2-16 letters or numbers.");
       return;
     }
+    saveDailyNickname(name);
     if (context === null) {
       setMessage("Finish a test before posting.");
       return;
@@ -107,8 +107,8 @@ export function DailyBoard(props: { variant: "result" | "page" }): JSXElement {
           when={live() && configured()}
           fallback={
             <p class="text-sm text-sub">
-              The daily board is not connected yet. Scores stay on this device
-              until the live server has a database.
+              The daily board is not connected yet. Add the Redis database on
+              the live server, then refresh.
             </p>
           }
         >

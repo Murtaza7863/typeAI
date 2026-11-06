@@ -154,6 +154,31 @@ describe("race party store", () => {
     ]);
   });
 
+  it("ranks a time race by characters typed when the bar is full", () => {
+    const party = Store.createParty("h", "Host", {
+      mode: "time",
+      wordCount: 50,
+      time: 30,
+      punctuation: false,
+    });
+    Store.addPlayer(party, "more", "More");
+    const host = party.players.get("h");
+    const more = party.players.get("more");
+    if (host === undefined || more === undefined) {
+      throw new Error("expected players");
+    }
+    host.progress = 100;
+    host.score = 180;
+    host.timeMs = 30000;
+    more.progress = 100;
+    more.score = 240;
+    more.timeMs = 30000;
+    expect(Store.standings(party).map((player) => player.id)).toEqual([
+      "more",
+      "h",
+    ]);
+  });
+
   it("resets a finished party back to the lobby", () => {
     const party = Store.createParty("h", "Host");
     Store.addPlayer(party, "g", "Guest");
@@ -187,6 +212,36 @@ describe("race party store", () => {
     Store.removePlayer(party, "g");
     expect(Store.allFinishedOrDisconnected(party)).toBe(true);
     expect(Store.connectedUnfinishedCount(party)).toBe(0);
+  });
+
+  it("treats a words race as stalled only after a finisher waits out an idle friend", () => {
+    const party = Store.createParty("h", "Host");
+    Store.addPlayer(party, "g", "Guest");
+    party.status = "racing";
+    party.startedAt = 1_000;
+    const host = party.players.get("h");
+    const guest = party.players.get("g");
+    if (host === undefined || guest === undefined) {
+      throw new Error("expected players");
+    }
+    host.timeMs = 4_000;
+    guest.lastProgressAt = 5_000;
+    expect(Store.stalledAfterFinish(party, 20_000, 30_000)).toBe(false);
+    expect(Store.stalledAfterFinish(party, 40_000, 30_000)).toBe(true);
+    guest.connected = false;
+    expect(Store.stalledAfterFinish(party, 40_000, 30_000)).toBe(false);
+  });
+
+  it("restores a party snapshot without replacing the live room", () => {
+    const party = Store.createParty("h", "Host");
+    const again = Store.importParty(Store.exportParty(party));
+    expect(again).toBe(party);
+    const copy = Store.exportParty(party);
+    copy.code = "ZZZZZZ";
+    const restored = Store.importParty(copy);
+    expect(restored?.code).toBe("ZZZZZZ");
+    expect(restored?.players.size).toBe(1);
+    expect(restored?.idleTimeout).toBeNull();
   });
 });
 

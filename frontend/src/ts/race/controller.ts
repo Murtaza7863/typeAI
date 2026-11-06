@@ -52,6 +52,8 @@ type RaceSettingsSnapshot = {
   minBurst: MinimumBurst;
   stopOnError: StopOnError;
   confidenceMode: ConfidenceMode;
+  strictSpace: boolean;
+  quickEnd: boolean;
 };
 
 let lastSentProgress = -1;
@@ -112,6 +114,8 @@ function snapshotSettingsIfNeeded(): void {
     minBurst: Config.minBurst,
     stopOnError: Config.stopOnError,
     confidenceMode: Config.confidenceMode,
+    strictSpace: Config.strictSpace,
+    quickEnd: Config.quickEnd,
   };
 }
 
@@ -138,6 +142,8 @@ export function restoreAfterRace(): void {
   setConfig("minBurst", snapshot.minBurst, { nosave: true });
   setConfig("stopOnError", snapshot.stopOnError, { nosave: true });
   setConfig("confidenceMode", snapshot.confidenceMode, { nosave: true });
+  setConfig("strictSpace", snapshot.strictSpace, { nosave: true });
+  setConfig("quickEnd", snapshot.quickEnd, { nosave: true });
   setConfig("mode", snapshot.mode, { nosave: true });
 }
 
@@ -256,6 +262,8 @@ function beginSharedRace(
   setConfig("minBurst", "off", { nosave: true });
   setConfig("stopOnError", "off", { nosave: true });
   setConfig("confidenceMode", "off", { nosave: true });
+  setConfig("strictSpace", false, { nosave: true });
+  setConfig("quickEnd", true, { nosave: true });
 
   // Navigating to the test page already restarts it in beforeShow.
   // Restarting first (while still on /race) can leave the test stuck.
@@ -266,6 +274,17 @@ function beginSharedRace(
   }
 }
 
+function typedCharCount(): number {
+  const history = TestInput.input.getHistory();
+  const completedJoined = history.length === 0 ? 0 : history.join(" ").length;
+  const spaceAfter =
+    history.length > 0 && TestState.activeWordIndex >= history.length ? 1 : 0;
+  return Math.max(
+    0,
+    completedJoined + spaceAfter + TestInput.input.current.length,
+  );
+}
+
 export function reportRaceProgressFromTest(): void {
   if (!isRaceActive() || getLocalFinished()) return;
   if (!TestState.isActive) return;
@@ -273,13 +292,7 @@ export function reportRaceProgressFromTest(): void {
   const words = TestWords.words.list;
   if (words.length === 0) return;
 
-  const history = TestInput.input.getHistory();
-  const completedJoined = history.length === 0 ? 0 : history.join(" ").length;
-  const spaceAfter =
-    history.length > 0 && TestState.activeWordIndex >= history.length ? 1 : 0;
-  const charsTyped =
-    completedJoined + spaceAfter + TestInput.input.current.length;
-
+  const charsTyped = typedCharCount();
   const settings = getRaceParty()?.settings;
   let progress: number;
   if (settings?.mode === "time") {
@@ -303,18 +316,21 @@ export function reportRaceProgressFromTest(): void {
 
   if (progress === lastSentProgress) return;
   lastSentProgress = progress;
-  sendProgress(progress);
+  sendProgress(progress, charsTyped);
 }
 
 export function reportRaceFinished(): void {
   if (!isRaceActive() || getLocalFinished()) return;
   const startedAt = getRaceStartedAt();
-  const timeMs = startedAt !== null ? Math.max(1, Date.now() - startedAt) : 1;
-  const mode = getRaceParty()?.settings?.mode;
+  const elapsed = startedAt !== null ? Math.max(1, Date.now() - startedAt) : 1;
+  const settings = getRaceParty()?.settings;
+  const mode = settings?.mode;
+  const timeMs = mode === "time" ? (settings?.time ?? 30) * 1000 : elapsed;
+  const score = typedCharCount();
   if (mode === "words" || mode === "quote") {
-    sendProgress(100);
+    sendProgress(100, score);
   }
-  sendFinished(timeMs);
+  sendFinished(timeMs, score);
 }
 
 export function beginLocalRaceFinish(): void {

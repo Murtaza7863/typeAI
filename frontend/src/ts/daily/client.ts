@@ -11,9 +11,31 @@ export type DailyEntry = {
 export type DailyBoardResponse = {
   configured: boolean;
   entries: DailyEntry[];
+  token?: string;
 };
 
 const NICKNAME_KEY = "typeai-daily-nickname";
+
+function tokenKey(nickname: string): string {
+  return `typeai-daily-token:${nickname}`;
+}
+
+function readDailyToken(nickname: string): string | undefined {
+  try {
+    const token = localStorage.getItem(tokenKey(nickname));
+    return token !== null && token.length > 0 ? token : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function saveDailyToken(nickname: string, token: string): void {
+  try {
+    localStorage.setItem(tokenKey(nickname), token);
+  } catch {
+    return;
+  }
+}
 const NICKNAME = /^[A-Za-z0-9]{2,16}$/;
 
 export function readDailyNickname(): string {
@@ -52,6 +74,7 @@ async function boardRequest(
   return {
     configured: body.configured,
     entries: Array.isArray(body.entries) ? body.entries : [],
+    token: typeof body.token === "string" ? body.token : undefined,
   };
 }
 
@@ -63,9 +86,12 @@ export async function postDailyScore(
   entry: DailyEntry,
 ): Promise<DailyBoardResponse> {
   saveDailyNickname(entry.nickname);
-  return boardRequest("/daily-board", {
+  const token = readDailyToken(entry.nickname);
+  const saved = await boardRequest("/daily-board", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(entry),
+    body: JSON.stringify(token === undefined ? entry : { ...entry, token }),
   });
+  if (saved.token !== undefined) saveDailyToken(entry.nickname, saved.token);
+  return saved;
 }

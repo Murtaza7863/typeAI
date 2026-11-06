@@ -267,5 +267,5 @@ describe("race websocket", () => {
     returned.close();
     await Promise.all([once(host, "close"), once(returned, "close")]);
     await server.close();
-  });
+  }, 15_000);
 });

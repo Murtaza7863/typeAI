@@ -987,7 +987,7 @@ describe("HTTP race room — after start", () => {
       timeMs: 4200,
     });
     expect(partyFrom(friendDone.messages).status).toBe("racing");
-    expect(partyFrom(friendDone.messages).winnerId).toBe(session.friendId);
+    expect(partyFrom(friendDone.messages).winnerId).toBeNull();
 
     resetRaceRoomsForTests();
     const hostSeesLead = await post({
@@ -1000,7 +1000,7 @@ describe("HTTP race room — after start", () => {
     );
     expect(friend?.progress).toBe(100);
     expect(friend?.timeMs).toBe(4200);
-    expect(partyFrom(hostSeesLead.messages).winnerId).toBe(session.friendId);
+    expect(partyFrom(hostSeesLead.messages).winnerId).toBeNull();
     expect(partyFrom(hostSeesLead.messages).status).toBe("racing");
 
     resetRaceRoomsForTests();
@@ -1059,24 +1059,18 @@ describe("HTTP race room — after start", () => {
       code: session.code,
       playerId: session.friendId,
     });
-    expect(guestReplay.ok).toBe(false);
-    expect(errorMessage(guestReplay.messages)).toMatch(/only the host/i);
-
-    resetRaceRoomsForTests();
-    const replay = await post({
-      type: "playAgain",
-      code: session.code,
-      playerId: session.hostId,
-    });
-    expect(replay.ok).toBe(true);
-    const replayed = partyFrom(replay.messages);
+    expect(guestReplay.ok).toBe(true);
+    const replayed = partyFrom(guestReplay.messages);
+    expect(
+      replayed.players.find((player) => player.id === session.friendId)?.isHost,
+    ).toBe(true);
     expect(replayed.status).toBe("lobby");
     expect(replayed.code).toBe(session.code);
     expect(replayed.winnerId).toBeNull();
     expect(replayed.players).toHaveLength(2);
     expect(replayed.players.every((p) => p.timeMs == null)).toBe(true);
     expect(replayed.players.every((p) => p.progress === 0)).toBe(true);
-    expectClientAccepts(replay.messages);
+    expectClientAccepts(guestReplay.messages);
 
     resetRaceRoomsForTests();
     const friendLobby = await post({
@@ -1127,7 +1121,7 @@ describe("HTTP race room — after start", () => {
     expect(errorMessage(started.messages)).toMatch(/at least 2 players/i);
   });
 
-  it("ends the race on the finish deadline and DNFs the slower player", async () => {
+  it("ends a words race at the ten minute cap and DNFs the slower player", async () => {
     const session = await lobby();
     const originalNow = Date.now;
     const startedAt = originalNow();
@@ -1154,7 +1148,7 @@ describe("HTTP race room — after start", () => {
         playerId: session.friendId,
         timeMs: 1000,
       });
-      Date.now = () => startedAt + 70_000;
+      Date.now = () => startedAt + 4000 + 10 * 60 * 1000;
       resetRaceRoomsForTests();
       const timedOut = await post({
         type: "poll",
@@ -1468,7 +1462,7 @@ describe("HTTP race room — client schema and full flows", () => {
       });
       expectClientAccepts(friendDone.messages);
       expect(partyFrom(friendDone.messages).status).toBe("racing");
-      expect(partyFrom(friendDone.messages).winnerId).toBe(friendId);
+      expect(partyFrom(friendDone.messages).winnerId).toBeNull();
 
       const hostDone = await post({
         type: "finished",
@@ -1694,7 +1688,7 @@ describe("HTTP race room — finish for words and time", () => {
         });
         expectClientAccepts(friendDone.messages);
         expect(partyFrom(friendDone.messages).status).toBe("racing");
-        expect(partyFrom(friendDone.messages).winnerId).toBe(race.friendId);
+        expect(partyFrom(friendDone.messages).winnerId).toBeNull();
         expect(
           partyFrom(friendDone.messages).players.find(
             (p) => p.id === race.friendId,

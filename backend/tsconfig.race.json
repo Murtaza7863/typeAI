@@ -9,6 +9,7 @@
     "src/race/prepare-logs.ts",
     "src/race/ws-server.ts",
     "src/race/party-store.ts",
+    "src/race/party-persist.ts",
     "src/race/word-list.ts",
     "src/race/frontend-origin.ts",
     "src/race/public-http.ts",

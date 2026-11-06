@@ -132,7 +132,7 @@ describe("race finish for words and time", () => {
     setLocalFinished(false);
     setRaceStartedAt(1000);
     reportRaceFinished();
-    expect(sendProgress).toHaveBeenCalledWith(100);
+    expect(sendProgress).toHaveBeenCalledWith(100, 0);
     expect(sendFinished).toHaveBeenCalled();
   });
 

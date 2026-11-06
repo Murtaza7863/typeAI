@@ -12,7 +12,7 @@ Project → **Settings** → **Environment Variables** (Production):
 | `CURSOR_API_KEY` | Fallback — Cursor agent (slow, 30–60s; may hit Vercel timeout on free plan) |
 | `LITE_MODE` | `true` — lighter UI (account/login/race/settings still available) |
 | `BACKEND_URL` | `https://api.typeai.com` |
-| `RACE_WS_URL` | `wss://<render-service>.onrender.com/race-ws` — live races. Without this, races stay on the serverless lobby and often never finish. |
+| `RACE_WS_URL` | Optional. Production already uses `wss://typeai-race.onrender.com/race-ws`. Set this only to point at a different race server. |
 | `RECAPTCHA_SITE_KEY` | test key or your site key |
 | `FIREBASE_CONFIG` | **Required for account/login** — JSON string of your Firebase web app config |
 
@@ -58,11 +58,10 @@ Without those, the board says it is not connected. Login stays off, so names are
 
 ## Competitive races
 
-Live races need the Render service in `render.yaml` (`typeai-race`). It is a long-running process with a WebSocket at `/race-ws`. Vercel’s `/api/race-room` lobby can start a race, but finish updates get overwritten, so the race often never completes.
+Live races use the Render service in `render.yaml` (`typeai-race`). It is a long-running process with a WebSocket at `/race-ws`. A production frontend build connects there even when `RACE_WS_URL` is unset. Vercel’s `/api/race-room` lobby can start a race, but finish updates get overwritten, so that path often never completes.
 
 1. Deploy the blueprint on Render. Invite links use the site the host opened (`*.vercel.app`, localhost, or `FRONTEND_URL`).
-2. Set Vercel `RACE_WS_URL` to `wss://<service>.onrender.com/race-ws`.
-3. Redeploy the frontend. The URL is baked in at build time.
+2. Redeploy the frontend so the race server URL is baked into the bundle. Set `RACE_WS_URL` only if the Render host is not `typeai-race`.
 4. Optional: `OPENAI_API_KEY` and the two Upstash variables on Render, then redeploy Render.
 
 Accounts stay off (`ACCOUNTS_ENABLED` is false). A GitHub Action pings `/health` every 10 minutes. If the free instance still sleeps, the first join can take up to a minute.

@@ -17,6 +17,7 @@ type RacePlayer = {
   progress: number;
   finishedAt: number | null;
   timeMs: number | null;
+  score?: number;
   connected: boolean;
   isHost: boolean;
   lastProgressAt: number;
@@ -48,6 +49,7 @@ type ClientMessage = {
   playerId?: string;
   progress?: number;
   timeMs?: number;
+  score?: number;
 };
 
 type ServerMessage = Record<string, unknown>;
@@ -67,9 +69,8 @@ const CORS_HEADERS = {
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const MAX_PLAYERS = 8;
 const COUNTDOWN_MS = 3000;
-const FINISH_GRACE_MS = 60_000;
 const RACE_HARD_TIMEOUT_MS = 10 * 60 * 1000;
-const TIME_RACE_GRACE_MS = 15_000;
+const TIME_RACE_GRACE_MS = 1_500;
 const STALE_MS = 45_000;
 const ROOM_TTL_MS = 2 * 60 * 60 * 1000;
 const ROOM_TTL_SECONDS = Math.floor(ROOM_TTL_MS / 1000);
@@ -256,7 +257,9 @@ function playersList(
 function standings(party: RaceParty): Omit<RacePlayer, "lastProgressAt">[] {
   return playersList(party).sort((a, b) => {
     if (party.settings.mode === "time") {
-      if (b.progress !== a.progress) return b.progress - a.progress;
+      const aScore = a.score ?? a.progress;
+      const bScore = b.score ?? b.progress;
+      if (bScore !== aScore) return bScore - aScore;
       if (typeof a.timeMs === "number" && typeof b.timeMs === "number") {
         return a.timeMs - b.timeMs;
       }
@@ -342,6 +345,7 @@ function resetPartyToLobby(party: RaceParty): void {
     player.progress = 0;
     player.finishedAt = null;
     player.timeMs = null;
+    player.score = undefined;
     player.lastProgressAt = 0;
   }
   party.status = "lobby";
@@ -359,6 +363,13 @@ function resetPartyToLobby(party: RaceParty): void {
 
 function completeRace(party: RaceParty): void {
   if (party.status === "finished") return;
+  if (party.settings.mode === "time") {
+    const duration = party.settings.time * 1000;
+    for (const player of Object.values(party.players)) {
+      if (!player.connected && typeof player.timeMs !== "number") continue;
+      if (typeof player.timeMs !== "number") player.timeMs = duration;
+    }
+  }
   party.status = "finished";
   party.finishDeadline = null;
   party.countdownEndsAt = null;
@@ -517,6 +528,10 @@ function parsePlayer(value: unknown): RacePlayer | undefined {
     finishedAt:
       typeof value["finishedAt"] === "number" ? value["finishedAt"] : null,
     timeMs: typeof value["timeMs"] === "number" ? value["timeMs"] : null,
+    score:
+      typeof value["score"] === "number" && value["score"] >= 0
+        ? Math.floor(value["score"])
+        : undefined,
     connected: value["connected"] !== false,
     isHost: value["isHost"] === true,
     lastProgressAt:
@@ -784,6 +799,10 @@ function mergePlayer(local: RacePlayer, remote: RacePlayer): RacePlayer {
       typeof local.timeMs === "number" && typeof remote.timeMs === "number"
         ? Math.min(local.timeMs, remote.timeMs)
         : (local.timeMs ?? remote.timeMs),
+    score:
+      local.score === undefined && remote.score === undefined
+        ? undefined
+        : Math.max(local.score ?? 0, remote.score ?? 0),
     connected: newer.connected,
     isHost: local.isHost || remote.isHost,
     lastProgressAt: Math.max(local.lastProgressAt, remote.lastProgressAt),
@@ -800,14 +819,15 @@ function mergePlayers(local: RaceParty, remote: RaceParty): void {
     if (local.left[id] !== undefined) continue;
     const existing = local.players[id];
     if (existing === undefined) {
-      local.players[id] = localNewer
-        ? {
-            ...player,
-            progress: 0,
-            timeMs: null,
-            finishedAt: null,
-          }
-        : player;
+      local.players[id] =
+        localNewer && local.status === "lobby"
+          ? {
+              ...player,
+              progress: 0,
+              timeMs: null,
+              finishedAt: null,
+            }
+          : player;
       continue;
     }
     if (localNewer) {
@@ -816,6 +836,20 @@ function mergePlayers(local: RaceParty, remote: RaceParty): void {
         existing.lastProgressAt,
         player.lastProgressAt,
       );
+      if (local.status !== "lobby") {
+        existing.progress = Math.max(existing.progress, player.progress);
+        existing.score =
+          existing.score === undefined && player.score === undefined
+            ? undefined
+            : Math.max(existing.score ?? 0, player.score ?? 0);
+        if (
+          typeof existing.timeMs !== "number" &&
+          typeof player.timeMs === "number"
+        ) {
+          existing.timeMs = player.timeMs;
+          existing.finishedAt = player.finishedAt;
+        }
+      }
       if (player.lastSeenAt >= existing.lastSeenAt) {
         existing.connected = player.connected;
         existing.displayName = player.displayName || existing.displayName;
@@ -1123,6 +1157,9 @@ async function handleAction(
       return reply(party, player.id, request);
     }
     const now = Date.now();
+    if (typeof body.score === "number" && body.score >= 0) {
+      player.score = Math.max(player.score ?? 0, Math.floor(body.score));
+    }
     if (now - player.lastProgressAt < 200) {
       return reply(party, player.id, request);
     }
@@ -1133,36 +1170,53 @@ async function handleAction(
   }
 
   if (type === "finished") {
-    if (party.status !== "racing" || typeof player.timeMs === "number") {
+    if (party.status !== "racing" && party.status !== "finished") {
+      return reply(party, player.id, request);
+    }
+    if (typeof player.timeMs === "number") {
+      if (typeof body.score === "number" && body.score >= 0) {
+        player.score = Math.max(player.score ?? 0, Math.floor(body.score));
+      }
+      if (party.status === "finished") {
+        const ranked = standings(party);
+        party.winnerId =
+          party.settings.mode === "time"
+            ? (ranked[0]?.id ?? null)
+            : (ranked.find((p) => typeof p.timeMs === "number")?.id ?? null);
+      }
       return reply(party, player.id, request);
     }
     if (party.settings.mode !== "time") {
       player.progress = 100;
-      party.winnerId ??= player.id;
     }
-    if (party.settings.mode === "time" && party.startedAt !== null) {
-      player.timeMs = Math.max(1, Date.now() - party.startedAt);
+    if (typeof body.score === "number" && body.score >= 0) {
+      player.score = Math.max(player.score ?? 0, Math.floor(body.score));
+    }
+    if (party.settings.mode === "time") {
+      player.timeMs = party.settings.time * 1000;
     } else {
       player.timeMs = Math.max(1, Math.floor(body.timeMs ?? 1));
     }
     player.finishedAt = Date.now();
-    const graceEnds = Date.now() + FINISH_GRACE_MS;
-    party.finishDeadline =
-      party.finishDeadline === null
-        ? graceEnds
-        : Math.min(party.finishDeadline, graceEnds);
     advance(party, Date.now());
+    if (party.status === "finished") {
+      const ranked = standings(party);
+      party.winnerId =
+        party.settings.mode === "time"
+          ? (ranked[0]?.id ?? null)
+          : (ranked.find((p) => typeof p.timeMs === "number")?.id ?? null);
+    }
     return reply(party, player.id, request);
   }
 
   if (type === "playAgain") {
-    transferHost(party);
-    if (party.hostId !== player.id) {
-      return error("Only the host can play again");
-    }
     if (party.status !== "finished") {
       return error("Can only play again after the race finishes");
     }
+    if (!player.connected) return error("You are not in this party");
+    for (const member of Object.values(party.players)) member.isHost = false;
+    player.isHost = true;
+    party.hostId = player.id;
     resetPartyToLobby(party);
     if (connectedCount(party) < 1) {
       return error("Party is empty");
