@@ -821,6 +821,43 @@ export function playAgain(): void {
   send({ type: "playAgain" });
 }
 
+export async function resumeStoredSession(): Promise<void> {
+  if (intentionalClose) return;
+  const session = getRaceSession();
+  if (session === null) return;
+  await connectRaceWs();
+  if (intentionalClose || getRaceSession() === null) return;
+  if (getRaceParty()?.code.toUpperCase() === session.code.toUpperCase()) {
+    return;
+  }
+  if (mode === "http") {
+    await joinParty(session.code, session.displayName, session.playerId);
+    return;
+  }
+  if (mode !== "ws") return;
+  try {
+    await wsRequest({
+      type: "reconnect",
+      code: session.code,
+      playerId: session.playerId,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (/party not found|player not found|party ended/i.test(message)) {
+      clearRaceSession();
+      setRaceError(null);
+    }
+    return;
+  }
+  const party = getRaceParty();
+  if (party?.status === "lobby") {
+    navigationEvent.dispatch({
+      url: `/race/${party.code}`,
+      options: { force: true },
+    });
+  }
+}
+
 export function leaveParty(): void {
   if (mode === "ws") {
     sendWs({ type: "leave" });

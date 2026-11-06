@@ -77,7 +77,9 @@ export function RaceStandings(): JSXElement {
             <li class="flex items-center justify-between rounded bg-bg px-3 py-2">
               <span>
                 #{index() + 1} {player.displayName}
-                <Show when={player.id === winnerId()}>
+                <Show
+                  when={player.id === winnerId() && resultHeadline() !== "Tie"}
+                >
                   <span class="ml-2 text-xs text-main">winner</span>
                 </Show>
               </span>

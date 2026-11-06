@@ -1171,6 +1171,59 @@ describe("HTTP race room — after start", () => {
     }
   });
 
+  it("ends a words race when the other player stops typing", async () => {
+    const session = await lobby();
+    const originalNow = Date.now;
+    const startedAt = originalNow();
+    Date.now = () => startedAt;
+    try {
+      resetRaceRoomsForTests();
+      await post({
+        type: "startRace",
+        code: session.code,
+        playerId: session.hostId,
+      });
+      Date.now = () => startedAt + 4000;
+      resetRaceRoomsForTests();
+      await post({
+        type: "poll",
+        code: session.code,
+        playerId: session.hostId,
+      });
+      Date.now = () => startedAt + 5000;
+      resetRaceRoomsForTests();
+      await post({
+        type: "finished",
+        code: session.code,
+        playerId: session.friendId,
+        timeMs: 1000,
+      });
+      Date.now = () => startedAt + 4000 + 20_000;
+      resetRaceRoomsForTests();
+      const stillRacing = await post({
+        type: "poll",
+        code: session.code,
+        playerId: session.hostId,
+      });
+      expect(partyFrom(stillRacing.messages).status).toBe("racing");
+      Date.now = () => startedAt + 4000 + 30_000;
+      resetRaceRoomsForTests();
+      const stalled = await post({
+        type: "poll",
+        code: session.code,
+        playerId: session.hostId,
+      });
+      expect(partyFrom(stalled.messages).status).toBe("finished");
+      expect(partyFrom(stalled.messages).winnerId).toBe(session.friendId);
+      const hostPlayer = partyFrom(stalled.messages).players.find(
+        (player) => player.displayName === "Host",
+      );
+      expect(hostPlayer?.timeMs ?? null).toBeNull();
+    } finally {
+      Date.now = originalNow;
+    }
+  });
+
   it("does not change the winner if a slower player finishes later", async () => {
     const session = await lobby();
     await goRacing(session);

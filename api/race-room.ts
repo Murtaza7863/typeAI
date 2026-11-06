@@ -71,6 +71,7 @@ const MAX_PLAYERS = 8;
 const COUNTDOWN_MS = 3000;
 const RACE_HARD_TIMEOUT_MS = 10 * 60 * 1000;
 const TIME_RACE_GRACE_MS = 1_500;
+const IDLE_AFTER_FINISH_MS = 30_000;
 const STALE_MS = 45_000;
 const ROOM_TTL_MS = 2 * 60 * 60 * 1000;
 const ROOM_TTL_SECONDS = Math.floor(ROOM_TTL_MS / 1000);
@@ -435,6 +436,26 @@ function afterDisconnect(party: RaceParty): void {
   }
 }
 
+function stalledAfterFinish(party: RaceParty, now: number): boolean {
+  if (party.settings.mode === "time") return false;
+  let someoneFinished = false;
+  let unfinished = 0;
+  for (const player of Object.values(party.players)) {
+    if (typeof player.timeMs === "number") {
+      someoneFinished = true;
+      continue;
+    }
+    if (!player.connected) continue;
+    unfinished += 1;
+    const seen =
+      player.lastProgressAt > 0
+        ? player.lastProgressAt
+        : (party.startedAt ?? now);
+    if (now - seen < IDLE_AFTER_FINISH_MS) return false;
+  }
+  return someoneFinished && unfinished > 0;
+}
+
 function advance(party: RaceParty, now: number): void {
   if (
     party.status === "countdown" &&
@@ -452,6 +473,9 @@ function advance(party: RaceParty, now: number): void {
     }
   }
   if (party.status === "racing" && allDone(party)) {
+    completeRace(party);
+  }
+  if (party.status === "racing" && stalledAfterFinish(party, now)) {
     completeRace(party);
   }
   if (

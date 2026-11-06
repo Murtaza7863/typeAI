@@ -33,7 +33,7 @@ const sockets = new Map<WebSocket, ClientMeta>();
 const DISCONNECT_GRACE_MS = 5_000;
 const TIME_RESULT_GRACE_MS = 1_500;
 const IDLE_AFTER_FINISH_MS = 30_000;
-const RESTORE_GRACE_MS = 45_000;
+const RESTORE_GRACE_MS = 90_000;
 const saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 Store.setPartyDeletedHook((code) => {
@@ -422,11 +422,17 @@ function handleProgress(ws: WebSocket, progress: number, score?: number): void {
 
   rememberScore(player, score);
   const now = Date.now();
-  if (now - player.lastProgressAt < 100) return;
+  if (now - player.lastProgressAt < 100) {
+    remember(party);
+    return;
+  }
   player.lastProgressAt = now;
 
   const clamped = Math.max(0, Math.min(100, Math.floor(progress)));
-  if (clamped === player.progress) return;
+  if (clamped === player.progress) {
+    remember(party);
+    return;
+  }
   player.progress = Math.max(player.progress, clamped);
 
   broadcast(party, {
@@ -434,6 +440,7 @@ function handleProgress(ws: WebSocket, progress: number, score?: number): void {
     playerId: player.id,
     progress: clamped,
   });
+  remember(party);
 }
 
 function handleFinished(ws: WebSocket, timeMs: number, score?: number): void {
@@ -635,25 +642,48 @@ function resumeParty(party: Store.RaceParty): void {
       party.finishTimeout = null;
       if (party.status === "racing") completeRace(party);
     }, delay);
-    armIdleWatch(party);
   }
   if (party.status === "racing" || party.status === "countdown") {
     setTimeout(() => {
-      dropAbsentPlayers(party.code);
+      const current = Store.getParty(party.code);
+      if (current === undefined) return;
+      if (current.status !== "racing" && current.status !== "countdown") {
+        return;
+      }
+      dropAbsentPlayers(current.code);
+      const after = Store.getParty(party.code);
+      if (after === undefined || after.status !== "racing") return;
+      const seenAt = Date.now();
+      for (const player of after.players.values()) {
+        if (
+          player.connected &&
+          (player.timeMs === null || player.timeMs === undefined)
+        ) {
+          player.lastProgressAt = seenAt;
+        }
+      }
+      armIdleWatch(after);
     }, RESTORE_GRACE_MS);
   }
 }
+
+const restoredParties: Store.RaceParty[] = [];
 
 export async function restoreParties(): Promise<void> {
   try {
     const snapshots = await loadRememberedParties();
     for (const snapshot of snapshots) {
       const party = Store.importParty(snapshot);
-      if (party !== undefined) resumeParty(party);
+      if (party !== undefined) restoredParties.push(party);
     }
   } catch (error) {
     console.error("party restore failed", error);
   }
+}
+
+export function resumeRestoredParties(): void {
+  for (const party of restoredParties) resumeParty(party);
+  restoredParties.length = 0;
 }
 
 export function attachRaceWebSocket(server: HttpServer): void {

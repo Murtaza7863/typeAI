@@ -34,10 +34,11 @@ import * as TestState from "../test/test-state";
 import * as TestWords from "../test/test-words";
 import {
   leaveParty,
+  leaveRaceOnPageHide,
   onRaceMessage,
+  resumeStoredSession,
   sendFinished,
   sendProgress,
-  leaveRaceOnPageHide,
 } from "./client";
 
 type RaceSettingsSnapshot = {
@@ -159,6 +160,8 @@ export function initRaceController(): void {
   if (typeof window !== "undefined") {
     window.addEventListener("pagehide", leaveRaceOnPageHide);
   }
+
+  void resumeStoredSession();
 
   onRaceMessage((message) => {
     if (message.type === "countdown") {
