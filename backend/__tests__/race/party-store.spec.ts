@@ -39,6 +39,7 @@ describe("race party store", () => {
       wordCount: 50,
       time: 30,
       punctuation: false,
+      quoteLength: 1,
     });
     expect(party.players.size).toBe(1);
     expect(party.players.get("host-1")?.displayName).toBe("Alice");
@@ -62,7 +63,25 @@ describe("race party store", () => {
       punctuation: false,
     });
     expect(party.settings.mode).toBe("quote");
-    expect(party.words.length).toBeGreaterThan(0);
+    expect(party.words.length).toBeGreaterThan(20);
+
+    Store.applySettings(party, {
+      mode: "quote",
+      wordCount: 50,
+      time: 30,
+      punctuation: false,
+      quoteLength: 0,
+    });
+    expect(party.words.length).toBeLessThanOrEqual(16);
+
+    Store.applySettings(party, {
+      mode: "quote",
+      wordCount: 50,
+      time: 30,
+      punctuation: false,
+      quoteLength: 2,
+    });
+    expect(party.words.length).toBeGreaterThanOrEqual(60);
   });
 
   it("joins players up to the max and rejects over capacity", () => {

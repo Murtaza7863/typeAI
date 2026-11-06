@@ -42,8 +42,7 @@ export function RaceProgressBars(props: {
       {(party) => (
         <div class="mb-4 flex w-full flex-col gap-2">
           <Show when={party().status === "finished"}>
-            <div class="bg-bg-2 rounded-lg border border-sub/30 p-4">
-              <h2 class="mb-3 text-lg text-main">Race complete</h2>
+            <div class="bg-bg-2 rounded-lg border border-main/40 p-4">
               <RaceStandings />
               <div class="flex flex-wrap gap-2">
                 <Button

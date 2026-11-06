@@ -25,11 +25,20 @@ export const RaceTimeSchema = z.union([
 ]);
 export type RaceTime = z.infer<typeof RaceTimeSchema>;
 
+/** 0 short, 1 medium, 2 long. Same groups as the quote test. */
+export const RaceQuoteLengthSchema = z.union([
+  z.literal(0),
+  z.literal(1),
+  z.literal(2),
+]);
+export type RaceQuoteLength = z.infer<typeof RaceQuoteLengthSchema>;
+
 export const RaceSettingsSchema = z.object({
   mode: RaceModeSchema.default("words"),
   wordCount: RaceWordCountSchema.default(50),
   time: RaceTimeSchema.default(30),
   punctuation: z.boolean().default(false),
+  quoteLength: RaceQuoteLengthSchema.optional(),
 });
 export type RaceSettings = z.infer<typeof RaceSettingsSchema>;
 
@@ -38,6 +47,7 @@ export const DEFAULT_RACE_SETTINGS: RaceSettings = {
   wordCount: 50,
   time: 30,
   punctuation: false,
+  quoteLength: 1,
 };
 
 export const RacePlayerSchema = z.object({

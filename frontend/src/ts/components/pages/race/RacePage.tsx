@@ -66,12 +66,34 @@ function settingsFromParty(settings: RaceSettings | undefined): RaceSettings {
     wordCount: settings?.wordCount ?? DEFAULT_RACE_SETTINGS.wordCount,
     time: settings?.time ?? DEFAULT_RACE_SETTINGS.time,
     punctuation: settings?.punctuation ?? DEFAULT_RACE_SETTINGS.punctuation,
+    quoteLength:
+      settings?.quoteLength === 0 ||
+      settings?.quoteLength === 1 ||
+      settings?.quoteLength === 2
+        ? settings.quoteLength
+        : 1,
   };
+}
+
+const QUOTE_LENGTHS: { id: 0 | 1 | 2; label: string }[] = [
+  { id: 0, label: "Short" },
+  { id: 1, label: "Medium" },
+  { id: 2, label: "Long" },
+];
+
+function quoteLengthOf(settings: RaceSettings): 0 | 1 | 2 {
+  if (settings.quoteLength === 0 || settings.quoteLength === 2) {
+    return settings.quoteLength;
+  }
+  return 1;
 }
 
 function settingsSummary(settings: RaceSettings): string {
   if (settings.mode === "quote") {
-    return "Quote race";
+    const length = QUOTE_LENGTHS.find(
+      (item) => item.id === quoteLengthOf(settings),
+    );
+    return `${length?.label ?? "Medium"} quote`;
   }
   const punct = settings.punctuation ? " · punctuation" : "";
   if (settings.mode === "time") {
@@ -139,6 +161,12 @@ function RacePartyPanel(props: {
               {props.settingsControls(true)}
             </Show>
           </div>
+
+          <Show when={liveSettings().mode === "quote"}>
+            <p class="mb-6 max-h-40 overflow-y-auto rounded bg-bg px-3 py-3 text-text">
+              {partyData()?.words.join(" ")}
+            </p>
+          </Show>
 
           <h2 class="mb-3 text-sm text-sub">Players ({playerCount()}/8)</h2>
           <ul class="mb-6 flex flex-col gap-2">
@@ -233,7 +261,6 @@ function RacePartyPanel(props: {
 
       <Show when={partyData()?.status === "finished"}>
         <div class="bg-bg-2 rounded-lg border border-sub/30 p-6">
-          <h2 class="mb-4 text-xl text-main">Race complete</h2>
           <RaceStandings />
           <div class="flex flex-wrap gap-2">
             <Button text="Play again" onClick={() => playAgain()} />
@@ -430,6 +457,28 @@ export function RacePage(): JSXElement {
               )}
             </For>
           </div>
+        </div>
+      </Show>
+
+      <Show when={draftSettings().mode === "quote"}>
+        <div>
+          <div class="mb-2 text-sm text-sub">Quote length</div>
+          <div class="flex flex-wrap gap-2">
+            <For each={QUOTE_LENGTHS}>
+              {(length) => (
+                <Button
+                  text={length.label}
+                  variant="text"
+                  active={quoteLengthOf(draftSettings()) === length.id}
+                  disabled={!editable}
+                  onClick={() => patchSettings({ quoteLength: length.id })}
+                />
+              )}
+            </For>
+          </div>
+          <p class="mt-2 text-xs text-sub">
+            Everyone in the party types the same passage.
+          </p>
         </div>
       </Show>
 

@@ -8,6 +8,7 @@ type RaceSettings = {
   wordCount: RaceWordCount;
   time: RaceTime;
   punctuation: boolean;
+  quoteLength?: 0 | 1 | 2;
 };
 type RaceStatus = "lobby" | "countdown" | "racing" | "finished";
 
@@ -141,13 +142,23 @@ const WORDS = [
   "now",
 ];
 
-const QUOTES = [
-  "The only way to do great work is to love what you do.",
-  "In the middle of difficulty lies opportunity.",
-  "The journey of a thousand miles begins with a single step.",
-  "Stay hungry, stay foolish.",
-  "It always seems impossible until it is done.",
-];
+const QUOTES: Record<0 | 1 | 2, string[]> = {
+  0: [
+    "The only way to do great work is to love what you do.",
+    "In the middle of difficulty lies opportunity.",
+    "Stay hungry. Stay foolish.",
+    "It always seems impossible until it is done.",
+    "Simplicity is the ultimate sophistication.",
+  ],
+  1: [
+    "Trust thyself: every heart vibrates to that iron string. Accept the place the divine providence has found for you, the society of your contemporaries, the connection of events. Great men have always done so, and confided themselves childlike to the genius of their age.",
+    "I went to the woods because I wished to live deliberately, to front only the essential facts of life, and see if I could not learn what it had to teach, and not, when I came to die, discover that I had not lived.",
+  ],
+  2: [
+    "It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, it was the epoch of incredulity, it was the season of Light, it was the season of Darkness, it was the spring of hope, it was the winter of despair, we had everything before us, we had nothing before us, we were all going direct to Heaven, we were all going direct the other way.",
+    "Call me Ishmael. Some years ago, never mind how long precisely, having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world. Whenever I find myself growing grim about the mouth, whenever it is a damp, drizzly November in my soul, I account it high time to get to sea as soon as I can.",
+  ],
+};
 
 const rooms: Map<string, RaceParty> = (() => {
   const g = globalThis as { __typeaiRaceRooms?: Map<string, RaceParty> };
@@ -190,11 +201,14 @@ function parseSettings(raw: Partial<RaceSettings> | undefined): RaceSettings {
   const wordCount =
     raw?.wordCount === 25 || raw?.wordCount === 100 ? raw.wordCount : 50;
   const time = raw?.time === 15 || raw?.time === 60 ? raw.time : 30;
+  const quoteLength =
+    raw?.quoteLength === 0 || raw?.quoteLength === 2 ? raw.quoteLength : 1;
   return {
     mode,
     wordCount,
     time,
     punctuation: raw?.punctuation === true,
+    quoteLength,
   };
 }
 
@@ -219,8 +233,13 @@ function makeCode(): string {
 
 function generateWords(settings: RaceSettings): string[] {
   if (settings.mode === "quote") {
-    const quote =
-      QUOTES[Math.floor(Math.random() * QUOTES.length)] ?? QUOTES[0] ?? "Go.";
+    const group =
+      settings.quoteLength === 0
+        ? QUOTES[0]
+        : settings.quoteLength === 2
+          ? QUOTES[2]
+          : QUOTES[1];
+    const quote = group[Math.floor(Math.random() * group.length)] ?? "Go.";
     return quote.split(/\s+/).filter((w) => w.length > 0);
   }
   const count =

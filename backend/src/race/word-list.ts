@@ -204,29 +204,32 @@ const ENGLISH_WORDS = [
   "line",
 ];
 
-/** Short curated quotes for race mode (already punctuated). */
-const RACE_QUOTES: string[] = [
-  "The only way to do great work is to love what you do.",
-  "In the middle of difficulty lies opportunity.",
-  "It is not the strongest of the species that survives, but the most adaptable.",
-  "Life is what happens when you are busy making other plans.",
-  "The future belongs to those who believe in the beauty of their dreams.",
-  "Do not go where the path may lead, go instead where there is no path and leave a trail.",
-  "Success is not final, failure is not fatal: it is the courage to continue that counts.",
-  "What you get by achieving your goals is not as important as what you become by achieving your goals.",
-  "The best time to plant a tree was twenty years ago. The second best time is now.",
-  "You miss one hundred percent of the shots you never take.",
-  "Whether you think you can or you think you cannot, you are right.",
-  "The journey of a thousand miles begins with a single step.",
-  "It always seems impossible until it is done.",
-  "Everything you can imagine is real.",
-  "Stay hungry, stay foolish.",
-  "Simplicity is the ultimate sophistication.",
-  "Be yourself; everyone else is already taken.",
-  "The secret of getting ahead is getting started.",
-  "Action is the foundational key to all success.",
-  "Dream big and dare to fail.",
-];
+/** Shared passages for quote races. 0 short, 1 medium, 2 long. */
+const RACE_QUOTES: Record<0 | 1 | 2, string[]> = {
+  0: [
+    "The only way to do great work is to love what you do.",
+    "In the middle of difficulty lies opportunity.",
+    "Stay hungry. Stay foolish.",
+    "It always seems impossible until it is done.",
+    "Simplicity is the ultimate sophistication.",
+    "The secret of getting ahead is getting started.",
+    "Well done is better than well said.",
+    "What we think, we become.",
+  ],
+  1: [
+    "Trust thyself: every heart vibrates to that iron string. Accept the place the divine providence has found for you, the society of your contemporaries, the connection of events. Great men have always done so, and confided themselves childlike to the genius of their age.",
+    "I went to the woods because I wished to live deliberately, to front only the essential facts of life, and see if I could not learn what it had to teach, and not, when I came to die, discover that I had not lived.",
+    "It is not the critic who counts; not the man who points out how the strong man stumbles, or where the doer of deeds could have done them better. The credit belongs to the man who is actually in the arena.",
+    "Two roads diverged in a yellow wood, and sorry I could not travel both and be one traveler, long I stood and looked down one as far as I could to where it bent in the undergrowth.",
+    "The happiness of your life depends upon the quality of your thoughts: therefore, guard accordingly, and take care that you entertain no notions unsuitable to virtue and reasonable nature.",
+  ],
+  2: [
+    "It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, it was the epoch of incredulity, it was the season of Light, it was the season of Darkness, it was the spring of hope, it was the winter of despair, we had everything before us, we had nothing before us, we were all going direct to Heaven, we were all going direct the other way.",
+    "All the world's a stage, and all the men and women merely players; they have their exits and their entrances, and one man in his time plays many parts, his acts being seven ages. At first the infant, mewling and puking in the nurse's arms. Then the whining schoolboy, with his satchel and shining morning face, creeping like snail unwillingly to school.",
+    "Call me Ishmael. Some years ago, never mind how long precisely, having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world. Whenever I find myself growing grim about the mouth, whenever it is a damp, drizzly November in my soul, I account it high time to get to sea as soon as I can.",
+    "I have sometimes thought that a woman's nature is like a great house full of rooms: there is the hall, through which everyone passes going in and out; the drawing-room, where one receives formal visits; the sitting-room, where the members of the family come and go as they list; but beyond that, the closed doors she has never opened, and the little room at the top where her own soul sits.",
+  ],
+};
 
 function applyPunctuation(words: string[]): string[] {
   if (words.length === 0) return words;
@@ -250,10 +253,17 @@ function applyPunctuation(words: string[]): string[] {
   return out;
 }
 
-function generateQuoteWords(): string[] {
+function quoteGroup(length: number | undefined): string[] {
+  if (length === 0) return RACE_QUOTES[0];
+  if (length === 2) return RACE_QUOTES[2];
+  return RACE_QUOTES[1];
+}
+
+function generateQuoteWords(length?: number): string[] {
+  const group = quoteGroup(length);
   const quote =
-    RACE_QUOTES[Math.floor(Math.random() * RACE_QUOTES.length)] ??
-    "The journey of a thousand miles begins with a single step.";
+    group[Math.floor(Math.random() * group.length)] ??
+    "The only way to do great work is to love what you do.";
   return quote.split(/\s+/).filter((w) => w.length > 0);
 }
 
@@ -275,9 +285,10 @@ export function generateRaceText(settings: {
   wordCount: 25 | 50 | 100;
   time?: 15 | 30 | 60;
   punctuation: boolean;
+  quoteLength?: 0 | 1 | 2;
 }): string[] {
   if (settings.mode === "quote") {
-    return generateQuoteWords();
+    return generateQuoteWords(settings.quoteLength);
   }
   const count =
     settings.mode === "time"

@@ -1,4 +1,4 @@
-import { cleanup, render } from "@solidjs/testing-library";
+import { cleanup, fireEvent, render } from "@solidjs/testing-library";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const memory = new Map<string, string>();
@@ -128,11 +128,19 @@ describe("RacePage lobby", () => {
   });
 
   it("offers timed mode next to words and quotes", () => {
-    const { container } = render(() => <RacePage />);
+    const { container, getByText, queryByText } = render(() => <RacePage />);
     const text = container.textContent ?? "";
     expect(text).toContain("Time");
     expect(text).toContain("Words");
     expect(text).toContain("Quote");
+    expect(queryByText("Short")).toBeNull();
+    fireEvent.click(getByText("Quote"));
+    expect(getByText("Short")).toBeTruthy();
+    expect(getByText("Medium")).toBeTruthy();
+    expect(getByText("Long")).toBeTruthy();
+    expect(container.textContent).toContain(
+      "Everyone in the party types the same passage.",
+    );
   });
 
   it("lets either player leave a race in progress", () => {
@@ -155,7 +163,8 @@ describe("RacePage lobby", () => {
     });
     const { container } = render(() => <RacePage />);
     expect(container.textContent).toContain("Race complete");
-    expect(container.textContent).toContain("winner");
+    expect(container.textContent).toContain("You win");
+    expect(container.textContent).toContain("1.90s ahead");
     expect(container.textContent).toContain("4.20s");
     expect(container.textContent).toContain("Play again");
   });
@@ -196,7 +205,9 @@ describe("RacePage lobby", () => {
     });
     const { container } = render(() => <RacePage />);
     expect(container.textContent).toContain("Race complete");
+    expect(container.textContent).toContain("Host wins");
     expect(container.textContent).toContain("Play again");
+    expect(container.textContent).not.toContain("You win");
     expect(container.textContent).not.toContain("Waiting for the host");
   });
 });
